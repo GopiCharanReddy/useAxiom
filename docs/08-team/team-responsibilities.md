@@ -1,33 +1,32 @@
 # Team Responsibilities & Implementation Guides
 
-To ensure parallel development with minimal bottlenecks, ownership is divided by business domains rather than purely frontend/backend splits.
+To ensure parallel development with minimal bottlenecks, the team is structured across 5 distinct domains. **We dogfood our own product:** As soon as Sprints 2 or 3 are functional, all project tracking moves into useAxiom itself. You are the Manager, and the AI will assign tasks to Developers 2-5.
 
-## Developer 1: Platform & Infrastructure
-- **Domain:** Monorepo architecture, CI/CD, Docker, Database Migrations, Auth Core.
-- **Responsibilities:** Setting up Turborepo, configuring Prisma/TypeORM, writing the RBAC middleware, and managing deployment pipelines.
-- **Key Docs:** `repository-architecture.md`, `database-design.md` (Sections 1, 4.1, 4.2).
-- **Integration Points:** Provides the database client and Auth APIs for the rest of the team.
+## Dev 1: You (Tech Lead + AI Lead)
+- **Domain:** The "Brain" of useAxiom.
+- **Responsibilities:** Overall architecture, AI Orchestrator, Agent Framework, Prompt Engineering, Provider Abstraction, Tool Calling, and AI Memory. Sprint planning, PR reviews, and integration support. You do *not* write the most code; you write the *smartest* code.
+- **Package Ownership:** `packages/ai-core`, `packages/ai-providers`, `packages/ai-tools`, `packages/ai-memory`.
+- **Code Reviews:** You review EVERY PR.
 
-## Developer 2: AI & Agent System
-- **Domain:** AI Orchestrator, LLM Integration, BullMQ Workers.
-- **Responsibilities:** Building the background worker fleet. Writing prompts and tool-calls for the Planner and Assignment agents. 
-- **Key Docs:** `ai-agent-design.md`, `api-specification.md` (Section 5).
-- **Integration Points:** Consumes Project data from Dev 5; feeds status updates to Dev 4.
+## Dev 2: Platform Engineer
+- **Domain:** The underlying platform that everyone else builds upon.
+- **Responsibilities:** Turborepo configuration, NestJS foundation, Docker, CI/CD, ESLint/Husky. Implementing the Authentication module, RBAC, and Organization structures.
+- **Package Ownership:** `apps/backend-api` (Shared), `packages/types`, `packages/config`, `packages/utils`.
+- **Code Reviews:** Reviews all Backend PRs.
 
-## Developer 3: Manager Dashboard
-- **Domain:** React (Vite) Frontend SPA.
-- **Responsibilities:** Building the UI components (Tailwind), managing state (React Query), and wiring up the API endpoints for the Manager experience.
-- **Key Docs:** `ux-product-flows.md`, `api-specification.md`.
-- **Integration Points:** Strictly consumes APIs built by Devs 1, 2, and 5.
+## Dev 3: Frontend Lead
+- **Domain:** The Manager Dashboard.
+- **Responsibilities:** Next.js scaffolding, Dashboard UI, Project screens, Analytics views, AI Chat Panel, Approval UI, and the shared component library.
+- **Package Ownership:** `apps/manager-dashboard`, `packages/ui`.
+- **Code Reviews:** Reviews all Frontend PRs.
 
-## Developer 4: WhatsApp & Notifications
-- **Domain:** Meta API Webhooks, Conversational State, Notifications.
-- **Responsibilities:** Handling inbound webhook security, pushing payloads to Redis, parsing intent, and sending daily summaries.
-- **Key Docs:** `database-design.md` (Section 10), `api-specification.md` (Section 6).
-- **Integration Points:** Highly dependent on Dev 1's Redis infrastructure and Dev 2's intent classification models.
+## Dev 4: Communication Engineer
+- **Domain:** Headless connectivity and background processing.
+- **Responsibilities:** WhatsApp Business API integration, Notification engine, BullMQ background jobs, Reminder scheduler, and webhook handlers.
+- **Code Reviews:** Reviews WhatsApp & Queue PRs.
 
-## Developer 5: Projects, Tasks & Analytics
-- **Domain:** Execution Core API.
-- **Responsibilities:** Implementing the core business logic and APIs for Projects, Milestones, Tasks, and Manager Approvals.
-- **Key Docs:** `database-design.md` (Section 4.3, 4.4), `api-specification.md` (Section 4).
-- **Integration Points:** Provides the core data structures that the AI (Dev 2) and Dashboard (Dev 3) manipulate.
+## Dev 5: Core Business Logic
+- **Domain:** The data entities that define work.
+- **Responsibilities:** Building the logic for Projects, Milestones, Tasks, Assignments, Reports, and Analytics workflows.
+- **Package Ownership:** `apps/backend-api` (Shared).
+- **Code Reviews:** Reviews Business Logic PRs.

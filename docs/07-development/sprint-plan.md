@@ -1,44 +1,30 @@
 # Sprint Plan & Implementation Roadmap
 
-## 1. Epics & Features Breakdown
-- **Epic 1: Platform Foundation** (Monorepo, CI/CD, DB schemas, Core Auth)
-- **Epic 2: Manager Dashboard** (UI framework, Project CRUD, Dashboard analytics)
-- **Epic 3: AI Orchestration** (Task generation, Assignment recommendations)
-- **Epic 4: Conversational Gateway** (WhatsApp webhooks, NLP intent classification)
+## Sprint 1: Foundations Only
+- **Dev 1 (Tech Lead):** AI package architecture, interfaces, provider abstraction, prompt package structure, agent skeletons. No AI logic.
+- **Dev 2 (Platform):** Turborepo, NestJS skeleton, Docker, ESLint, Husky, environment and shared configs.
+- **Dev 3 (Frontend):** Next.js dashboard shell, routing, layout, theme, shared UI.
+- **Dev 4 (Communication):** Queue infrastructure (BullMQ), notification module skeleton, WhatsApp module skeleton.
+- **Dev 5 (Business):** Backend module skeletons (Project, Task, Analytics modules).
 
-## 2. Sprint Roadmap (To MVP)
+## Sprint 2: Core Data & Basic UI
+- **Platform:** Authentication, Organization, RBAC.
+- **Frontend:** Login screen, Dashboard view.
+- **Business:** Project CRUD.
+- **AI:** Planner Agent initial implementation.
+- **Communication:** Notification APIs.
 
-### Sprint 1: Infrastructure & Scaffolding
-- **Objective:** Establish the physical monorepo and deployable skeletons.
-- **Deliverables:** Turborepo setup, ESLint/Prettier, Docker Compose (Postgres/Redis), empty backend/frontend apps.
-- **Definition of Done:** `pnpm dev` successfully starts DB, Redis, API (returning 200 OK), and React app.
+## Sprint 3: Deep Execution & Generation
+- **Business:** Tasks, Assignments, Milestones.
+- **Frontend:** Project pages, Task pages.
+- **AI:** Task generation logic.
+- **Communication:** Reminder engine.
 
-### Sprint 2: Core Data & Identity
-- **Objective:** Multi-tenancy and Authentication.
-- **Deliverables:** `users`, `organizations`, `roles` migrations. JWT login APIs. RBAC middleware.
-- **Dependencies:** Sprint 1.
+## Sprint 4: Advanced AI & Headless Ops
+- **AI:** Assignment Agent, Conversation Agent, Reporting Agent.
+- **Communication:** Full WhatsApp integration.
+- **Business:** Task Dependencies.
+- **Frontend:** Approval UI for AI-generated plans.
 
-### Sprint 3: Execution Engine (CRUD)
-- **Objective:** Project and Task state management.
-- **Deliverables:** `projects`, `tasks`, `milestones` schemas and APIs. React UI for managing projects.
-- **Dependencies:** Sprint 2.
-
-### Sprint 4: AI Brain
-- **Objective:** Connect the AI Orchestrator.
-- **Deliverables:** BullMQ workers, LLM client integration, Planner Agent logic (Objective -> JSON Task list).
-- **Dependencies:** Sprint 3.
-
-### Sprint 5: WhatsApp Gateway
-- **Objective:** Headless employee experience.
-- **Deliverables:** Meta Webhook API, inbound message intent parsing, outbound notification engine.
-- **Dependencies:** Sprint 4.
-
-## 3. Dependency Graph
-```mermaid
-graph TD
-    S1[Sprint 1: Scaffold] --> S2[Sprint 2: Auth/DB Core]
-    S2 --> S3[Sprint 3: Project CRUD]
-    S3 --> S4[Sprint 4: AI Workers]
-    S3 --> S5[Sprint 5: Manager UI]
-    S4 --> S6[Sprint 6: WhatsApp Webhooks]
-```
+## Sprint 5: Integration Sprint
+- **Everyone:** Wire everything together. End-to-end testing of the AI task generation flowing into WhatsApp notifications, employee replies routing through the Conversation Agent, and updating the Manager Dashboard.

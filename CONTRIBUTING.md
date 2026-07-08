@@ -1,20 +1,19 @@
 # Contributing to useAxiom
 
-Thank you for contributing to useAxiom! As a core developer, please adhere to the following guidelines.
+## Branching Strategy
+We use an isolated Git-flow style branching strategy to keep `main` stable.
+`main` -> `develop` -> `feature/your-feature` -> `PR to develop` -> `develop to main`
+Nobody commits directly to `main`.
 
-## Branching Model
-We use a Trunk-Based Development model. 
-- Do not commit directly to `main`.
-- Create a branch formatted as `type/short-description` (e.g., `feat/whatsapp-webhook`, `fix/login-timeout`).
+## Daily Standup
+Keep it asynchronous and under 10 minutes. Answer only 3 questions:
+1. What did I complete yesterday?
+2. What will I work on today?
+3. Is anything blocking me?
 
-## Pull Requests
-1. Open a PR against `main`.
-2. Fill out the Pull Request Template thoroughly.
-3. Ensure CI passes (Lint, TypeScript compilation, Unit Tests).
-4. Request review from at least one domain owner (see `team-responsibilities.md`).
-5. Use "Squash and Merge" to keep the history clean.
-
-## Coding Standards
-- Enforce strict typing. No implicit `any`.
-- If modifying the database schema, generate the migration and update `database-design.md`.
-- If modifying API endpoints, update `api-specification.md`.
+## Code Review Matrix
+- **Tech Lead (You):** Reviews EVERY PR.
+- **Dev 2:** Reviews Backend PRs.
+- **Dev 3:** Reviews Frontend PRs.
+- **Dev 4:** Reviews WhatsApp & Queue PRs.
+- **Dev 5:** Reviews Business Logic PRs.
