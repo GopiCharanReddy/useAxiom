@@ -1,0 +1,17 @@
+{
+  "name": "@useaxiom/background-workers",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "node src/index.js",
+    "build": "echo 'build workers'",
+    "start": "node src/index.js",
+    "lint": "echo 'linting workers'"
+  },
+  "dependencies": {
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "@useaxiom/config": "workspace:*"
+  }
+}
