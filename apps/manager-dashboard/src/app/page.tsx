@@ -11,7 +11,6 @@ import {
   Sparkles, 
   Play, 
   Check, 
-  UserPlus, 
   FileText,
   Users
 } from "lucide-react";
@@ -87,7 +86,7 @@ export default function Home() {
                     <Badge variant="proposed">Proposed Plan</Badge>
                   </div>
                   <CardDescription className="mt-1">
-                    AI generated a structured plan based on objective: <span className="text-zinc-300">"Launch the new Q3 Product Marketing campaign"</span>
+                    AI generated a structured plan based on objective: <span className="text-zinc-300">&quot;Launch the new Q3 Product Marketing campaign&quot;</span>
                   </CardDescription>
                 </div>
                 <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-400 border border-amber-500/20">
@@ -253,7 +252,7 @@ export default function Home() {
                     <Badge variant="blocked">Blocked</Badge>
                   </div>
                   <p className="text-xs text-zinc-400 leading-relaxed bg-zinc-950 p-2 rounded border border-zinc-900 font-mono">
-                    "I can't load the graphics, the drive link is broken."
+                    &quot;I can&apos;t load the graphics, the drive link is broken.&quot;
                   </p>
                   <div className="flex justify-end gap-1.5">
                     <Button variant="ghost" size="sm" className="h-7 text-[10px] rounded-lg">

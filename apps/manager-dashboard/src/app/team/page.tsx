@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Users, UserCheck, MessageSquare, AlertTriangle, ShieldCheck } from "lucide-react";
+import { UserCheck, MessageSquare } from "lucide-react";
 import { Button, Card, Badge } from "@useaxiom/ui";
 
 interface TeamMember {

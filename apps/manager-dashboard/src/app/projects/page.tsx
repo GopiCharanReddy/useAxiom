@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { FolderKanban, Search, Plus, Sparkles, Filter, CheckCircle2 } from "lucide-react";
+import { FolderKanban, Search, Plus } from "lucide-react";
 import { Button, Card, Badge } from "@useaxiom/ui";
 
 interface Project {
@@ -94,15 +94,17 @@ export default function ProjectsPage() {
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-zinc-900/20 p-4 rounded-2xl border border-zinc-900">
         {/* Status Tabs */}
         <div className="flex bg-zinc-950/60 p-1.5 rounded-xl border border-zinc-800/80 gap-1 overflow-x-auto w-full md:w-auto">
-          {[
-            { id: "all", label: "All Campaigns" },
-            { id: "progress", label: "In Progress" },
-            { id: "proposed", label: "Awaiting Review" },
-            { id: "completed", label: "Completed" }
-          ].map((tab) => (
+          {(
+            [
+              { id: "all", label: "All Campaigns" },
+              { id: "progress", label: "In Progress" },
+              { id: "proposed", label: "Awaiting Review" },
+              { id: "completed", label: "Completed" }
+            ] as const
+          ).map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
+              onClick={() => setActiveTab(tab.id)}
               className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all whitespace-nowrap cursor-pointer ${
                 activeTab === tab.id
                   ? "bg-zinc-800 text-zinc-100 shadow-sm border border-zinc-700/50"

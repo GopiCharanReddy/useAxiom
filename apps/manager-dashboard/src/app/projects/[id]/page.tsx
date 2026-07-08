@@ -4,17 +4,12 @@ import { use, useState } from "react";
 import Link from "next/link";
 import { 
   ArrowLeft, 
-  Sparkles, 
-  AlertTriangle, 
-  CheckCircle2, 
   Clock, 
   MessageSquare, 
   Plus, 
-  Users,
-  ChevronRight,
+  ChevronRight, 
   Activity,
-  Play,
-  RotateCcw
+  Play
 } from "lucide-react";
 import { Button, Card, Badge } from "@useaxiom/ui";
 
@@ -245,7 +240,7 @@ export default function ProjectDetailPage({ params }: PageProps) {
                     </div>
                     {task.blockerDescription && (
                       <span className="text-xs text-rose-400 font-medium bg-rose-500/5 border border-rose-500/10 px-2 py-1 rounded block max-w-xl">
-                        Blocker feedback: "{task.blockerDescription}"
+                        Blocker feedback: &quot;{task.blockerDescription}&quot;
                       </span>
                     )}
                   </div>
