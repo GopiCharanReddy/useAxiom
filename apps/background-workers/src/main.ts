@@ -19,12 +19,16 @@ console.log(`Starting Background Workers with Redis URL: ${redisUrl}...`);
 
 // 1. AI Leads Workers
 // @ts-ignore
-const plannerWorker = new Worker('planner_jobs', plannerWorkerProcessor, { connection: redisConnection as any });
+const plannerWorker = new Worker('planner_jobs', plannerWorkerProcessor, {
+  connection: redisConnection as any,
+});
 // @ts-ignore
-const whatsappWorker = new Worker('whatsapp_jobs', whatsappWorkerProcessor, { connection: redisConnection as any });
+const whatsappWorker = new Worker('whatsapp_jobs', whatsappWorkerProcessor, {
+  connection: redisConnection as any,
+});
 
-plannerWorker.on('completed', job => console.log(`[Planner] Job ${job.id} completed.`));
-whatsappWorker.on('completed', job => console.log(`[WhatsApp] Job ${job.id} completed.`));
+plannerWorker.on('completed', (job) => console.log(`[Planner] Job ${job.id} completed.`));
+whatsappWorker.on('completed', (job) => console.log(`[WhatsApp] Job ${job.id} completed.`));
 
 // 2. Communications & Outbound Queue Workers
 const outgoingQueue = new Queue('outgoing_messages', { connection: redisConnection as any });
@@ -33,7 +37,9 @@ const outboundWorker = createOutgoingMessagesWorker(redisConnection as any);
 const reminderWorker = createReminderSchedulerWorker(redisConnection as any, outgoingQueue);
 
 // 3. Repeatable Cron Job Setup
-const reminderSchedulerQueue = new Queue('reminder_scheduler', { connection: redisConnection as any });
+const reminderSchedulerQueue = new Queue('reminder_scheduler', {
+  connection: redisConnection as any,
+});
 
 async function setupRepeatableJobs() {
   console.info('[Background Workers] Setting up repeatable cron jobs...');
@@ -44,11 +50,15 @@ async function setupRepeatableJobs() {
       await reminderSchedulerQueue.removeRepeatableByKey(job.key);
     }
 
-    await reminderSchedulerQueue.add('check_deadlines', {}, {
-      repeat: {
-        pattern: '*/1 * * * *', // Run every minute
+    await reminderSchedulerQueue.add(
+      'check_deadlines',
+      {},
+      {
+        repeat: {
+          pattern: '*/1 * * * *', // Run every minute
+        },
       },
-    });
+    );
     console.info('[Background Workers] Repeatable job check_deadlines scheduled successfully');
   } catch (error) {
     console.error('[Background Workers] Failed to setup repeatable jobs:', error);

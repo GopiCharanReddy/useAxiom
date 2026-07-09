@@ -3,10 +3,7 @@ import { getMockTasks } from '../utils/mock-db';
 
 const remindedTasks = new Set<string>();
 
-export function createReminderSchedulerWorker(
-  redisConnection: any,
-  outgoingQueue: Queue
-) {
+export function createReminderSchedulerWorker(redisConnection: any, outgoingQueue: Queue) {
   console.info('[ReminderScheduler] Starting reminder scheduler worker...');
 
   const worker = new Worker(
@@ -32,8 +29,10 @@ export function createReminderSchedulerWorker(
         if (hoursDiff < 0) {
           const trackerKey = `${task.id}:overdue`;
           if (!remindedTasks.has(trackerKey)) {
-            console.info(`[ReminderScheduler] Task ${task.id} is OVERDUE. Enqueuing alert to ${task.assigneePhone}.`);
-            
+            console.info(
+              `[ReminderScheduler] Task ${task.id} is OVERDUE. Enqueuing alert to ${task.assigneePhone}.`,
+            );
+
             await outgoingQueue.add('send_message', {
               to: task.assigneePhone,
               content: `⚠️ Overdue Alert: Your task "${task.title}" (ID: ${task.id}) is past its deadline. Please reply "Done" to mark it complete, or text us what is blocking you.`,
@@ -47,8 +46,10 @@ export function createReminderSchedulerWorker(
         else if (hoursDiff <= 2.0) {
           const trackerKey = `${task.id}:approaching`;
           if (!remindedTasks.has(trackerKey)) {
-            console.info(`[ReminderScheduler] Task ${task.id} is approaching deadline. Enqueuing reminder to ${task.assigneePhone}.`);
-            
+            console.info(
+              `[ReminderScheduler] Task ${task.id} is approaching deadline. Enqueuing reminder to ${task.assigneePhone}.`,
+            );
+
             await outgoingQueue.add('send_message', {
               to: task.assigneePhone,
               content: `⏰ Reminder: Your task "${task.title}" (ID: ${task.id}) is approaching its deadline. You have ${hoursDiff.toFixed(1)} hour(s) remaining. Reply "Done" when finished!`,
@@ -64,7 +65,7 @@ export function createReminderSchedulerWorker(
     },
     {
       connection: redisConnection,
-    }
+    },
   );
 
   worker.on('completed', (job) => {

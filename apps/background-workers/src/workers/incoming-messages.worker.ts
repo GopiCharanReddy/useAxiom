@@ -1,17 +1,14 @@
 import { Worker, Job, Queue } from 'bullmq';
 import { getMockTasks } from '../utils/mock-db';
 
-export function createIncomingMessagesWorker(
-  redisConnection: any,
-  outgoingQueue: Queue
-) {
+export function createIncomingMessagesWorker(redisConnection: any, outgoingQueue: Queue) {
   console.info('[IncomingWorker] Starting incoming messages worker...');
-  
+
   const worker = new Worker(
     'incoming_messages',
     async (job: Job) => {
       console.info(`[IncomingWorker] Processing job ${job.id} of type ${job.name}`);
-      
+
       const payload = job.data.payload || job.data;
       let text = '';
       let waId = '';
@@ -39,13 +36,32 @@ export function createIncomingMessagesWorker(
       let intent: 'COMPLETED' | 'BLOCKED' | 'DELAYED' | 'STARTING' | 'QUESTION' = 'QUESTION';
       const cleanText = text.toLowerCase().trim();
 
-      if (cleanText.includes('done') || cleanText.includes('finish') || cleanText.includes('completed') || cleanText.includes('complete')) {
+      if (
+        cleanText.includes('done') ||
+        cleanText.includes('finish') ||
+        cleanText.includes('completed') ||
+        cleanText.includes('complete')
+      ) {
         intent = 'COMPLETED';
-      } else if (cleanText.includes('stuck') || cleanText.includes('block') || cleanText.includes('cannot') || cleanText.includes('cant')) {
+      } else if (
+        cleanText.includes('stuck') ||
+        cleanText.includes('block') ||
+        cleanText.includes('cannot') ||
+        cleanText.includes('cant')
+      ) {
         intent = 'BLOCKED';
-      } else if (cleanText.includes('delay') || cleanText.includes('later') || cleanText.includes('tomorrow') || cleanText.includes('postpone')) {
+      } else if (
+        cleanText.includes('delay') ||
+        cleanText.includes('later') ||
+        cleanText.includes('tomorrow') ||
+        cleanText.includes('postpone')
+      ) {
         intent = 'DELAYED';
-      } else if (cleanText.includes('start') || cleanText.includes('begin') || cleanText.includes('ready')) {
+      } else if (
+        cleanText.includes('start') ||
+        cleanText.includes('begin') ||
+        cleanText.includes('ready')
+      ) {
         intent = 'STARTING';
       }
 
@@ -53,12 +69,12 @@ export function createIncomingMessagesWorker(
 
       // Locate task context
       const tasks = getMockTasks();
-      const activeTask = tasks.find(
-        (t) => t.assigneePhone === waId && t.status !== 'COMPLETED'
-      );
+      const activeTask = tasks.find((t) => t.assigneePhone === waId && t.status !== 'COMPLETED');
 
       if (activeTask) {
-        console.info(`[IncomingWorker] Active task found for employee: ${activeTask.title} (ID: ${activeTask.id})`);
+        console.info(
+          `[IncomingWorker] Active task found for employee: ${activeTask.title} (ID: ${activeTask.id})`,
+        );
 
         if (intent === 'COMPLETED') {
           console.info(`[IncomingWorker] Task ${activeTask.id} marked as COMPLETED`);
@@ -67,8 +83,7 @@ export function createIncomingMessagesWorker(
             content: `Great job, ${name}! I have marked your task "${activeTask.title}" as COMPLETED. Let me know when you are ready to start the next one.`,
             timestamp: new Date().toISOString(),
           });
-        } 
-        else if (intent === 'BLOCKED') {
+        } else if (intent === 'BLOCKED') {
           console.info(`[IncomingWorker] Task ${activeTask.id} marked as BLOCKED`);
           await outgoingQueue.add('send_message', {
             to: waId,
@@ -83,22 +98,19 @@ export function createIncomingMessagesWorker(
             content: `⚠️ Blocker Alert! Employee ${name} has reported a blocker on task "${activeTask.title}" (ID: ${activeTask.id}). Reason: "${text}". Please log into the dashboard or reply to resolve.`,
             timestamp: new Date().toISOString(),
           });
-        }
-        else if (intent === 'STARTING') {
+        } else if (intent === 'STARTING') {
           await outgoingQueue.add('send_message', {
             to: waId,
             content: `Got it! I've updated your status. Good luck starting "${activeTask.title}". Let me know if you run into any issues.`,
             timestamp: new Date().toISOString(),
           });
-        }
-        else if (intent === 'DELAYED') {
+        } else if (intent === 'DELAYED') {
           await outgoingQueue.add('send_message', {
             to: waId,
             content: `No worries, ${name}. I've logged the delay for "${activeTask.title}". Make sure to keep us updated!`,
             timestamp: new Date().toISOString(),
           });
-        }
-        else {
+        } else {
           await outgoingQueue.add('send_message', {
             to: waId,
             content: `Hi ${name}, I couldn't quite determine if you were updating your task status. If you are finished, reply "Done". If you are stuck, reply "Blocked".`,
@@ -118,7 +130,7 @@ export function createIncomingMessagesWorker(
     },
     {
       connection: redisConnection,
-    }
+    },
   );
 
   worker.on('completed', (job) => {
