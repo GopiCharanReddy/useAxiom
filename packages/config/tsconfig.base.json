@@ -12,12 +12,6 @@
     "forceConsistentCasingInFileNames": true,
     "declaration": true,
     "declarationMap": true,
-    "baseUrl": ".",
-    "paths": {
-      "@useaxiom/ai-providers": ["../ai-providers/index.ts"],
-      "@useaxiom/ai-memory": ["../ai-memory/index.ts"],
-      "@useaxiom/ai-tools": ["../ai-tools/index.ts"],
-      "@useaxiom/ai-core": ["../ai-core/index.ts"]
-    }
+    "baseUrl": "."
   }
 }

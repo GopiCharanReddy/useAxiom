@@ -9,7 +9,8 @@
   },
   "dependencies": {
     "@useaxiom/ai-providers": "workspace:*",
-    "@useaxiom/ai-memory": "workspace:*"
+    "@useaxiom/ai-memory": "workspace:*",
+    "@useaxiom/ai-tools": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

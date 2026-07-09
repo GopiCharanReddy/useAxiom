@@ -6,6 +6,7 @@ datasource db {
 
 generator client {
   provider = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
 }
 
 enum Role {
@@ -113,6 +114,7 @@ model Milestone {
   description    String?
   targetDeadline DateTime?    @map("target_deadline")
   createdAt      DateTime     @default(now()) @map("created_at")
+  deletedAt      DateTime?    @map("deleted_at")
   project        Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
   tasks          Task[]
 
@@ -214,4 +216,14 @@ model LongTermMemory {
   createdAt DateTime @default(now()) @map("created_at")
 
   @@map("long_term_memory")
+}
+
+model ShortTermMemory {
+  id        String   @id @default(uuid()) @db.Uuid
+  threadId  String   @map("thread_id")
+  role      String
+  content   String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("short_term_memory")
 }

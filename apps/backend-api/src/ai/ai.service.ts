@@ -5,7 +5,7 @@ import { InMemoryMemory } from '@useaxiom/ai-memory';
 
 @Injectable()
 export class AiService implements OnModuleInit {
-  private orchestrator: AiOrchestrator;
+  private orchestrator!: AiOrchestrator;
 
   onModuleInit() {
     const geminiKey = process.env.GEMINI_API_KEY;

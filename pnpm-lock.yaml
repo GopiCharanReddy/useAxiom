@@ -221,6 +221,9 @@ importers:
       '@useaxiom/ai-providers':
         specifier: workspace:*
         version: link:../ai-providers
+      '@useaxiom/ai-tools':
+        specifier: workspace:*
+        version: link:../ai-tools
     devDependencies:
       '@types/node':
         specifier: ^20.0.0

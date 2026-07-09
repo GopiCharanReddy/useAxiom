@@ -1,6 +1,6 @@
 import { IAiMemory, IMemoryMessage } from './memory.interface';
 import { ILlmProvider } from '@useaxiom/ai-providers';
-import prisma from '@useaxiom/database';
+import { prisma } from '@useaxiom/database';
 
 export class RagMemory implements IAiMemory {
   constructor(private provider: ILlmProvider) {}
