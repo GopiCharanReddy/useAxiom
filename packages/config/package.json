@@ -2,5 +2,9 @@
   "name": "@useaxiom/config",
   "version": "1.0.0",
   "private": true,
-  "main": "index.js"
+  "exports": {
+    "./tsconfig.base.json": "./tsconfig.base.json",
+    "./eslint.base.mjs": "./eslint.base.mjs",
+    "./prettier.base.json": "./prettier.base.json"
+  }
 }

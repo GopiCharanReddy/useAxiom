@@ -45,3 +45,7 @@ coverage/
 # OS metadata
 .DS_Store
 Thumbs.db
+
+# Custom local database cluster
+infra/postgres_dev_data/
+

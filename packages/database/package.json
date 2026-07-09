@@ -1,18 +1,16 @@
 {
   "name": "@useaxiom/database",
   "version": "1.0.0",
-  "main": "./index.ts",
-  "types": "./index.ts",
+  "private": true,
+  "main": "index.ts",
   "scripts": {
-    "db:push": "prisma db push",
-    "db:generate": "prisma generate",
-    "db:studio": "prisma studio"
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev"
   },
   "dependencies": {
-    "@prisma/client": "^5.10.0"
+    "@prisma/client": "^5.22.0"
   },
   "devDependencies": {
-    "prisma": "^5.10.0",
-    "typescript": "^5.0.0"
+    "prisma": "^5.22.0"
   }
 }

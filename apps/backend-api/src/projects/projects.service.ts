@@ -1,30 +1,59 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../database/prisma.service';
+import { PrismaService } from '../prisma/prisma.service';
+import { Project, ProjectStatus } from '@useaxiom/database';
+import { CreateProjectDto } from './dto/project.dto';
 
 @Injectable()
 export class ProjectsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) {}
 
-  async create(tenantId: string, data: { name: string; description?: string }) {
-    return this.prisma.client.project.create({
+  async create(organizationId: string, managerId: string, dto: CreateProjectDto): Promise<Project> {
+    return this.prisma.project.create({
       data: {
-        ...data,
-        organizationId: tenantId,
-        status: 'PROPOSED',
+        name: dto.name,
+        objective: dto.objective,
+        targetDeadline: dto.targetDeadline ? new Date(dto.targetDeadline) : null,
+        status: ProjectStatus.PLANNING,
+        organization: {
+          connect: { id: organizationId },
+        },
+        manager: {
+          connect: { id: managerId },
+        },
       },
     });
   }
 
-  async findAll(tenantId: string) {
-    return this.prisma.client.project.findMany({ where: { organizationId: tenantId } });
+  async findAll(organizationId: string): Promise<Project[]> {
+    return this.prisma.project.findMany({
+      where: {
+        organizationId,
+        deletedAt: null,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
   }
 
-  async findOne(tenantId: string, id: string) {
-    const project = await this.prisma.client.project.findFirst({ 
-      where: { id, organizationId: tenantId }, 
-      include: { tasks: true, milestones: true } 
+  async findOne(organizationId: string, id: string): Promise<Project | null> {
+    return this.prisma.project.findFirst({
+      where: {
+        id,
+        organizationId,
+        deletedAt: null,
+      },
     });
-    if (!project) throw new NotFoundException();
-    return project;
+  }
+
+  async updateStatus(organizationId: string, id: string, status: ProjectStatus): Promise<Project> {
+    const project = await this.findOne(organizationId, id);
+    if (!project) {
+      throw new NotFoundException(`Project with ID ${id} not found under your organization`);
+    }
+    return this.prisma.project.update({
+      where: { id },
+      data: { status },
+    });
   }
 }

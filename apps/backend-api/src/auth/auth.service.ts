@@ -1,50 +1,43 @@
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { UsersService } from '../users/users.service';
 import { JwtService } from '@nestjs/jwt';
-import { PrismaService } from '../database/prisma.service';
+import { BcryptUtility } from '../common/utils/bcrypt.utility';
+import { User } from '@useaxiom/database';
 
 @Injectable()
 export class AuthService {
   constructor(
-    private prisma: PrismaService,
-    private jwtService: JwtService
+    private readonly usersService: UsersService,
+    private readonly jwtService: JwtService,
   ) {}
 
-  async validateUser(email: string): Promise<any> {
-    const user = await this.prisma.client.user.findUnique({ where: { email } });
-    if (user) {
-      return user;
+  async validateUser(email: string, pass: string): Promise<Omit<User, 'passwordHash'> | null> {
+    const user = await this.usersService.findByEmail(email);
+    if (user && user.passwordHash) {
+      const isMatch = await BcryptUtility.compare(pass, user.passwordHash);
+      if (isMatch) {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { passwordHash, ...result } = user;
+        return result;
+      }
     }
     return null;
   }
 
-  async login(user: any) {
-    const payload = { email: user.email, sub: user.id, organizationId: user.organizationId, role: user.role };
+  login(user: Omit<User, 'passwordHash'>) {
+    const payload = {
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+      organizationId: user.organizationId,
+    };
     return {
       access_token: this.jwtService.sign(payload),
+      user: {
+        id: user.id,
+        role: user.role,
+        organization_id: user.organizationId,
+      },
     };
-  }
-
-  async register(email: string, name: string, organizationName: string) {
-    const existing = await this.prisma.client.user.findUnique({ where: { email } });
-    if (existing) {
-      throw new ConflictException('User already exists');
-    }
-
-    const org = await this.prisma.client.organization.create({
-      data: {
-        name: organizationName,
-      }
-    });
-
-    const user = await this.prisma.client.user.create({
-      data: {
-        email,
-        name,
-        role: 'ADMIN',
-        organizationId: org.id,
-      }
-    });
-
-    return this.login(user);
   }
 }

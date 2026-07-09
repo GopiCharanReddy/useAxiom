@@ -1,21 +1,27 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { AiModule } from './ai/ai.module';
-import { DatabaseModule } from './database/database.module';
+import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
-import { TenantMiddleware } from './middleware/tenant.middleware';
+import { UsersModule } from './users/users.module';
+import { OrganizationsModule } from './organizations/organizations.module';
 import { ProjectsModule } from './projects/projects.module';
+import { MilestonesModule } from './milestones/milestones.module';
 import { TasksModule } from './tasks/tasks.module';
-import { WebhooksModule } from './webhooks/webhooks.module';
+import { AssignmentsModule } from './assignments/assignments.module';
 
 @Module({
-  imports: [AiModule, DatabaseModule, AuthModule, ProjectsModule, TasksModule, WebhooksModule],
+  imports: [
+    PrismaModule,
+    AuthModule,
+    UsersModule,
+    OrganizationsModule,
+    ProjectsModule,
+    MilestonesModule,
+    TasksModule,
+    AssignmentsModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })
-export class AppModule {
-  configure(consumer: import('@nestjs/common').MiddlewareConsumer) {
-    consumer.apply(TenantMiddleware).forRoutes('*');
-  }
-}
+export class AppModule {}

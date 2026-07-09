@@ -21,6 +21,7 @@ export async function plannerWorkerProcessor(job: Job) {
             title: task.name,
             description: task.description || '',
             projectId: projectId,
+            organizationId: tenantId,
             status: 'PROPOSED',
           }
         });

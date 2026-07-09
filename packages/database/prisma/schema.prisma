@@ -1,106 +1,217 @@
-generator client {
-  provider        = "prisma-client-js"
-  previewFeatures = ["postgresqlExtensions"]
-}
-
 datasource db {
   provider   = "postgresql"
   url        = env("DATABASE_URL")
   extensions = [vector]
 }
 
-model Organization {
-  id        String   @id @default(uuid())
-  name      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+generator client {
+  provider = "prisma-client-js"
+}
 
-  users    User[]
-  projects Project[]
+enum Role {
+  ADMIN
+  MANAGER
+  EMPLOYEE
+}
+
+enum ProjectStatus {
+  PLANNING
+  ACTIVE
+  COMPLETED
+  ARCHIVED
+}
+
+enum TaskStatus {
+  PROPOSED
+  PENDING
+  IN_PROGRESS
+  BLOCKED
+  COMPLETED
+}
+
+enum MessageDirection {
+  INBOUND
+  OUTBOUND
+}
+
+enum MessageStatus {
+  SENT
+  DELIVERED
+  READ
+  FAILED
+}
+
+model Organization {
+  id                 String               @id @default(uuid()) @db.Uuid
+  name               String
+  whatsappBusinessId String?              @map("whatsapp_business_id")
+  createdAt          DateTime             @default(now()) @map("created_at")
+  deletedAt          DateTime?            @map("deleted_at")
+  users              User[]
+  departments        Department[]
+  projects           Project[]
+  whatsappMessages   WhatsAppMessage[]
+  auditLogs          AuditLog[]
+
+  @@map("organizations")
 }
 
 model User {
-  id             String       @id @default(uuid())
-  email          String       @unique
-  name           String?
-  role           String       @default("EMPLOYEE") // ADMIN, MANAGER, EMPLOYEE
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  id             String            @id @default(uuid()) @db.Uuid
+  organizationId String            @map("organization_id") @db.Uuid
+  departmentId   String?           @map("department_id") @db.Uuid
+  role           Role
+  name           String
+  email          String?           @unique
+  passwordHash   String?           @map("password_hash")
+  phoneNumber    String            @map("phone_number")
+  createdAt      DateTime          @default(now()) @map("created_at")
+  deletedAt      DateTime?         @map("deleted_at")
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  department     Department?       @relation(fields: [departmentId], references: [id], onDelete: SetNull)
+  projects       Project[]         @relation("ProjectManager")
+  assignments    Assignment[]
+  messages       WhatsAppMessage[]
 
-  assignedTasks Task[] @relation("TaskAssignee")
+  @@map("users")
+}
+
+model Department {
+  id             String       @id @default(uuid()) @db.Uuid
+  organizationId String       @map("organization_id") @db.Uuid
+  name           String
+  createdAt      DateTime     @default(now()) @map("created_at")
+  deletedAt      DateTime?    @map("deleted_at")
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  users          User[]
+
+  @@map("departments")
 }
 
 model Project {
-  id             String       @id @default(uuid())
+  id             String         @id @default(uuid()) @db.Uuid
+  organizationId String         @map("organization_id") @db.Uuid
+  managerId      String?        @map("manager_id") @db.Uuid
   name           String
-  description    String?
-  status         String       @default("PROPOSED") // PROPOSED, ACTIVE, COMPLETED, ON_HOLD
-  organizationId String
-  organization   Organization @relation(fields: [organizationId], references: [id])
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  objective      String
+  status         ProjectStatus  @default(PLANNING)
+  targetDeadline DateTime?      @map("target_deadline")
+  createdAt      DateTime       @default(now()) @map("created_at")
+  deletedAt      DateTime?      @map("deleted_at")
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  manager        User?          @relation("ProjectManager", fields: [managerId], references: [id], onDelete: SetNull)
+  milestones     Milestone[]
+  tasks          Task[]
 
-  tasks      Task[]
-  milestones Milestone[]
+  @@map("projects")
 }
 
 model Milestone {
-  id        String   @id @default(uuid())
-  name      String
-  projectId String
-  project   Project  @relation(fields: [projectId], references: [id])
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             String       @id @default(uuid()) @db.Uuid
+  projectId      String       @map("project_id") @db.Uuid
+  name           String
+  description    String?
+  targetDeadline DateTime?    @map("target_deadline")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  project        Project      @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  tasks          Task[]
+
+  @@map("milestones")
 }
 
 model Task {
-  id          String   @id @default(uuid())
-  title       String
-  description String?
-  status      String   @default("PROPOSED") // PROPOSED, IN_PROGRESS, COMPLETED, BLOCKED
-  projectId   String
-  project     Project  @relation(fields: [projectId], references: [id])
-  assigneeId  String?
-  assignee    User?    @relation("TaskAssignee", fields: [assigneeId], references: [id])
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id             String           @id @default(uuid()) @db.Uuid
+  organizationId String           @map("organization_id") @db.Uuid
+  projectId      String           @map("project_id") @db.Uuid
+  milestoneId    String?          @map("milestone_id") @db.Uuid
+  title          String
+  description    String
+  status         TaskStatus       @default(PROPOSED)
+  estimatedHours Decimal?         @map("estimated_hours") @db.Decimal(5, 2)
+  createdByAi    Boolean          @default(false) @map("created_by_ai")
+  createdAt      DateTime         @default(now()) @map("created_at")
+  deletedAt      DateTime?        @map("deleted_at")
+  project        Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  milestone      Milestone?       @relation(fields: [milestoneId], references: [id], onDelete: SetNull)
+  assignments    Assignment[]
+  dependencies   TaskDependency[] @relation("TaskPrerequisite")
+  dependents     TaskDependency[] @relation("TaskDependent")
+
+  @@map("tasks")
 }
 
-model AiAgentRun {
-  id        String   @id @default(uuid())
-  agentType String
-  status    String
-  result    Json?
-  createdAt DateTime @default(now())
+model TaskDependency {
+  id              String   @id @default(uuid()) @db.Uuid
+  taskId          String   @map("task_id") @db.Uuid
+  dependsOnTaskId String   @map("depends_on_task_id") @db.Uuid
+  createdAt       DateTime @default(now()) @map("created_at")
+  task            Task     @relation("TaskDependent", fields: [taskId], references: [id], onDelete: Cascade)
+  dependsOnTask   Task     @relation("TaskPrerequisite", fields: [dependsOnTaskId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, dependsOnTaskId])
+  @@map("task_dependencies")
+}
+
+model Assignment {
+  id         String   @id @default(uuid()) @db.Uuid
+  taskId     String   @map("task_id") @db.Uuid
+  userId     String   @map("user_id") @db.Uuid
+  assignedAt DateTime @default(now()) @map("assigned_at")
+  task       Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([taskId, userId])
+  @@map("assignments")
 }
 
 model WhatsAppMessage {
-  id        String   @id @default(uuid())
-  from      String
-  content   String
-  status    String   @default("RECEIVED")
-  createdAt DateTime @default(now())
+  id             String            @id @default(uuid()) @db.Uuid
+  organizationId String            @map("organization_id") @db.Uuid
+  userId         String            @map("user_id") @db.Uuid
+  direction      MessageDirection
+  metaMessageId  String?           @map("meta_message_id")
+  content        String
+  deliveryStatus MessageStatus     @default(SENT) @map("delivery_status")
+  createdAt      DateTime          @default(now()) @map("created_at")
+  organization   Organization      @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  threads        ConversationThread[]
+
+  @@map("whatsapp_messages")
 }
 
-model ShortTermMemory {
-  id        String   @id @default(uuid())
-  threadId  String
-  role      String
-  content   String
-  createdAt DateTime @default(now())
+model ConversationThread {
+  id        String          @id @default(uuid()) @db.Uuid
+  messageId String          @map("message_id") @db.Uuid
+  taskId    String?         @map("task_id") @db.Uuid
+  createdAt DateTime        @default(now()) @map("created_at")
+  message   WhatsAppMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
 
-  @@index([threadId])
+  @@map("conversation_threads")
+}
+
+model AuditLog {
+  id             String       @id @default(uuid()) @db.Uuid
+  organizationId String       @map("organization_id") @db.Uuid
+  actorId        String       @map("actor_id") @db.Uuid
+  action         String
+  entityType     String       @map("entity_type")
+  entityId       String       @map("entity_id")
+  previousState  Json?        @map("previous_state")
+  newState       Json?        @map("new_state")
+  createdAt      DateTime     @default(now()) @map("created_at")
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@map("audit_logs")
 }
 
 model LongTermMemory {
-  id        String   @id @default(uuid())
-  key       String
-  value     String
-  tags      String[]
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @map("tenant_id") @db.Uuid
+  content   String
   embedding Unsupported("vector(1536)")?
-  createdAt DateTime @default(now())
+  metadata  Json?
+  createdAt DateTime @default(now()) @map("created_at")
 
-  @@index([key])
+  @@map("long_term_memory")
 }

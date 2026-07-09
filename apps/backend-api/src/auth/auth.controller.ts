@@ -1,22 +1,20 @@
-import { Controller, Post, Body, HttpCode, HttpStatus, UnauthorizedException } from '@nestjs/common';
+import { Controller, Post, UseGuards, Request, HttpCode, HttpStatus } from '@nestjs/common';
 import { AuthService } from './auth.service';
+import { LocalAuthGuard } from './guards/local-auth.guard';
+import { User } from '@useaxiom/database';
+
+interface AuthenticatedRequest {
+  user: Omit<User, 'passwordHash'>;
+}
 
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(private readonly authService: AuthService) {}
 
-  @HttpCode(HttpStatus.OK)
+  @UseGuards(LocalAuthGuard)
   @Post('login')
-  async login(@Body() signInDto: Record<string, any>) {
-    const user = await this.authService.validateUser(signInDto.email);
-    if (!user) {
-      throw new UnauthorizedException();
-    }
-    return this.authService.login(user);
-  }
-
-  @Post('register')
-  async register(@Body() registerDto: Record<string, any>) {
-    return this.authService.register(registerDto.email, registerDto.name, registerDto.organizationName);
+  @HttpCode(HttpStatus.OK)
+  login(@Request() req: AuthenticatedRequest) {
+    return this.authService.login(req.user);
   }
 }
