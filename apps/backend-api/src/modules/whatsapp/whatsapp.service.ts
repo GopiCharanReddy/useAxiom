@@ -4,9 +4,7 @@ import { Queue } from 'bullmq';
 
 @Injectable()
 export class WhatsappService {
-  constructor(
-    @InjectQueue('outgoing_messages') private readonly outgoingQueue: Queue,
-  ) {}
+  constructor(@InjectQueue('outgoing_messages') private readonly outgoingQueue: Queue) {}
 
   async enqueueOutboundMessage(to: string, content: string): Promise<void> {
     console.info(`[WhatsappService] Enqueuing outbound message to ${to}`);

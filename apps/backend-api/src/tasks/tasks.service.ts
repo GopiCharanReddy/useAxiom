@@ -1,11 +1,15 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { Task, TaskStatus } from '@useaxiom/database';
+import { Task, TaskStatus, Prisma } from '@useaxiom/database';
 import { CreateTaskDto } from './dto/task.dto';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class TasksService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notificationsService: NotificationsService,
+  ) {}
 
   private async checkProjectOwner(organizationId: string, projectId: string): Promise<void> {
     const project = await this.prisma.project.findFirst({
@@ -147,27 +151,56 @@ export class TasksService {
       });
 
       const incomplete = blockedBy.filter(
-        (dep) =>
-          dep.dependsOnTask.status !== 'COMPLETED' &&
-          dep.dependsOnTask.deletedAt === null,
+        (dep) => dep.dependsOnTask.status !== 'COMPLETED' && dep.dependsOnTask.deletedAt === null,
       );
       if (incomplete.length > 0) {
-        const names = incomplete
-          .map((dep) => `'${dep.dependsOnTask.title}'`)
-          .join(', ');
+        const names = incomplete.map((dep) => `'${dep.dependsOnTask.title}'`).join(', ');
         throw new BadRequestException(
           `Cannot start task. It is blocked by incomplete prerequisite tasks: ${names}.`,
         );
       }
     }
 
-    return this.prisma.task.update({
+    const updatedTask = await this.prisma.task.update({
       where: { id },
       data: { status },
       include: {
         milestone: true,
       },
     });
+
+    if (status === 'BLOCKED') {
+      const fullTask = await this.prisma.task.findFirst({
+        where: { id },
+        include: {
+          project: {
+            include: {
+              manager: true,
+            },
+          },
+          assignments: {
+            include: {
+              user: true,
+            },
+          },
+        },
+      });
+
+      if (fullTask && fullTask.project.manager) {
+        const managerPhone = fullTask.project.manager.phoneNumber;
+        const employeeName = fullTask.assignments[0]?.user.name || 'Assigned Employee';
+        const reason = 'Task transitioned status to BLOCKED';
+        await this.notificationsService
+          .sendBlockerAlert(id, managerPhone, employeeName, reason)
+          .catch((err: unknown) => {
+            console.error(
+              `Failed to send blocker alert notification: ${err instanceof Error ? err.message : String(err)}`,
+            );
+          });
+      }
+    }
+
+    return updatedTask;
   }
 
   async softDeleteTask(organizationId: string, id: string) {
@@ -195,7 +228,7 @@ export class TasksService {
 
     this.validateStatusTransition(task.status, 'PENDING');
 
-    const updatePayload: any = { status: 'PENDING' };
+    const updatePayload: Prisma.TaskUpdateInput = { status: 'PENDING' };
     if (overrideData?.estimatedHoursOverride !== undefined) {
       updatePayload.estimatedHours = overrideData.estimatedHoursOverride;
     }
@@ -228,10 +261,27 @@ export class TasksService {
       });
     }
 
-    return this.prisma.task.update({
+    const resultTask = await this.prisma.task.update({
       where: { id },
       data: updatePayload,
     });
+
+    if (overrideData?.assigneeIdOverride) {
+      const user = await this.prisma.user.findFirst({
+        where: { id: overrideData.assigneeIdOverride },
+      });
+      if (user) {
+        await this.notificationsService
+          .sendTaskAssignedAlert(id, user.phoneNumber, task.title, 'No deadline')
+          .catch((err: unknown) =>
+            console.error(
+              `Failed to send assignment alert: ${err instanceof Error ? err.message : String(err)}`,
+            ),
+          );
+      }
+    }
+
+    return resultTask;
   }
 
   async assignTask(organizationId: string, taskId: string, userId: string) {
@@ -248,12 +298,10 @@ export class TasksService {
     });
 
     if (!user) {
-      throw new NotFoundException(
-        `User with ID ${userId} not found in this organization`,
-      );
+      throw new NotFoundException(`User with ID ${userId} not found in this organization`);
     }
 
-    return this.prisma.assignment.upsert({
+    const assignmentResult = await this.prisma.assignment.upsert({
       where: {
         taskId_userId: {
           taskId: taskId,
@@ -266,6 +314,16 @@ export class TasksService {
         userId: userId,
       },
     });
+
+    await this.notificationsService
+      .sendTaskAssignedAlert(taskId, user.phoneNumber, task.title, 'No deadline')
+      .catch((err: unknown) =>
+        console.error(
+          `Failed to send assignment alert: ${err instanceof Error ? err.message : String(err)}`,
+        ),
+      );
+
+    return assignmentResult;
   }
 
   async hasPath(startTaskId: string, targetTaskId: string): Promise<boolean> {

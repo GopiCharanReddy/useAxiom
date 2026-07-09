@@ -6,16 +6,18 @@ export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}
 
   @Post('test')
-  async testNotification(@Body() body: { userId: string, message: string }) {
+  async testNotification(@Body() body: { userId: string; message: string }) {
     return this.notificationsService.sendTestNotification(
       body.userId || 'mock-user-123',
-      body.message || 'Hello from the background queue!'
+      body.message || 'Hello from the background queue!',
     );
   }
 
   @Post('send-summary')
   async sendSummary(@Body('organizationId') organizationId: string) {
-    console.info(`[NotificationsController] Received send-summary trigger for organizationId: ${organizationId}`);
+    console.info(
+      `[NotificationsController] Received send-summary trigger for organizationId: ${organizationId}`,
+    );
     const orgId = organizationId || 'default-org';
     await this.notificationsService.triggerOrganizationSummary(orgId);
     return { status: 'summary_triggered', organizationId: orgId };
@@ -41,7 +43,12 @@ export class NotificationsController {
     @Body('hoursRemaining') hoursRemaining: number,
   ) {
     console.info(`[NotificationsController] Received deadline-reminder trigger for task ${taskId}`);
-    await this.notificationsService.sendDeadlineReminder(taskId, employeePhone, taskTitle, hoursRemaining);
+    await this.notificationsService.sendDeadlineReminder(
+      taskId,
+      employeePhone,
+      taskTitle,
+      hoursRemaining,
+    );
     return { status: 'deadline_reminder_sent', taskId };
   }
 
@@ -53,7 +60,12 @@ export class NotificationsController {
     @Body('dueDate') dueDate: string,
   ) {
     console.info(`[NotificationsController] Received task-assigned trigger for task ${taskId}`);
-    await this.notificationsService.sendTaskAssignedAlert(taskId, employeePhone, taskTitle, dueDate);
+    await this.notificationsService.sendTaskAssignedAlert(
+      taskId,
+      employeePhone,
+      taskTitle,
+      dueDate,
+    );
     return { status: 'task_assignment_alert_sent', taskId };
   }
 }

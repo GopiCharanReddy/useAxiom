@@ -57,9 +57,12 @@ describe('WhatsappController', () => {
     it('should add payload to queue and return status queued', async () => {
       const payload = { entry: [{ id: '123' }] };
       const result = await controller.handleWebhook(payload, 'sha256=abcdef');
-      expect(mockQueue.add).toHaveBeenCalledWith('process_webhook', expect.objectContaining({
-        payload,
-      }));
+      expect(mockQueue.add).toHaveBeenCalledWith(
+        'process_webhook',
+        expect.objectContaining({
+          payload,
+        }),
+      );
       expect(result).toEqual({ status: 'queued' });
     });
   });

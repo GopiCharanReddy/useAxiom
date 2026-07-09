@@ -66,6 +66,28 @@ export class TasksController {
     return this.tasksService.updateStatus(user.organizationId, id, body.status);
   }
 
+  @Post('tasks/:id/start')
+  @HttpCode(HttpStatus.OK)
+  async startTask(@CurrentUser() user: ActiveUser, @Param('id') id: string) {
+    return this.tasksService.updateStatus(
+      user.organizationId,
+      id,
+      Role.EMPLOYEE === user.role ? 'IN_PROGRESS' : 'IN_PROGRESS',
+    ); // cast safely
+  }
+
+  @Post('tasks/:id/block')
+  @HttpCode(HttpStatus.OK)
+  async blockTask(@CurrentUser() user: ActiveUser, @Param('id') id: string) {
+    return this.tasksService.updateStatus(user.organizationId, id, 'BLOCKED');
+  }
+
+  @Post('tasks/:id/mark-complete')
+  @HttpCode(HttpStatus.OK)
+  async completeTask(@CurrentUser() user: ActiveUser, @Param('id') id: string) {
+    return this.tasksService.updateStatus(user.organizationId, id, 'COMPLETED');
+  }
+
   @Delete('tasks/:id')
   async deleteTask(@CurrentUser() user: ActiveUser, @Param('id') id: string) {
     return this.tasksService.softDeleteTask(user.organizationId, id);

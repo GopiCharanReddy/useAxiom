@@ -1,11 +1,4 @@
-import {
-  Controller,
-  Get,
-  Query,
-  HttpCode,
-  HttpStatus,
-  Headers,
-} from '@nestjs/common';
+import { Controller, Get, Query, HttpCode, HttpStatus, Headers } from '@nestjs/common';
 import { AnalyticsService } from './analytics.service';
 
 @Controller('analytics')
