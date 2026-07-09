@@ -11,7 +11,9 @@
   "dependencies": {
     "next": "^15.0.0",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "@useaxiom/ui": "workspace:*",
+    "lucide-react": "^0.470.0"
   },
   "devDependencies": {
     "@useaxiom/config": "workspace:*",
