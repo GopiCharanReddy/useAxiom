@@ -6,7 +6,7 @@ import { InMemoryMemory } from '@useaxiom/ai-memory';
 
 export async function plannerWorkerProcessor(job: Job) {
   const { projectId, objective, tenantId } = job.data;
-  
+
   const provider = getLlmProvider();
   const memory = new InMemoryMemory(); // Note: could be RagMemory if configured
   const orchestrator = new AiOrchestrator({ provider, memory });
@@ -23,7 +23,7 @@ export async function plannerWorkerProcessor(job: Job) {
             projectId: projectId,
             organizationId: tenantId,
             status: 'PROPOSED',
-          }
+          },
         });
       }
     }

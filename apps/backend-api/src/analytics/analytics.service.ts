@@ -6,43 +6,41 @@ export class AnalyticsService {
   constructor(private readonly prisma: PrismaService) {}
 
   async getDashboard(organizationId: string, timeframe: string = '7d') {
-    const [activeProjects, blockedTasks, aiTasks, totalTasks] =
-      await Promise.all([
-        this.prisma.project.count({
-          where: {
-            organizationId,
-            status: 'ACTIVE',
-            deletedAt: null,
-          },
-        }),
-        this.prisma.task.count({
-          where: {
-            organizationId,
-            status: 'BLOCKED',
-            deletedAt: null,
-          },
-        }),
-        this.prisma.task.count({
-          where: {
-            organizationId,
-            createdByAi: true,
-            deletedAt: null,
-          },
-        }),
-        this.prisma.task.count({
-          where: {
-            organizationId,
-            deletedAt: null,
-          },
-        }),
-      ]);
+    const [activeProjects, blockedTasks, aiTasks, totalTasks] = await Promise.all([
+      this.prisma.project.count({
+        where: {
+          organizationId,
+          status: 'ACTIVE',
+          deletedAt: null,
+        },
+      }),
+      this.prisma.task.count({
+        where: {
+          organizationId,
+          status: 'BLOCKED',
+          deletedAt: null,
+        },
+      }),
+      this.prisma.task.count({
+        where: {
+          organizationId,
+          createdByAi: true,
+          deletedAt: null,
+        },
+      }),
+      this.prisma.task.count({
+        where: {
+          organizationId,
+          deletedAt: null,
+        },
+      }),
+    ]);
 
     return {
       active_projects: activeProjects,
       blocked_tasks: blockedTasks,
       ai_interventions_count: aiTasks,
-      team_velocity:
-        totalTasks > 0 ? Math.round((activeProjects / totalTasks) * 100) : 100,
+      team_velocity: totalTasks > 0 ? Math.round((activeProjects / totalTasks) * 100) : 100,
       timeframe,
     };
   }

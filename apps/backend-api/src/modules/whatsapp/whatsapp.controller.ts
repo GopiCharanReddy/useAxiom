@@ -1,4 +1,13 @@
-import { Controller, Get, Post, Body, Query, Headers, HttpException, HttpStatus } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Query,
+  Headers,
+  HttpException,
+  HttpStatus,
+} from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { ConfigService } from '@nestjs/config';
@@ -30,10 +39,7 @@ export class WhatsappController {
   }
 
   @Post()
-  async handleWebhook(
-    @Body() payload: any,
-    @Headers('x-hub-signature-256') signature: string,
-  ) {
+  async handleWebhook(@Body() payload: any, @Headers('x-hub-signature-256') signature: string) {
     console.info('[WhatsappController] Received webhook payload');
 
     // HMAC verification

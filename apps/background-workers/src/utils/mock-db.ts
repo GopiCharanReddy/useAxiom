@@ -9,7 +9,7 @@ export interface MockTask {
 
 export function getMockTasks(): MockTask[] {
   const now = new Date();
-  
+
   return [
     {
       id: 'task-101',
@@ -42,6 +42,6 @@ export function getMockTasks(): MockTask[] {
       status: 'COMPLETED',
       assigneePhone: '+1234567890',
       assigneeName: 'David',
-    }
+    },
   ];
 }
