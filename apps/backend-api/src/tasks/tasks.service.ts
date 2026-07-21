@@ -147,13 +147,13 @@ export class TasksService {
       });
 
       const incomplete = blockedBy.filter(
-        (dep) =>
+        (dep: any) =>
           dep.dependsOnTask.status !== 'COMPLETED' &&
           dep.dependsOnTask.deletedAt === null,
       );
       if (incomplete.length > 0) {
         const names = incomplete
-          .map((dep) => `'${dep.dependsOnTask.title}'`)
+          .map((dep: any) => `'${dep.dependsOnTask.title}'`)
           .join(', ');
         throw new BadRequestException(
           `Cannot start task. It is blocked by incomplete prerequisite tasks: ${names}.`,

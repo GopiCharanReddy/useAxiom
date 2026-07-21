@@ -12,6 +12,7 @@
     "@useaxiom/database": "workspace:*"
   },
   "devDependencies": {
+    "@types/node": "^20.11.0",
     "@useaxiom/config": "workspace:*"
   }
 }

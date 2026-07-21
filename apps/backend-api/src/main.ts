@@ -6,7 +6,7 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
 
 async function bootstrap() {
   try {
-    const app = await NestFactory.create(AppModule, { abortOnError: false });
+    const app = await NestFactory.create(AppModule, { abortOnError: false, rawBody: true });
     app.setGlobalPrefix('api');
     app.enableVersioning({
       type: VersioningType.URI,

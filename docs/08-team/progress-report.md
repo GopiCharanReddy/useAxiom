@@ -47,8 +47,8 @@ The following details the specific systems and code that each developer role has
 *   **Background Workers App:** Built out `apps/background-workers` as a standalone Node.js service to handle asynchronous processing without blocking the main API.
 *   **BullMQ Integration:** Successfully implemented the Redis-backed BullMQ queue system. Resolved complex TypeScript type mismatch errors relating to `ioredis` dependencies, ensuring stable queue connections.
 *   **Queue Definitions:** Established the core queues: `notifications`, `incoming_messages`, `outgoing_messages`, `planner_jobs`, and `reminder_scheduler`.
-*   **Worker Implementations:** Created the initial worker files (e.g., `ai-planner.worker.ts`, `notifications.worker.ts`, `outgoing-messages.worker.ts`). Currently, these workers contain the foundational scaffolding and simulated logic, ready to be replaced with actual API integrations.
-*   **WhatsApp Controller Prep:** Added the `whatsapp.controller.ts` in the backend API to serve as the eventual webhook receiver for Meta's API.
+*   **Worker Implementations:** Created and finalized all workers, including a unified `notifications.worker.ts` for dynamic multi-channel template rendering (WhatsApp, Email, SMS, In-App), and implemented an exponential backoff retry strategy in `outgoing-messages.worker.ts` with real Meta WhatsApp Graph API requests.
+*   **WhatsApp Webhook Verification:** Integrated HMAC SHA-256 signature validation in `whatsapp.controller.ts` to secure incoming Meta webhook payloads, pushing processed messages to the `incoming_messages` queue.
 
 ### Developer 5 (Core Business Logic)
 **Focus:** Unifying core modules and preparing business logic.

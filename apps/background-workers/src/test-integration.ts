@@ -18,6 +18,7 @@ async function runSimulation() {
   const inboundQueue = new Queue('incoming_messages', { connection: redisConnection });
   const schedulerQueue = new Queue('reminder_scheduler', { connection: redisConnection });
   const outboundQueue = new Queue('outgoing_messages', { connection: redisConnection });
+  const notificationsQueue = new Queue('notifications', { connection: redisConnection });
 
   // 1. Simulate summary trigger enqueuing (Outbound summary)
   console.info('\n--- Test Scenario 1: Manual Daily Summary Trigger ---');
@@ -50,6 +51,24 @@ async function runSimulation() {
   console.info('Enqueuing check_deadlines task scheduler scanner job...');
   await schedulerQueue.add('check_deadlines', {});
 
+  // 5. Simulate notifications queue enqueuing
+  console.info('\n--- Test Scenario 5: Multi-Channel Template Notification ---');
+  console.info('Enqueuing TASK_ASSIGNED template alert to notifications queue...');
+  await notificationsQueue.add('send-notification', {
+    recipient: {
+      phone: '+1234567890',
+      email: 'employee@example.com',
+      name: 'John Doe',
+    },
+    channels: ['WHATSAPP', 'EMAIL', 'SMS', 'IN_APP'],
+    template: 'TASK_ASSIGNED',
+    variables: {
+      taskId: 'task-abc-123',
+      taskTitle: 'Design System Documentation',
+      dueDate: '2026-07-15',
+    },
+  });
+
   // Wait a few seconds for workers to log the process
   console.info('\nWaiting 5 seconds for background workers fleet to complete processing...');
   await new Promise((resolve) => setTimeout(resolve, 5000));
@@ -58,6 +77,7 @@ async function runSimulation() {
   await inboundQueue.close();
   await schedulerQueue.close();
   await outboundQueue.close();
+  await notificationsQueue.close();
 
   console.info('\n==================================================');
   console.info('INTEGRATION TEST SIMULATION COMPLETED');
