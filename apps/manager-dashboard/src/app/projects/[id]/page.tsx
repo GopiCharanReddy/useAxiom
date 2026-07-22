@@ -111,66 +111,66 @@ export default function ProjectDetailPage({ params }: PageProps) {
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       {/* Breadcrumb back navigation */}
-      <Link href="/projects" className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-900 transition-colors font-bold">
+      <Link href="/projects" className="inline-flex items-center gap-1.5 text-xs text-zinc-500 hover:text-zinc-200 transition-colors font-bold">
         <ArrowLeft className="w-3.5 h-3.5" />
         <span>Back to Projects</span>
       </Link>
 
       {/* Campaign Details Header */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 pb-6 border-b-2 border-gray-100">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 pb-6 border-b border-zinc-850">
         <div className="space-y-2">
           <div className="flex items-center gap-2">
-            <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest bg-blue-50 px-2.5 py-0.5 rounded-sm">
+            <span className="text-[10px] font-bold text-purple-400 uppercase tracking-widest bg-purple-500/5 px-2.5 py-0.5 rounded border border-purple-500/10">
               {(project.status as string) || 'PROJECT'}
             </span>
             <Badge variant={project.status === "ACTIVE" ? "progress" : project.status === "COMPLETED" ? "completed" : "proposed"}>
               {project.status === "ACTIVE" ? "In Progress" : project.status === "COMPLETED" ? "Done" : "Awaiting Review"}
             </Badge>
           </div>
-          <h1 className="text-4xl font-extrabold tracking-tight text-gray-900">{project.name as string}</h1>
-          <p className="text-gray-500 text-base max-w-2xl font-medium">{project.objective as string}</p>
+          <h1 className="text-4xl font-extrabold tracking-tight text-zinc-100">{project.name as string}</h1>
+          <p className="text-zinc-400 text-base max-w-2xl font-medium">{project.objective as string}</p>
         </div>
 
         {/* Progress Bar Widget */}
         <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
           {project.healthScore !== undefined && project.healthScore !== null && (
-            <div className={`w-full lg:w-72 bg-white p-5 border-4 ${project.healthStatus === 'HIGH' ? 'border-red-600' : project.healthStatus === 'MEDIUM' ? 'border-amber-500' : 'border-emerald-500'} space-y-3`}>
+            <div className={`w-full lg:w-72 bg-zinc-900 p-5 border border-zinc-850 border-l-4 ${project.healthStatus === 'HIGH' ? 'border-l-rose-500' : project.healthStatus === 'MEDIUM' ? 'border-l-amber-500' : 'border-l-emerald-500'} space-y-3 rounded-r-xl`}>
               <div className="flex justify-between items-center text-sm font-bold">
                 <div className="flex items-center gap-2">
-                  <AlertTriangle className={`w-4 h-4 ${project.healthStatus === 'HIGH' ? 'text-red-600' : project.healthStatus === 'MEDIUM' ? 'text-amber-600' : 'text-emerald-600'}`} />
-                  <span className="text-gray-900 uppercase tracking-wider">AI Risk</span>
+                  <AlertTriangle className={`w-4 h-4 ${project.healthStatus === 'HIGH' ? 'text-rose-400' : project.healthStatus === 'MEDIUM' ? 'text-amber-400' : 'text-emerald-400'}`} />
+                  <span className="text-zinc-200 uppercase tracking-wider">AI Risk</span>
                 </div>
-                <span className={project.healthStatus === 'HIGH' ? 'text-red-600' : project.healthStatus === 'MEDIUM' ? 'text-amber-600' : 'text-emerald-600'}>{project.healthScore as number}/100</span>
+                <span className={project.healthStatus === 'HIGH' ? 'text-rose-400' : project.healthStatus === 'MEDIUM' ? 'text-amber-400' : 'text-emerald-400'}>{project.healthScore as number}/100</span>
               </div>
-              <p className="text-xs font-medium text-gray-600 line-clamp-2">{project.healthReasoning as string}</p>
+              <p className="text-xs font-medium text-zinc-450 line-clamp-2">{project.healthReasoning as string}</p>
             </div>
           )}
-          <div className="w-full lg:w-72 bg-white p-5 border-4 border-gray-900 space-y-3">
+          <div className="w-full lg:w-72 bg-zinc-900 p-5 border border-zinc-850 rounded-xl space-y-3">
             <div className="flex justify-between items-center text-sm font-bold">
-              <span className="text-gray-900 uppercase tracking-wider">Campaign Progress</span>
-              <span className="text-blue-600">{project.status === 'ACTIVE' ? 10 : 0}%</span>
+              <span className="text-zinc-200 uppercase tracking-wider">Campaign Progress</span>
+              <span className="text-purple-400">{project.status === 'ACTIVE' ? 10 : 0}%</span>
             </div>
-            <div className="w-full bg-gray-200 h-2">
-              <div className="bg-blue-600 h-full" style={{ width: `${project.status === 'ACTIVE' ? 10 : 0}%` }} />
+            <div className="w-full bg-zinc-950 h-2 rounded-full overflow-hidden border border-zinc-855">
+              <div className="bg-purple-600 h-full rounded-full" style={{ width: `${project.status === 'ACTIVE' ? 10 : 0}%` }} />
             </div>
           </div>
         </div>
       </div>
 
       {/* Actions Bar */}
-      <div className="flex justify-between items-center gap-4 bg-gray-50 p-4 rounded-md border-2 border-gray-100">
+      <div className="flex justify-between items-center gap-4 bg-zinc-900/50 p-4 rounded-xl border border-zinc-850">
         <div className="flex items-center gap-2">
-          <Activity className="w-5 h-5 text-blue-500" />
-          <span className="text-sm font-bold text-gray-900 tracking-wide">Campaign Execution Log</span>
+          <Activity className="w-5 h-5 text-purple-500" />
+          <span className="text-sm font-bold text-zinc-200 tracking-wide">Campaign Execution Log</span>
         </div>
         <div className="flex gap-2">
           {tasks.some(t => t.status === "PROPOSED") && (
-            <Button variant="primary" size="sm" onClick={handleApprovePlan}>
+            <Button variant="primary" size="sm" onClick={handleApprovePlan} className="rounded-xl">
               <Play className="w-4 h-4" />
               <span>Approve Proposed Plan</span>
             </Button>
           )}
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" className="rounded-xl border-zinc-800 text-zinc-300 hover:bg-zinc-800">
             <Plus className="w-4 h-4" />
             <span>Add Task</span>
           </Button>
@@ -183,22 +183,22 @@ export default function ProjectDetailPage({ params }: PageProps) {
           <div className="space-y-3">
             <div className="flex justify-between items-center">
               <div className="flex items-center gap-2">
-                <ChevronRight className="w-5 h-5 text-gray-400" />
-                <h3 className="font-bold text-gray-900 text-lg tracking-tight">All Tasks</h3>
+                <ChevronRight className="w-5 h-5 text-zinc-500" />
+                <h3 className="font-bold text-zinc-200 text-lg tracking-tight">All Tasks</h3>
               </div>
             </div>
 
             {/* Task list inside card */}
-            <Card className="divide-y-2 divide-gray-100 p-0 overflow-hidden">
+            <Card className="bg-zinc-900 border border-zinc-850 divide-y divide-zinc-800 p-0 rounded-2xl overflow-hidden">
               {tasks.map((task) => (
-                <div key={task.id} className="p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:bg-gray-50 transition-colors">
+                <div key={task.id} className="p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:bg-zinc-950/40 transition-colors">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
-                      <span className="text-base font-bold text-gray-900">{task.title}</span>
+                      <span className="text-base font-bold text-zinc-100">{task.title}</span>
                       {getTaskStatusBadge(task.status)}
                     </div>
                     {task.description && (
-                      <span className="text-sm text-gray-500 font-medium block max-w-xl">
+                      <span className="text-sm text-zinc-400 font-medium block max-w-xl">
                         {task.description}
                       </span>
                     )}
@@ -206,19 +206,19 @@ export default function ProjectDetailPage({ params }: PageProps) {
 
                   <div className="flex items-center gap-4 self-end sm:self-auto">
                     {/* Task Metadata */}
-                    <div className="flex items-center gap-3 text-xs text-gray-500">
-                      <span className="font-bold bg-gray-100 px-3 py-1.5 rounded-sm">
+                    <div className="flex items-center gap-3 text-xs text-zinc-400">
+                      <span className="font-bold bg-zinc-950 border border-zinc-850 px-3 py-1.5 rounded-lg text-zinc-300">
                         {task.estimatedHours || 1} hrs
                       </span>
                     </div>
 
                     {/* Interactive Resolves */}
                     {task.status === "BLOCKED" && (
-                      <Button variant="danger" size="sm" onClick={() => handleResolveBlocker()} className="h-9">
+                      <Button variant="danger" size="sm" onClick={() => handleResolveBlocker()} className="h-9 rounded-xl">
                         Resolve Blocker
                       </Button>
                     )}
-                    <button className="p-2 rounded-md bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-900 transition-colors cursor-pointer border-0">
+                    <button className="p-2.5 rounded-xl bg-zinc-950 hover:bg-zinc-800 text-zinc-400 hover:text-zinc-200 cursor-pointer border border-zinc-850">
                       <MessageSquare className="w-4 h-4" />
                     </button>
                   </div>
@@ -227,7 +227,7 @@ export default function ProjectDetailPage({ params }: PageProps) {
             </Card>
           </div>
         ) : (
-          <div className="text-gray-500 font-medium py-4">No tasks found for this project yet.</div>
+          <div className="text-zinc-500 font-medium py-4">No tasks found for this project yet.</div>
         )}
       </div>
     </div>

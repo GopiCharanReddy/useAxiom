@@ -56,10 +56,10 @@ export default function Home() {
   const hasResolvedBlocker = statsData?.blocked_tasks === 0;
 
   const stats = [
-    { name: "Active Projects", value: statsData?.active_projects.toString() || "0", icon: FolderKanban, bg: "bg-purple-600", text: "text-purple-600" },
-    { name: "AI Interventions", value: statsData?.ai_interventions_count.toString() || "0", icon: FileText, bg: "bg-amber-500", text: "text-amber-600" },
-    { name: "Tasks Blocked", value: statsData?.blocked_tasks.toString() || "0", icon: AlertTriangle, bg: "bg-red-600", text: "text-red-600" },
-    { name: "Team Velocity", value: `${statsData?.team_velocity || 100}%`, icon: Cpu, bg: "bg-emerald-500", text: "text-emerald-600" },
+    { name: "Active Projects", value: statsData?.active_projects.toString() || "0", icon: FolderKanban, bg: "bg-purple-600/10", text: "text-purple-400" },
+    { name: "AI Interventions", value: statsData?.ai_interventions_count.toString() || "0", icon: FileText, bg: "bg-amber-500/10", text: "text-amber-400" },
+    { name: "Tasks Blocked", value: statsData?.blocked_tasks.toString() || "0", icon: AlertTriangle, bg: "bg-rose-500/10", text: "text-rose-400" },
+    { name: "Team Velocity", value: `${statsData?.team_velocity || 100}%`, icon: Cpu, bg: "bg-emerald-500/10", text: "text-emerald-400" },
   ];
 
   const handleApprove = async (id: string) => {
@@ -98,19 +98,18 @@ export default function Home() {
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       {/* Welcome Banner */}
-      <div className="relative overflow-hidden bg-blue-600 p-8 sm:p-10">
-        <div className="absolute top-[-50%] right-[-10%] w-96 h-96 bg-white/10 rounded-full pointer-events-none" />
-        <div className="absolute bottom-[-20%] right-[10%] w-64 h-64 bg-white/10 rotate-45 pointer-events-none" />
+      <div className="relative overflow-hidden bg-zinc-900 border border-zinc-800 p-8 sm:p-10 rounded-2xl">
+        <div className="absolute top-[-50%] right-[-10%] w-96 h-96 bg-purple-600/5 rounded-full pointer-events-none" />
         
         <div className="relative max-w-2xl z-10">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-white text-blue-800 text-xs font-bold uppercase tracking-wider mb-6 shadow-none">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-zinc-950 border border-zinc-800 rounded-lg text-purple-400 text-xs font-bold uppercase tracking-wider mb-6">
             <Sparkles className="w-4 h-4" />
             <span>Sprint 1 Foundations Operational</span>
           </div>
           <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-white mb-4">
             Welcome back, David
           </h1>
-          <p className="text-blue-100 text-lg font-medium leading-relaxed max-w-xl">
+          <p className="text-zinc-400 text-lg font-medium leading-relaxed max-w-xl">
             Your execution assistants are actively listening on employee WhatsApp channels. You have {hasApprovedPlan ? "no plans awaiting review" : "1 AI-generated project plan awaiting review"}.
           </p>
         </div>
@@ -119,11 +118,11 @@ export default function Home() {
       {/* KPI Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
         {stats.map((stat) => (
-          <Card key={stat.name} className="hover:-translate-y-1 transition-transform duration-200">
+          <Card key={stat.name} className="hover:-translate-y-1 transition-all duration-300 border border-zinc-850 rounded-2xl bg-zinc-900">
             <CardHeader className="flex flex-row items-center justify-between pb-2 mb-0">
-              <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">{stat.name}</span>
-              <div className={`w-8 h-8 ${stat.bg} flex items-center justify-center`}>
-                <stat.icon className="w-4 h-4 text-white" />
+              <span className="text-xs font-bold text-zinc-500 uppercase tracking-wider">{stat.name}</span>
+              <div className={`w-8 h-8 ${stat.bg} flex items-center justify-center rounded-lg`}>
+                <stat.icon className={`w-4 h-4 ${stat.text}`} />
               </div>
             </CardHeader>
             <CardContent>
@@ -141,50 +140,50 @@ export default function Home() {
           
           {/* Pending Approvals Widget */}
           {!hasApprovedPlan ? (
-            <div className="bg-amber-400 p-8 sm:p-10 relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-64 h-64 bg-white/20 rounded-full translate-x-1/3 -translate-y-1/3 pointer-events-none" />
+            <div className="bg-zinc-900 border-2 border-amber-500 p-8 sm:p-10 relative overflow-hidden group rounded-2xl">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/5 rounded-full translate-x-1/3 -translate-y-1/3 pointer-events-none" />
               <div className="relative z-10">
                 <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6">
                   <div>
                     <div className="flex items-center gap-3 mb-2">
-                      <h2 className="text-2xl font-black text-amber-950">Awaiting Manager Approval</h2>
-                      <span className="bg-white text-amber-900 text-[10px] font-bold uppercase px-2 py-1 tracking-wider">Proposed Plan</span>
+                      <h2 className="text-2xl font-black text-zinc-100">Awaiting Manager Approval</h2>
+                      <span className="bg-amber-500/10 text-amber-400 text-[10px] font-bold uppercase px-2 py-1 tracking-wider rounded border border-amber-500/20">Proposed Plan</span>
                     </div>
-                    <p className="text-amber-900 font-medium text-sm max-w-lg">
-                      AI generated a structured plan for <span className="font-bold">&quot;{proposedProject?.name}&quot;</span> based on objective: <span className="font-bold">&quot;{proposedProject?.objective}&quot;</span>
+                    <p className="text-zinc-400 font-medium text-sm max-w-lg">
+                      AI generated a structured plan for <span className="font-bold text-zinc-200">&quot;{proposedProject?.name}&quot;</span> based on objective: <span className="font-bold text-zinc-200">&quot;{proposedProject?.objective}&quot;</span>
                     </p>
                   </div>
-                  <div className="w-12 h-12 bg-white flex items-center justify-center shrink-0">
-                    <Sparkles className="w-6 h-6 text-amber-600" />
+                  <div className="w-12 h-12 bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0 rounded-xl">
+                    <Sparkles className="w-6 h-6 text-amber-400" />
                   </div>
                 </div>
 
-                <div className="bg-white p-6 space-y-4 mb-6 shadow-none">
-                  <div className="flex justify-between items-center pb-4 border-b-4 border-gray-100">
-                    <span className="text-sm font-black text-gray-900 uppercase tracking-wide">AI Plan Ready</span>
+                <div className="bg-zinc-950 p-6 rounded-xl border border-zinc-850 space-y-4 mb-6">
+                  <div className="flex justify-between items-center pb-4 border-b border-zinc-850">
+                    <span className="text-sm font-black text-zinc-200 uppercase tracking-wide">AI Plan Ready</span>
                   </div>
                   <div className="space-y-3">
-                    <p className="text-sm font-medium text-gray-700">
+                    <p className="text-sm font-medium text-zinc-400">
                       The AI has generated tasks, milestones, and resource allocations for this project. Please review and customize the plan before approving.
                     </p>
                   </div>
                 </div>
 
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                  <Link href={`/projects/${proposedProject?.id}`} className="text-sm font-bold text-amber-950 hover:text-white transition-colors flex items-center gap-2 group/link">
-                    <span className="border-b-2 border-transparent group-hover/link:border-white pb-0.5 transition-all">Review & Customize Plan</span>
+                  <Link href={`/projects/${proposedProject?.id}`} className="text-sm font-bold text-amber-400 hover:text-amber-300 transition-colors flex items-center gap-2 group/link">
+                    <span className="border-b border-transparent group-hover/link:border-amber-300 pb-0.5 transition-all">Review & Customize Plan</span>
                     <ArrowRight className="w-4 h-4 group-hover/link:translate-x-1 transition-transform" />
                   </Link>
                   <div className="flex gap-3 w-full sm:w-auto">
-                    <Button variant="outline" className="bg-white border-4 border-amber-900 text-amber-900 hover:bg-amber-900 hover:text-white flex-1 sm:flex-none">
+                    <Button variant="outline" className="border border-zinc-800 text-zinc-300 hover:bg-zinc-800 flex-1 sm:flex-none">
                       Reject
                     </Button>
-                    <Button variant="primary" className="bg-amber-900 text-amber-400 hover:bg-amber-950 hover:text-amber-400 flex-1 sm:flex-none" onClick={() => {
+                    <Button variant="primary" className="bg-amber-500 hover:bg-amber-600 text-zinc-950 hover:text-zinc-950 flex-1 sm:flex-none" onClick={() => {
                       if (proposedProject) {
                         handleApprove(proposedProject.id);
                       }
                     }}>
-                      <Play className="w-4 h-4 fill-current" />
+                      <Play className="w-4 h-4 fill-current text-zinc-950" />
                       <span>Approve & Start</span>
                     </Button>
                   </div>
@@ -192,12 +191,12 @@ export default function Home() {
               </div>
             </div>
           ) : (
-            <div className="bg-emerald-500 p-10 flex flex-col items-center justify-center text-center">
-              <div className="w-16 h-16 bg-white flex items-center justify-center mb-6">
-                <CheckCircle2 className="w-8 h-8 text-emerald-600" />
+            <div className="bg-zinc-900 border border-zinc-800 rounded-2xl p-10 flex flex-col items-center justify-center text-center">
+              <div className="w-16 h-16 bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center mb-6 rounded-2xl">
+                <CheckCircle2 className="w-8 h-8 text-emerald-400" />
               </div>
-              <h3 className="text-white font-black text-2xl mb-2">All plans have been reviewed</h3>
-              <p className="text-emerald-100 font-medium max-w-md">
+              <h3 className="text-zinc-100 font-black text-2xl mb-2">All plans have been reviewed</h3>
+              <p className="text-zinc-400 font-medium max-w-md">
                 The Q3 Product Marketing campaign plan has been moved to active execution. Tasks are queued for employee notification.
               </p>
             </div>
@@ -205,9 +204,9 @@ export default function Home() {
 
           {/* Active Projects List */}
           <div className="space-y-6">
-            <div className="flex justify-between items-end border-b-4 border-gray-900 pb-2">
-              <h2 className="text-2xl font-black text-gray-900">Active Campaigns</h2>
-              <Link href="/projects" className="text-sm font-bold text-blue-600 hover:text-blue-800">
+            <div className="flex justify-between items-end border-b border-zinc-850 pb-2">
+              <h2 className="text-2xl font-black text-zinc-100">Active Campaigns</h2>
+              <Link href="/projects" className="text-sm font-bold text-purple-400 hover:text-purple-300">
                 View all
               </Link>
             </div>
@@ -215,11 +214,11 @@ export default function Home() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {projects.map((project) => (
                 <Link href={`/projects/${project.id}`} key={project.id} className="block group">
-                  <Card className="h-full border-4 border-gray-200 group-hover:border-gray-900 transition-colors duration-200">
+                  <Card className="h-full border border-zinc-850 group-hover:border-zinc-700/80 bg-zinc-900 transition-colors duration-200 rounded-2xl">
                     <div className="flex justify-between items-start mb-6">
                       <div>
-                        <h3 className="font-black text-lg text-gray-900 group-hover:text-blue-600 transition-colors leading-tight mb-2">{project.name}</h3>
-                        <p className="text-xs text-gray-600 font-bold line-clamp-2 leading-relaxed">{project.objective}</p>
+                        <h3 className="font-black text-lg text-zinc-200 group-hover:text-purple-400 transition-colors leading-tight mb-2">{project.name}</h3>
+                        <p className="text-xs text-zinc-400 font-bold line-clamp-2 leading-relaxed">{project.objective}</p>
                       </div>
                       <Badge variant={project.status === 'ACTIVE' ? "progress" : "proposed"}>
                         {project.status === 'ACTIVE' ? "Active" : project.status}
@@ -228,30 +227,30 @@ export default function Home() {
 
                     {/* Progress bar */}
                     <div className="space-y-2 mt-auto pt-6">
-                      <div className="flex justify-between text-xs font-bold text-gray-500 uppercase tracking-wider">
+                      <div className="flex justify-between text-xs font-bold text-zinc-500 uppercase tracking-wider">
                         <span>Progress</span>
-                        <span className="text-gray-900">{project.status === 'ACTIVE' ? "5%" : "0%"}</span>
+                        <span className="text-zinc-300">{project.status === 'ACTIVE' ? "5%" : "0%"}</span>
                       </div>
-                      <div className="w-full bg-gray-200 h-3">
-                        <div className="bg-blue-600 h-full" style={{ width: project.status === 'ACTIVE' ? "5%" : "0%" }} />
+                      <div className="w-full bg-zinc-950 h-2 rounded-full overflow-hidden">
+                        <div className="bg-purple-600 h-full rounded-full" style={{ width: project.status === 'ACTIVE' ? "5%" : "0%" }} />
                       </div>
                     </div>
                     {project.healthScore !== undefined && project.healthScore !== null && (
-                      <div className={`mt-4 p-3 border-l-4 ${project.healthStatus === 'HIGH' ? 'border-red-600 bg-red-50' : project.healthStatus === 'MEDIUM' ? 'border-amber-500 bg-amber-50' : 'border-emerald-500 bg-emerald-50'} flex justify-between items-center`}>
+                      <div className={`mt-4 p-3 border-l-4 rounded-r-xl ${project.healthStatus === 'HIGH' ? 'border-rose-500 bg-rose-500/5' : project.healthStatus === 'MEDIUM' ? 'border-amber-500 bg-amber-500/5' : 'border-emerald-500 bg-emerald-500/5'} flex justify-between items-center`}>
                         <div className="flex items-center gap-2">
-                          <AlertTriangle className={`w-4 h-4 ${project.healthStatus === 'HIGH' ? 'text-red-600' : project.healthStatus === 'MEDIUM' ? 'text-amber-600' : 'text-emerald-600'}`} />
-                          <span className="text-xs font-bold text-gray-900 uppercase tracking-wider">AI Risk</span>
+                          <AlertTriangle className={`w-4 h-4 ${project.healthStatus === 'HIGH' ? 'text-rose-400' : project.healthStatus === 'MEDIUM' ? 'text-amber-400' : 'text-emerald-400'}`} />
+                          <span className="text-xs font-bold text-zinc-200 uppercase tracking-wider">AI Risk</span>
                         </div>
-                        <span className={`text-xs font-black ${project.healthStatus === 'HIGH' ? 'text-red-600' : project.healthStatus === 'MEDIUM' ? 'text-amber-600' : 'text-emerald-600'}`}>{project.healthScore}/100</span>
+                        <span className={`text-xs font-black ${project.healthStatus === 'HIGH' ? 'text-rose-400' : project.healthStatus === 'MEDIUM' ? 'text-amber-400' : 'text-emerald-400'}`}>{project.healthScore}/100</span>
                       </div>
                     )}
-                    <div className="mt-6 pt-4 border-t-4 border-gray-100 flex items-center justify-between text-xs font-bold">
-                      <span className={project.status === 'ACTIVE' ? "text-emerald-600" : "text-amber-600"}>
+                    <div className="mt-6 pt-4 border-t border-zinc-850 flex items-center justify-between text-xs font-bold">
+                      <span className={project.status === 'ACTIVE' ? "text-emerald-400" : "text-amber-400"}>
                         {project.status === 'ACTIVE' ? "ON TRACK" : "NEEDS REVIEW"}
                       </span>
                       <span className="flex gap-2">
-                        <button className="text-gray-500 hover:text-gray-900 transition-colors uppercase tracking-wider text-[10px]" onClick={(e) => { e.preventDefault(); handleGenerate(project.id); }}>Generate</button>
-                        <button className="text-blue-600 hover:text-blue-800 transition-colors uppercase tracking-wider text-[10px]" onClick={(e) => { e.preventDefault(); handleApprove(project.id); }}>Approve</button>
+                        <button className="text-zinc-500 hover:text-zinc-300 transition-colors uppercase tracking-wider text-[10px]" onClick={(e) => { e.preventDefault(); handleGenerate(project.id); }}>Generate</button>
+                        <button className="text-purple-400 hover:text-purple-300 transition-colors uppercase tracking-wider text-[10px]" onClick={(e) => { e.preventDefault(); handleApprove(project.id); }}>Approve</button>
                       </span>
                     </div>
                   </Card>
@@ -265,24 +264,24 @@ export default function Home() {
         <div className="space-y-8">
           
           {/* Active Alerts Widget */}
-          <div className={!hasResolvedBlocker ? "bg-red-600 p-6 sm:p-8 text-white" : "bg-white p-6 sm:p-8"}>
+          <div className={`p-6 sm:p-8 rounded-2xl border ${!hasResolvedBlocker ? "bg-zinc-900 border-rose-500 text-zinc-100" : "bg-zinc-900 border-zinc-850"}`}>
             <div className="flex items-center gap-3 mb-6">
-              <div className={`w-10 h-10 flex items-center justify-center ${!hasResolvedBlocker ? "bg-white text-red-600" : "bg-gray-100 text-gray-400"}`}>
+              <div className={`w-10 h-10 flex items-center justify-center rounded-xl ${!hasResolvedBlocker ? "bg-rose-500/10 text-rose-400" : "bg-zinc-950 text-zinc-500"}`}>
                 <AlertTriangle className="w-5 h-5" />
               </div>
               <div>
-                <h3 className={`font-black text-lg ${!hasResolvedBlocker ? "text-white" : "text-gray-900"}`}>Active Alerts</h3>
-                <span className={`text-[10px] font-bold uppercase tracking-wider ${!hasResolvedBlocker ? "text-red-200" : "text-gray-500"}`}>SMS/WhatsApp Streams</span>
+                <h3 className={`font-black text-lg ${!hasResolvedBlocker ? "text-zinc-100" : "text-zinc-200"}`}>Active Alerts</h3>
+                <span className={`text-[10px] font-bold uppercase tracking-wider ${!hasResolvedBlocker ? "text-rose-400" : "text-zinc-500"}`}>SMS/WhatsApp Streams</span>
               </div>
             </div>
             
             {!hasResolvedBlocker && statsData && statsData.blocked_tasks > 0 ? (
-              <div className="bg-white p-5 text-gray-900 flex flex-col items-center justify-center text-center">
-                <div className="w-16 h-16 bg-red-100 text-red-600 flex items-center justify-center rounded-full mb-4">
+              <div className="bg-zinc-950 p-5 rounded-xl border border-zinc-850 text-zinc-200 flex flex-col items-center justify-center text-center">
+                <div className="w-16 h-16 bg-rose-500/10 text-rose-400 border border-rose-500/20 flex items-center justify-center rounded-2xl mb-4">
                   <AlertTriangle className="w-8 h-8" />
                 </div>
-                <span className="text-gray-900 text-sm font-black">{statsData.blocked_tasks} Active Blockers!</span>
-                <p className="text-xs text-gray-500 font-bold mt-2 mb-4">
+                <span className="text-zinc-100 text-sm font-black">{statsData.blocked_tasks} Active Blockers!</span>
+                <p className="text-xs text-zinc-400 font-bold mt-2 mb-4">
                   There are tasks currently blocked by employees.
                 </p>
                 <div className="flex flex-col gap-2 w-full">
@@ -293,11 +292,11 @@ export default function Home() {
               </div>
             ) : (
               <div className="text-center py-10 flex flex-col items-center justify-center">
-                <div className="w-16 h-16 bg-emerald-100 text-emerald-600 flex items-center justify-center rounded-full mb-4">
+                <div className="w-16 h-16 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 flex items-center justify-center rounded-2xl mb-4">
                   <CheckCircle2 className="w-8 h-8" />
                 </div>
-                <span className="text-gray-900 text-sm font-black">No active blockers!</span>
-                <p className="text-xs text-gray-500 font-bold mt-2">
+                <span className="text-zinc-200 text-sm font-black">No active blockers!</span>
+                <p className="text-xs text-zinc-500 font-bold mt-2">
                   All employee feedback streams are green.
                 </p>
               </div>
@@ -305,11 +304,11 @@ export default function Home() {
           </div>
 
           {/* Team Workload Widget */}
-          <Card className="bg-white border-4 border-gray-100">
-            <CardHeader className="border-b-4 border-gray-100 pb-4 mb-6">
-              <CardTitle className="text-lg font-black flex items-center gap-3 text-gray-900">
-                <div className="w-8 h-8 bg-purple-100 flex items-center justify-center">
-                  <Users className="w-4 h-4 text-purple-600" />
+          <Card className="bg-zinc-900 border border-zinc-850 rounded-2xl">
+            <CardHeader className="border-b border-zinc-850 pb-4 mb-6">
+              <CardTitle className="text-lg font-black flex items-center gap-3 text-zinc-200">
+                <div className="w-8 h-8 bg-purple-500/10 rounded-lg flex items-center justify-center">
+                  <Users className="w-4 h-4 text-purple-400" />
                 </div>
                 Team Workloads
               </CardTitle>
@@ -318,23 +317,23 @@ export default function Home() {
               <div className="space-y-6">
                 {workloads.map((emp) => (
                   <div key={emp.employee_id} className="space-y-2">
-                    <div className="flex justify-between items-center text-sm font-black text-gray-900">
+                    <div className="flex justify-between items-center text-sm font-black text-zinc-200">
                       <span>{emp.employee_name}</span>
                       <span>{emp.capacity_percentage}% Load</span>
                     </div>
-                    <div className="w-full bg-gray-200 h-3">
-                      <div className="bg-purple-600 h-full" style={{ width: `${emp.capacity_percentage}%` }} />
+                    <div className="w-full bg-zinc-950 h-2.5 rounded-full overflow-hidden border border-zinc-850">
+                      <div className="bg-purple-600 h-full rounded-full" style={{ width: `${emp.capacity_percentage}%` }} />
                     </div>
-                    <span className="block text-[10px] text-gray-500 font-bold uppercase tracking-wider">Active: {emp.active_tasks} tasks</span>
+                    <span className="block text-[10px] text-zinc-500 font-bold uppercase tracking-wider">Active: {emp.active_tasks} tasks</span>
                   </div>
                 ))}
                 {workloads.length === 0 && (
-                  <div className="text-gray-500 text-sm font-bold text-center py-4">No employee data found.</div>
+                  <div className="text-zinc-500 text-sm font-bold text-center py-4">No employee data found.</div>
                 )}
               </div>
             </CardContent>
-            <CardFooter className="pt-6 border-t-4 border-gray-100">
-              <Link href="/team" className="text-sm font-black text-gray-900 hover:text-blue-600 w-full text-center transition-colors uppercase tracking-wider">
+            <CardFooter className="pt-6 border-t border-zinc-850">
+              <Link href="/team" className="text-sm font-black text-zinc-300 hover:text-purple-400 w-full text-center transition-colors uppercase tracking-wider">
                 Manage Allocations
               </Link>
             </CardFooter>
