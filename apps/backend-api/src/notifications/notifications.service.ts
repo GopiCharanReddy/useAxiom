@@ -4,19 +4,21 @@ import { Queue } from 'bullmq';
 
 @Injectable()
 export class NotificationsService {
-  constructor(
-    @InjectQueue('notifications') private notificationsQueue: Queue,
-  ) {}
+  constructor(@InjectQueue('notifications') private notificationsQueue: Queue) {}
 
   async sendTestNotification(userId: string, message: string) {
-    const job = await this.notificationsQueue.add('test-notification', {
-      userId,
-      message,
-      timestamp: new Date().toISOString(),
-    }, {
-      attempts: 3,
-      backoff: { type: 'exponential', delay: 1000 },
-    });
+    const job = await this.notificationsQueue.add(
+      'test-notification',
+      {
+        userId,
+        message,
+        timestamp: new Date().toISOString(),
+      },
+      {
+        attempts: 3,
+        backoff: { type: 'exponential', delay: 1000 },
+      },
+    );
 
     return {
       success: true,
@@ -59,7 +61,6 @@ export class NotificationsService {
     }
   }
 
-<<<<<<< HEAD
   async sendBlockerAlert(
     taskId: string,
     managerPhone: string,
@@ -69,38 +70,7 @@ export class NotificationsService {
     console.info(
       `[NotificationsService] Triggering blocker alert for task ${taskId} to manager ${managerPhone}`,
     );
-    const message = `⚠️ Blocker Alert! Employee ${employeeName} has reported a blocker on task ID: ${taskId}. Reason: "${reason}". Please log into the dashboard or reply to resolve.`;
-    await this.whatsappService.enqueueOutboundMessage(managerPhone, message);
-  }
 
-  async sendDeadlineReminder(
-    taskId: string,
-    employeePhone: string,
-    taskTitle: string,
-    hoursRemaining: number,
-  ): Promise<void> {
-    console.info(
-      `[NotificationsService] Triggering deadline reminder for task ${taskId} to employee ${employeePhone}`,
-    );
-    const message = `⏰ Reminder: Your task "${taskTitle}" is approaching its deadline. You have ${hoursRemaining} hour(s) remaining. Reply "Done" when completed or text us if you are blocked.`;
-    await this.whatsappService.enqueueOutboundMessage(employeePhone, message);
-  }
-
-  async sendTaskAssignedAlert(
-    taskId: string,
-    employeePhone: string,
-    taskTitle: string,
-    dueDate: string,
-  ): Promise<void> {
-    console.info(
-      `[NotificationsService] Triggering task assignment alert for task ${taskId} to employee ${employeePhone}`,
-    );
-    const message = `📋 New Task Assigned: You have been assigned "${taskTitle}" (ID: ${taskId}), due on ${dueDate}. Reply to confirm or get started.`;
-    await this.whatsappService.enqueueOutboundMessage(employeePhone, message);
-=======
-  async sendBlockerAlert(taskId: string, managerPhone: string, employeeName: string, reason: string): Promise<void> {
-    console.info(`[NotificationsService] Triggering blocker alert for task ${taskId} to manager ${managerPhone}`);
-    
     await this.notificationsQueue.add(
       'send-notification',
       {
@@ -126,9 +96,16 @@ export class NotificationsService {
     );
   }
 
-  async sendDeadlineReminder(taskId: string, employeePhone: string, taskTitle: string, hoursRemaining: number): Promise<void> {
-    console.info(`[NotificationsService] Triggering deadline reminder for task ${taskId} to employee ${employeePhone}`);
-    
+  async sendDeadlineReminder(
+    taskId: string,
+    employeePhone: string,
+    taskTitle: string,
+    hoursRemaining: number,
+  ): Promise<void> {
+    console.info(
+      `[NotificationsService] Triggering deadline reminder for task ${taskId} to employee ${employeePhone}`,
+    );
+
     await this.notificationsQueue.add(
       'send-notification',
       {
@@ -152,9 +129,16 @@ export class NotificationsService {
     );
   }
 
-  async sendTaskAssignedAlert(taskId: string, employeePhone: string, taskTitle: string, dueDate: string): Promise<void> {
-    console.info(`[NotificationsService] Triggering task assignment alert for task ${taskId} to employee ${employeePhone}`);
-    
+  async sendTaskAssignedAlert(
+    taskId: string,
+    employeePhone: string,
+    taskTitle: string,
+    dueDate: string,
+  ): Promise<void> {
+    console.info(
+      `[NotificationsService] Triggering task assignment alert for task ${taskId} to employee ${employeePhone}`,
+    );
+
     await this.notificationsQueue.add(
       'send-notification',
       {
@@ -177,6 +161,5 @@ export class NotificationsService {
         },
       },
     );
->>>>>>> fd5b481ec1ea730d5a4c7eb6bce401237e197930
   }
 }

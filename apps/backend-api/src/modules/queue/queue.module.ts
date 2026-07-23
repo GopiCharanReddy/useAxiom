@@ -23,7 +23,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
       },
       {
         name: 'planner_jobs',
-      }
+      },
     ),
   ],
   exports: [BullModule],

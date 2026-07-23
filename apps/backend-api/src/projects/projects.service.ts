@@ -30,11 +30,19 @@ export class ProjectsService {
     });
   }
 
-  async findAll(organizationId: string): Promise<Project[]> {
+  async findAll(organizationId: string) {
     return this.prisma.project.findMany({
       where: {
         organizationId,
         deletedAt: null,
+      },
+      include: {
+        tasks: {
+          select: {
+            id: true,
+            status: true,
+          },
+        },
       },
       orderBy: {
         createdAt: 'desc',
@@ -112,7 +120,7 @@ export class ProjectsService {
       throw new NotFoundException(`Project with ID ${id} not found under your organization`);
     }
     const jobId = `job_${Math.random().toString(36).substring(2, 11)}`;
-    
+
     await this.plannerQueue.add('generate-plan', {
       projectId: id,
       objective: project.objective,

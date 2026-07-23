@@ -61,32 +61,55 @@ export default function AIAssistantPanel({ isOpen, onClose }: AIAssistantPanelPr
     setInput("");
     setIsTyping(true);
 
-    // Simulate AI response based on the query
-    setTimeout(() => {
-      let aiResponseText = "I've processed your query. Let me look into that for you.";
-      
-      const query = textToSend.toLowerCase();
-      if (query.includes("milestone") || query.includes("delayed")) {
-        aiResponseText = "Milestone 2 is currently delayed by 1 day because Dave reported a blocker on 'Load Graphics' (the Google Drive link is broken). Sarah is also running behind on 'Configure Audience'. Would you like me to ping Sarah or reassign Dave's task?";
-      } else if (query.includes("blocked") || query.includes("dave")) {
-        aiResponseText = "Dave has 1 blocked task: 'Load Graphics'. He reported that the Google Drive link is broken. I can prompt you to upload a new asset link, or reassign it.";
-      } else if (query.includes("ping") || query.includes("sarah")) {
-        aiResponseText = "I've scheduled a high-priority WhatsApp ping to Sarah requesting an update on 'Configure Audience'. You'll see her response here as soon as she replies.";
-      } else if (query.includes("plan") || query.includes("draft")) {
-        aiResponseText = "I've drafted a new project plan for 'Q3 Marketing Launch' with 2 Milestones and 3 proposed tasks. You can view it on your home dashboard under 'Pending Approvals'.";
+    try {
+      const token = localStorage.getItem("axiom_token");
+      const res = await fetch("/api/v1/ai/chat", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          message: textToSend,
+          threadId: "dashboard-thread",
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error("Chat service returned an error");
       }
 
+      const data = await res.json();
       idCounterRef.current += 1;
+      
+      let aiResponseText = "";
+      if (data.success) {
+        aiResponseText = data.data;
+      } else {
+        aiResponseText = `Error: ${data.error || "Failed to process chat query"}`;
+      }
+
       const aiMessage: Message = {
         id: `ai-msg-${idCounterRef.current}`,
         sender: "ai",
         content: aiResponseText,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
-
       setMessages((prev) => [...prev, aiMessage]);
+    } catch (err: unknown) {
+      console.error(err);
+      idCounterRef.current += 1;
+      const messageText = err instanceof Error ? err.message : "Unknown error";
+      const aiMessage: Message = {
+        id: `ai-msg-${idCounterRef.current}`,
+        sender: "ai",
+        content: `Could not connect to the AI engine: ${messageText}`,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      };
+      setMessages((prev) => [...prev, aiMessage]);
+    } finally {
       setIsTyping(false);
-    }, 1500);
+    }
   };
 
   return (

@@ -146,13 +146,22 @@ export default function ProjectDetailPage({ params }: PageProps) {
             </div>
           )}
           <div className="w-full lg:w-72 bg-zinc-900 p-5 border border-zinc-850 rounded-xl space-y-3">
-            <div className="flex justify-between items-center text-sm font-bold">
-              <span className="text-zinc-200 uppercase tracking-wider">Campaign Progress</span>
-              <span className="text-purple-400">{project.status === 'ACTIVE' ? 10 : 0}%</span>
-            </div>
-            <div className="w-full bg-zinc-950 h-2 rounded-full overflow-hidden border border-zinc-855">
-              <div className="bg-purple-600 h-full rounded-full" style={{ width: `${project.status === 'ACTIVE' ? 10 : 0}%` }} />
-            </div>
+            {(() => {
+              const tasksTotal = tasks.length;
+              const tasksDone = tasks.filter(t => t.status === "COMPLETED" || t.status === "completed").length;
+              const progressPercent = tasksTotal > 0 ? Math.round((tasksDone / tasksTotal) * 100) : 0;
+              return (
+                <>
+                  <div className="flex justify-between items-center text-sm font-bold">
+                    <span className="text-zinc-200 uppercase tracking-wider">Campaign Progress</span>
+                    <span className="text-purple-400">{progressPercent}%</span>
+                  </div>
+                  <div className="w-full bg-zinc-950 h-2 rounded-full overflow-hidden border border-zinc-855">
+                    <div className="bg-purple-600 h-full rounded-full transition-all duration-500" style={{ width: `${progressPercent}%` }} />
+                  </div>
+                </>
+              );
+            })()}
           </div>
         </div>
       </div>

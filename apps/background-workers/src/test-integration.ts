@@ -25,12 +25,15 @@ async function runSimulation() {
   console.info('Enqueuing daily summary dispatch for Sarah (+0987654321)...');
   await outboundQueue.add('send_message', {
     to: '+0987654321',
-    content: 'Hello Sarah, here is your daily task summary for today in useAxiom. Make sure to update your task status via WhatsApp!',
+    content:
+      'Hello Sarah, here is your daily task summary for today in useAxiom. Make sure to update your task status via WhatsApp!',
   });
 
   // 2. Simulate webhook: David reporting a blocker
   console.info('\n--- Test Scenario 2: Webhook - Blocker Reported ---');
-  console.info('Simulating webhook payload for David (+1234567890) saying: "I am stuck on google drive link"...');
+  console.info(
+    'Simulating webhook payload for David (+1234567890) saying: "I am stuck on google drive link"...',
+  );
   await inboundQueue.add('process_webhook', {
     waId: '+1234567890',
     name: 'David',
@@ -39,7 +42,9 @@ async function runSimulation() {
 
   // 3. Simulate webhook: Sarah reporting completion
   console.info('\n--- Test Scenario 3: Webhook - Task Completion ---');
-  console.info('Simulating webhook payload for Sarah (+0987654321) saying: "Just finished target audience task"...');
+  console.info(
+    'Simulating webhook payload for Sarah (+0987654321) saying: "Just finished target audience task"...',
+  );
   await inboundQueue.add('process_webhook', {
     waId: '+0987654321',
     name: 'Sarah',

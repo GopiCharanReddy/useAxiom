@@ -1,6 +1,11 @@
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import { AiOrchestrator } from '@useaxiom/ai-core';
-import { OpenAiProvider, MockLlmProvider, GeminiProvider, getLlmProvider } from '@useaxiom/ai-providers';
+import {
+  OpenAiProvider,
+  MockLlmProvider,
+  GeminiProvider,
+  getLlmProvider,
+} from '@useaxiom/ai-providers';
 import { InMemoryMemory } from '@useaxiom/ai-memory';
 
 @Injectable()

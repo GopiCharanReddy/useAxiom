@@ -17,9 +17,10 @@ import {
 import { Button, Card, CardHeader, CardTitle, CardContent, CardFooter, Badge } from "@useaxiom/ui";
 
 export default function Home() {
-  const [projects, setProjects] = useState<Array<{id: string, name: string, objective: string, status: string, healthScore?: number, healthStatus?: string, healthReasoning?: string}>>([]);
+  const [projects, setProjects] = useState<Array<{id: string, name: string, objective: string, status: string, healthScore?: number, healthStatus?: string, healthReasoning?: string, tasks?: Array<{ id: string, status: string }> }>>([]);
   const [statsData, setStatsData] = useState<{ active_projects: number, blocked_tasks: number, ai_interventions_count: number, team_velocity: number } | null>(null);
   const [workloads, setWorkloads] = useState<Array<{employee_id: string, employee_name: string, active_tasks: number, capacity_percentage: number}>>([]);
+  const [user, setUser] = useState<{ name: string } | null>(null);
 
   const router = useRouter();
 
@@ -36,12 +37,14 @@ export default function Home() {
         return r.json();
       }),
       fetch('/api/v1/analytics/dashboard', { headers: { 'Authorization': `Bearer ${token}` } }).then(r => r.json()),
-      fetch('/api/v1/analytics/team-workload', { headers: { 'Authorization': `Bearer ${token}` } }).then(r => r.json())
+      fetch('/api/v1/analytics/team-workload', { headers: { 'Authorization': `Bearer ${token}` } }).then(r => r.json()),
+      fetch('/api/v1/auth/me', { headers: { 'Authorization': `Bearer ${token}` } }).then(r => r.json())
     ])
-    .then(([projectsData, dashboardData, workloadData]) => {
+    .then(([projectsData, dashboardData, workloadData, userData]) => {
       if (Array.isArray(projectsData)) setProjects(projectsData);
       setStatsData(dashboardData);
       if (workloadData?.workloads) setWorkloads(workloadData.workloads);
+      if (userData) setUser(userData);
     })
     .catch(err => {
       if (err.message === 'Unauthorized') {
@@ -107,7 +110,7 @@ export default function Home() {
             <span>Sprint 1 Foundations Operational</span>
           </div>
           <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-white mb-4">
-            Welcome back, David
+            Welcome back, {user ? user.name.split(' ')[0] : 'Manager'}
           </h1>
           <p className="text-zinc-400 text-lg font-medium leading-relaxed max-w-xl">
             Your execution assistants are actively listening on employee WhatsApp channels. You have {hasApprovedPlan ? "no plans awaiting review" : "1 AI-generated project plan awaiting review"}.
@@ -226,15 +229,22 @@ export default function Home() {
                     </div>
 
                     {/* Progress bar */}
-                    <div className="space-y-2 mt-auto pt-6">
-                      <div className="flex justify-between text-xs font-bold text-zinc-500 uppercase tracking-wider">
-                        <span>Progress</span>
-                        <span className="text-zinc-300">{project.status === 'ACTIVE' ? "5%" : "0%"}</span>
-                      </div>
-                      <div className="w-full bg-zinc-950 h-2 rounded-full overflow-hidden">
-                        <div className="bg-purple-600 h-full rounded-full" style={{ width: project.status === 'ACTIVE' ? "5%" : "0%" }} />
-                      </div>
-                    </div>
+                    {(() => {
+                      const tasksTotal = project.tasks?.length || 0;
+                      const tasksDone = project.tasks?.filter((t) => t.status === "COMPLETED").length || 0;
+                      const progress = tasksTotal > 0 ? Math.round((tasksDone / tasksTotal) * 100) : 0;
+                      return (
+                        <div className="space-y-2 mt-auto pt-6">
+                          <div className="flex justify-between text-xs font-bold text-zinc-500 uppercase tracking-wider">
+                            <span>Progress</span>
+                            <span className="text-zinc-300">{progress}%</span>
+                          </div>
+                          <div className="w-full bg-zinc-950 h-2 rounded-full overflow-hidden">
+                            <div className="bg-purple-600 h-full rounded-full" style={{ width: `${progress}%` }} />
+                          </div>
+                        </div>
+                      );
+                    })()}
                     {project.healthScore !== undefined && project.healthScore !== null && (
                       <div className={`mt-4 p-3 border-l-4 rounded-r-xl ${project.healthStatus === 'HIGH' ? 'border-rose-500 bg-rose-500/5' : project.healthStatus === 'MEDIUM' ? 'border-amber-500 bg-amber-500/5' : 'border-emerald-500 bg-emerald-500/5'} flex justify-between items-center`}>
                         <div className="flex items-center gap-2">

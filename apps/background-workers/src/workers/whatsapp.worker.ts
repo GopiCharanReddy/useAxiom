@@ -8,7 +8,11 @@ export async function whatsappWorkerProcessor(job: Job) {
 
   const provider = getLlmProvider();
   const memory = new InMemoryMemory();
-  const agent = new ConversationAgent({ provider, memory, systemPrompt: 'You are a conversation agent.' });
+  const agent = new ConversationAgent({
+    provider,
+    memory,
+    systemPrompt: 'You are a conversation agent.',
+  });
 
   const result = await agent.run({ message, threadId: from });
 

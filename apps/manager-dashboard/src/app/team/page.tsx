@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { UserCheck, MessageSquare } from "lucide-react";
 import { Button, Card, Badge } from "@useaxiom/ui";
 
@@ -17,45 +18,68 @@ interface TeamMember {
   currentTaskName: string;
 }
 
+interface DBWorkload {
+  employee_id: string;
+  employee_name: string;
+  role: string;
+  avatar: string;
+  load: number;
+  active_tasks: number;
+  queued_tasks: number;
+  blocked_tasks: number;
+  status: "active" | "offline";
+  current_task_name: string;
+}
+
 export default function TeamPage() {
-  const [team, setTeam] = useState<TeamMember[]>([
-    {
-      id: "sarah",
-      name: "Sarah Jenkins",
-      role: "Backend Engineer",
-      avatar: "SJ",
-      load: 90,
-      activeTasks: 1,
-      queuedTasks: 2,
-      blockedTasks: 0,
-      status: "active",
-      currentTaskName: "Prisma & PostgreSQL migration schema"
-    },
-    {
-      id: "alex",
-      name: "Alex Rivers",
-      role: "Platform Engineer",
-      avatar: "AR",
-      load: 80,
-      activeTasks: 1,
-      queuedTasks: 1,
-      blockedTasks: 0,
-      status: "active",
-      currentTaskName: "Turborepo & NestJS init"
-    },
-    {
-      id: "dave",
-      name: "Dave Morris",
-      role: "Frontend Designer",
-      avatar: "DM",
-      load: 50,
-      activeTasks: 0,
-      queuedTasks: 0,
-      blockedTasks: 1,
-      status: "active",
-      currentTaskName: "Load Creative Assets & Graphics (Blocked)"
-    }
-  ]);
+  const [team, setTeam] = useState<TeamMember[]>([]);
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
+
+  useEffect(() => {
+    const fetchTeam = async () => {
+      try {
+        const token = localStorage.getItem('axiom_token');
+        if (!token) {
+          router.push('/login');
+          return;
+        }
+
+        const res = await fetch('/api/v1/analytics/team-workload', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (res.status === 401) {
+          localStorage.removeItem('axiom_token');
+          router.push('/login');
+          return;
+        }
+
+        const data = await res.json();
+        if (data && Array.isArray(data.workloads)) {
+          const mapped = data.workloads.map((emp: DBWorkload) => ({
+            id: emp.employee_id,
+            name: emp.employee_name,
+            role: emp.role,
+            avatar: emp.avatar,
+            load: emp.load,
+            activeTasks: emp.active_tasks,
+            queuedTasks: emp.queued_tasks,
+            blockedTasks: emp.blocked_tasks,
+            status: emp.status,
+            currentTaskName: emp.current_task_name,
+          }));
+          setTeam(mapped);
+        }
+      } catch (err) {
+        console.error("Error fetching team workload:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTeam();
+  }, [router]);
 
   const handleReallocate = (memberId: string) => {
     setTeam(prev => prev.map(member => {
@@ -86,6 +110,10 @@ export default function TeamPage() {
     if (load >= 60) return "bg-purple-500";
     return "bg-emerald-500";
   };
+
+  if (loading) {
+    return <div className="text-zinc-400 py-8">Loading workloads...</div>;
+  }
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">

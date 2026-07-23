@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { FolderKanban, Search, Plus, X } from "lucide-react";
 import { Button, Card, Badge } from "@useaxiom/ui";
 
@@ -26,9 +26,10 @@ interface DBProject {
   status: string;
   healthStatus?: string;
   healthScore?: number;
+  tasks?: Array<{ id: string; status: string }>;
 }
 
-export default function ProjectsPage() {
+function ProjectsPageContent() {
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState<"all" | "progress" | "proposed" | "completed">("all");
   const [projects, setProjects] = useState<Project[]>([]);
@@ -38,6 +39,13 @@ export default function ProjectsPage() {
   const [newObjective, setNewObjective] = useState("");
   
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    if (searchParams.get("create") === "true") {
+      setShowModal(true);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -70,16 +78,20 @@ export default function ProjectsPage() {
             if (p.healthStatus === "LOW") health = "on_track";
             else if (p.healthStatus === "HIGH") health = "at_risk";
             
+            const tasksTotal = p.tasks?.length || 0;
+            const tasksDone = p.tasks?.filter((t) => t.status === "COMPLETED").length || 0;
+            const progress = tasksTotal > 0 ? Math.round((tasksDone / tasksTotal) * 100) : 0;
+
             return {
               id: p.id,
               name: p.name,
               category: p.category || "General",
               description: p.objective,
               status,
-              progress: p.status === "ACTIVE" ? 10 : p.status === "COMPLETED" ? 100 : 0,
+              progress,
               health,
-              tasksDone: 0, 
-              tasksTotal: 0
+              tasksDone, 
+              tasksTotal
             };
           });
           setProjects(mapped);
@@ -132,16 +144,20 @@ export default function ProjectsPage() {
               if (p.healthStatus === "LOW") health = "on_track";
               else if (p.healthStatus === "HIGH") health = "at_risk";
               
+              const tasksTotal = p.tasks?.length || 0;
+              const tasksDone = p.tasks?.filter((t) => t.status === "COMPLETED").length || 0;
+              const progress = tasksTotal > 0 ? Math.round((tasksDone / tasksTotal) * 100) : 0;
+
               return {
                 id: p.id,
                 name: p.name,
                 category: p.category || "General",
                 description: p.objective,
                 status,
-                progress: p.status === "ACTIVE" ? 10 : p.status === "COMPLETED" ? 100 : 0,
+                progress,
                 health,
-                tasksDone: 0, 
-                tasksTotal: 0
+                tasksDone, 
+                tasksTotal
               };
             });
             setProjects(mapped);
@@ -333,5 +349,13 @@ export default function ProjectsPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function ProjectsPage() {
+  return (
+    <Suspense fallback={<div className="text-zinc-400 py-8">Loading workspace...</div>}>
+      <ProjectsPageContent />
+    </Suspense>
   );
 }

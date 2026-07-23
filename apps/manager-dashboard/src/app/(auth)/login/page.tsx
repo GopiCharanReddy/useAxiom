@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Activity, Lock, Mail, ArrowRight } from "lucide-react";
+import Link from "next/link";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("mockmanager@useaxiom.com");
@@ -107,6 +108,12 @@ export default function LoginPage() {
               </div>
             </button>
           </form>
+          <div className="mt-6 text-center text-xs">
+            <span className="text-zinc-500">Need to create an organization? </span>
+            <Link href="/register" className="text-purple-400 hover:text-purple-300 font-bold transition-colors">
+              Register here
+            </Link>
+          </div>
         </div>
 
         <p className="text-center text-zinc-600 text-xs mt-8 font-medium">

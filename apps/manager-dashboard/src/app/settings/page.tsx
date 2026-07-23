@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { 
   Cpu, 
   MessageSquare, 
@@ -17,6 +18,14 @@ export default function SettingsPage() {
   const [orgName, setOrgName] = useState("Axiom Core Labs");
   const [automationMode, setAutomationMode] = useState<"assisted" | "manual" | "autonomous">("assisted");
   const [isSaved, setIsSaved] = useState(false);
+  const router = useRouter();
+
+  useEffect(() => {
+    const token = localStorage.getItem('axiom_token');
+    if (!token) {
+      router.push('/login');
+    }
+  }, [router]);
 
   const handleSave = () => {
     setIsSaved(true);

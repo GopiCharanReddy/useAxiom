@@ -22,12 +22,16 @@ console.log(`Starting Background Workers with Redis URL: ${redisUrl}...`);
 
 // 1. AI Leads Workers
 // @ts-ignore
-const plannerWorker = new Worker('planner_jobs', plannerWorkerProcessor, { connection: redisConnection as any });
+const plannerWorker = new Worker('planner_jobs', plannerWorkerProcessor, {
+  connection: redisConnection as any,
+});
 // @ts-ignore
-const whatsappWorker = new Worker('whatsapp_jobs', whatsappWorkerProcessor, { connection: redisConnection as any });
+const whatsappWorker = new Worker('whatsapp_jobs', whatsappWorkerProcessor, {
+  connection: redisConnection as any,
+});
 
-plannerWorker.on('completed', job => console.log(`[Planner] Job ${job.id} completed.`));
-whatsappWorker.on('completed', job => console.log(`[WhatsApp] Job ${job.id} completed.`));
+plannerWorker.on('completed', (job) => console.log(`[Planner] Job ${job.id} completed.`));
+whatsappWorker.on('completed', (job) => console.log(`[WhatsApp] Job ${job.id} completed.`));
 
 // 2. Communications, Outbound, & Notifications Queue Workers
 const outgoingQueue = new Queue('outgoing_messages', { connection: redisConnection as any });
@@ -40,7 +44,9 @@ const notificationsQueue = new Queue('notifications', { connection: redisConnect
 const reportingWorker = createReportingWorker(redisConnection as any, notificationsQueue);
 
 // 3. Repeatable Cron Job Setup
-const reminderSchedulerQueue = new Queue('reminder_scheduler', { connection: redisConnection as any });
+const reminderSchedulerQueue = new Queue('reminder_scheduler', {
+  connection: redisConnection as any,
+});
 const reportingSchedulerQueue = new Queue('reporting_jobs', { connection: redisConnection as any });
 
 async function setupRepeatableJobs() {
@@ -52,23 +58,37 @@ async function setupRepeatableJobs() {
       await reminderSchedulerQueue.removeRepeatableByKey(job.key);
     }
 
-    await reminderSchedulerQueue.add('check_deadlines', {}, {
-      repeat: {
-        pattern: '*/1 * * * *', // Run every minute
+    const checkDeadlinesPattern = process.env.CRON_CHECK_DEADLINES || '0 * * * *';
+    await reminderSchedulerQueue.add(
+      'check_deadlines',
+      {},
+      {
+        repeat: {
+          pattern: checkDeadlinesPattern,
+        },
       },
-    });
-    console.info('[Background Workers] Repeatable job check_deadlines scheduled successfully');
+    );
+    console.info(
+      `[Background Workers] Repeatable job check_deadlines scheduled successfully with pattern: ${checkDeadlinesPattern}`,
+    );
 
     const reportingJobs = await reportingSchedulerQueue.getRepeatableJobs();
     for (const job of reportingJobs) {
       await reportingSchedulerQueue.removeRepeatableByKey(job.key);
     }
-    await reportingSchedulerQueue.add('check_health', {}, {
-      repeat: {
-        pattern: '*/1 * * * *', // Run every 1 minutes
+    const checkHealthPattern = process.env.CRON_CHECK_HEALTH || '0 * * * *';
+    await reportingSchedulerQueue.add(
+      'check_health',
+      {},
+      {
+        repeat: {
+          pattern: checkHealthPattern,
+        },
       },
-    });
-    console.info('[Background Workers] Repeatable job check_health scheduled successfully');
+    );
+    console.info(
+      `[Background Workers] Repeatable job check_health scheduled successfully with pattern: ${checkHealthPattern}`,
+    );
   } catch (error) {
     console.error('[Background Workers] Failed to setup repeatable jobs:', error);
   }
@@ -110,7 +130,9 @@ const statsInterval = setInterval(async () => {
   for (const queue of monitoringQueues) {
     try {
       const counts = await queue.getJobCounts();
-      console.info(`  Queue [${queue.name}]: active=${counts.active}, waiting=${counts.waiting}, failed=${counts.failed}, delayed=${counts.delayed}, completed=${counts.completed}`);
+      console.info(
+        `  Queue [${queue.name}]: active=${counts.active}, waiting=${counts.waiting}, failed=${counts.failed}, delayed=${counts.delayed}, completed=${counts.completed}`,
+      );
     } catch (err) {
       console.error(`  Queue [${queue.name}] stats check failed:`, err);
     }

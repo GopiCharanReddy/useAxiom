@@ -23,6 +23,15 @@ export default tseslint.config(
   {
     rules: {
       ...baseRules,
+      // Relax type-safety checks for worker processors handling dynamic payloads
+      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
+      '@typescript-eslint/no-unsafe-argument': 'off',
+      '@typescript-eslint/no-floating-promises': 'off',
+      '@typescript-eslint/no-misused-promises': 'off',
+      '@typescript-eslint/ban-ts-comment': 'off',
+      'no-case-declarations': 'off',
     },
   },
 );

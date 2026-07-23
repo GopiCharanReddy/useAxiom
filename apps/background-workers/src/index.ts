@@ -34,11 +34,15 @@ async function setupRepeatableJobs() {
       await reminderSchedulerQueue.removeRepeatableByKey(job.key);
     }
 
-    await reminderSchedulerQueue.add('check_deadlines', {}, {
-      repeat: {
-        pattern: '*/1 * * * *', // Run every minute
+    await reminderSchedulerQueue.add(
+      'check_deadlines',
+      {},
+      {
+        repeat: {
+          pattern: '*/1 * * * *', // Run every minute
+        },
       },
-    });
+    );
     console.info('[Background Workers] Repeatable job check_deadlines scheduled successfully');
   } catch (error) {
     console.error('[Background Workers] Failed to setup repeatable jobs:', error);

@@ -15,7 +15,7 @@ export function createAssignmentWorker(redisConnection: any, outgoingQueue: Queu
     'assignment_jobs',
     async (job: Job) => {
       console.info(`[AssignmentWorker] Processing job ${job.id} for project ${job.data.projectId}`);
-      
+
       const { projectId, tenantId } = job.data;
       if (!projectId || !tenantId) {
         throw new Error('projectId and tenantId are required');
@@ -80,7 +80,9 @@ export function createAssignmentWorker(redisConnection: any, outgoingQueue: Queu
         workload: u._count.assignments,
       }));
 
-      console.info(`[AssignmentWorker] Running AssignmentAgent for ${projectTasks.length} tasks and ${users.length} team members.`);
+      console.info(
+        `[AssignmentWorker] Running AssignmentAgent for ${projectTasks.length} tasks and ${users.length} team members.`,
+      );
 
       const result = await orchestrator.getAssigner().run({
         tasks: tasksInput,
@@ -89,7 +91,9 @@ export function createAssignmentWorker(redisConnection: any, outgoingQueue: Queu
 
       // Save assignments to database
       for (const assignment of result.assignments) {
-        console.info(`[AssignmentWorker] Assigning Task ${assignment.taskId} to User ${assignment.assigneeId}`);
+        console.info(
+          `[AssignmentWorker] Assigning Task ${assignment.taskId} to User ${assignment.assigneeId}`,
+        );
         await prisma.assignment.upsert({
           where: {
             taskId_userId: {
@@ -106,7 +110,7 @@ export function createAssignmentWorker(redisConnection: any, outgoingQueue: Queu
 
         const assignedUser = users.find((u) => u.id === assignment.assigneeId);
         const task = projectTasks.find((t) => t.id === assignment.taskId);
-        
+
         if (assignedUser && assignedUser.phoneNumber && task) {
           // Notify the user via WhatsApp
           await outgoingQueue.add('send_message', {
@@ -120,11 +124,13 @@ export function createAssignmentWorker(redisConnection: any, outgoingQueue: Queu
       console.info(`[AssignmentWorker] Completed AI assignment for project ${projectId}.`);
       return { status: 'completed', assignments: result.assignments.length };
     },
-    { connection: redisConnection }
+    { connection: redisConnection },
   );
 
   worker.on('completed', (job) => console.log(`[AssignmentWorker] Job ${job.id} completed.`));
-  worker.on('failed', (job, err) => console.error(`[AssignmentWorker] Job ${job?.id} failed with error:`, err));
+  worker.on('failed', (job, err) =>
+    console.error(`[AssignmentWorker] Job ${job?.id} failed with error:`, err),
+  );
 
   return worker;
 }

@@ -16,9 +16,9 @@ export class AiController {
   ) {
     // Optionally inject user context into the message or orchestrator if needed
     // const userId = (req.user as any).id;
-    
+
     const orchestrator = this.aiService.getOrchestrator();
-    
+
     // Using a default threadId if none is provided
     const conversationThread = threadId || 'default-thread';
 

@@ -9,26 +9,22 @@ export class GlobalExceptionFilter implements ExceptionFilter {
     const request = ctx.getRequest<Request>();
 
     const status =
-      exception instanceof HttpException
-        ? exception.getStatus()
-        : HttpStatus.INTERNAL_SERVER_ERROR;
+      exception instanceof HttpException ? exception.getStatus() : HttpStatus.INTERNAL_SERVER_ERROR;
 
     const message =
-      exception instanceof HttpException
-        ? exception.message
-        : 'Internal server error';
+      exception instanceof HttpException ? exception.message : 'Internal server error';
 
-    const errorResponse =
-      exception instanceof HttpException
-        ? exception.getResponse()
-        : null;
+    const errorResponse = exception instanceof HttpException ? exception.getResponse() : null;
 
     response.status(status).json({
       statusCode: status,
       timestamp: new Date().toISOString(),
       path: request.url,
       message: message,
-      error: typeof errorResponse === 'object' ? errorResponse : { details: errorResponse || String(exception) }
+      error:
+        typeof errorResponse === 'object'
+          ? errorResponse
+          : { details: errorResponse || String(exception) },
     });
   }
 }

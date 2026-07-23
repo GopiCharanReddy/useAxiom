@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { 
@@ -13,24 +13,60 @@ import {
   Plus, 
   Menu, 
   X, 
-  Bell 
+  Bell,
+  ShieldAlert,
+  CreditCard,
+  Link2 
 } from "lucide-react";
 import { Button } from "@useaxiom/ui";
 import AIAssistantPanel from "./AIAssistantPanel";
 
-interface DashboardShellProps {
-  children: React.ReactNode;
+interface UserProfile {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+  organization: {
+    name: string;
+  };
 }
 
-export default function DashboardShell({ children }: DashboardShellProps) {
-  const pathname = usePathname();
+export default function DashboardShell({ children }: { children: React.ReactNode }) {
+  const [user, setUser] = useState<UserProfile | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isAIOpen, setIsAIOpen] = useState(false);
+  const pathname = usePathname();
+
+  useEffect(() => {
+    const token = localStorage.getItem('axiom_token');
+    if (!token) return;
+
+    fetch('/api/v1/auth/me', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    })
+    .then(r => {
+      if (r.status === 401) throw new Error('Unauthorized');
+      return r.json();
+    })
+    .then(data => {
+      if (data) setUser(data);
+    })
+    .catch(err => console.error("Error fetching user profile:", err));
+  }, []);
+
+  const initials = user?.name 
+    ? user.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2) 
+    : '??';
 
   const navigation = [
     { name: "Dashboard", href: "/", icon: LayoutDashboard },
     { name: "Projects", href: "/projects", icon: FolderKanban },
     { name: "Team Workload", href: "/team", icon: Users },
+    ...(user?.role === 'ADMIN' ? [
+      { name: "Users & Invites", href: "/admin/users", icon: ShieldAlert },
+      { name: "Integrations", href: "/admin/integrations", icon: Link2 },
+      { name: "Billing", href: "/admin/billing", icon: CreditCard },
+    ] : []),
     { name: "Settings", href: "/settings", icon: Settings },
   ];
 
@@ -74,11 +110,11 @@ export default function DashboardShell({ children }: DashboardShellProps) {
         {/* User Card */}
         <div className="p-4 border-t border-zinc-800 bg-zinc-900 flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-300 font-bold text-sm">
-            DM
+            {initials}
           </div>
           <div className="flex-1 min-w-0">
-            <span className="block text-sm font-bold text-zinc-200 truncate">David Miller</span>
-            <span className="block text-xs font-semibold text-zinc-500 truncate">Project Lead @ Org A</span>
+            <span className="block text-sm font-bold text-zinc-200 truncate">{user?.name || "Loading..."}</span>
+            <span className="block text-xs font-semibold text-zinc-500 truncate">{user?.role || "Manager"} @ {user?.organization?.name || "Axiom"}</span>
           </div>
         </div>
       </aside>
@@ -121,11 +157,11 @@ export default function DashboardShell({ children }: DashboardShellProps) {
             </nav>
             <div className="pt-4 border-t border-zinc-800 flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-zinc-800 border border-zinc-700 flex items-center justify-center text-zinc-300 font-bold">
-                DM
+                {initials}
               </div>
               <div className="flex-1 min-w-0">
-                <span className="block text-sm font-bold truncate">David Miller</span>
-                <span className="block text-xs font-semibold text-zinc-500 truncate">Project Lead</span>
+                <span className="block text-sm font-bold truncate">{user?.name || "Loading..."}</span>
+                <span className="block text-xs font-semibold text-zinc-500 truncate">{user?.role || "Manager"}</span>
               </div>
             </div>
           </aside>
@@ -170,7 +206,7 @@ export default function DashboardShell({ children }: DashboardShellProps) {
               <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full" />
             </button>
 
-            <Link href="/projects">
+            <Link href="/projects?create=true">
               <Button variant="primary" size="sm" className="hidden sm:inline-flex shadow-none border-0 h-11 px-5 rounded-xl">
                 <Plus className="w-4 h-4" />
                 <span>New Project</span>

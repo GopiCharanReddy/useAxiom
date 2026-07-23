@@ -27,6 +27,18 @@ export class UsersService {
     });
   }
 
+  async findByIdWithOrg(id: string) {
+    return this.prisma.user.findUnique({
+      where: {
+        id,
+        deletedAt: null,
+      },
+      include: {
+        organization: true,
+      },
+    });
+  }
+
   async create(data: Prisma.UserCreateInput): Promise<User> {
     return this.prisma.user.create({
       data,
