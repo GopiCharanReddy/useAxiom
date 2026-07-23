@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Activity, Lock, Mail, ArrowRight } from 'lucide-react';
+import { Sparkles, Lock, Mail, ArrowRight } from 'lucide-react';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('mockmanager@useaxiom.com');
@@ -42,61 +42,63 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-black flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Dynamic Background Elements */}
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-purple-600/30 blur-[120px] rounded-full pointer-events-none animate-pulse" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-indigo-600/20 blur-[120px] rounded-full pointer-events-none" />
+    <div className="min-h-screen bg-[#faf8f5] flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Soft Architectural Glow elements */}
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[#8c7853]/5 blur-[120px] rounded-full pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-[#bda272]/5 blur-[120px] rounded-full pointer-events-none" />
 
       <div className="w-full max-w-md relative z-10 animate-in fade-in slide-in-from-bottom-8 duration-700">
         <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-zinc-900 border border-zinc-800 mb-6 shadow-2xl">
-            <Activity className="w-8 h-8 text-purple-500" />
+          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-white border border-[#e6e3da] mb-6 shadow-sm">
+            <Sparkles className="w-6 h-6 text-[#8c7853]" />
           </div>
-          <h1 className="text-4xl font-extrabold tracking-tight text-white mb-2">
-            Welcome to Axiom
+          <h1 className="text-4xl font-serif font-black tracking-tight text-[#1c1b18] mb-2">
+            useAxiom
           </h1>
-          <p className="text-zinc-400 font-medium">Log in to your manager workspace</p>
+          <p className="text-[#66635d] text-[10px] font-black uppercase tracking-widest">
+            Log in to your manager workspace
+          </p>
         </div>
 
-        <div className="bg-zinc-900/50 backdrop-blur-xl border border-zinc-800/50 p-8 rounded-3xl shadow-2xl">
-          <form onSubmit={handleLogin} className="space-y-6">
-            <div className="space-y-2">
-              <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
+        <div className="bg-white border border-[#e6e3da] p-8 rounded-3xl shadow-[0_15px_40px_-15px_rgba(28,27,24,0.05)]">
+          <form onSubmit={handleLogin} className="space-y-5">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black text-[#66635d] uppercase tracking-widest block">
                 Email Address
               </label>
               <div className="relative">
-                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
+                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#66635d]" />
                 <input
                   type="email"
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-zinc-950/50 border border-zinc-800 rounded-xl py-3 pl-11 pr-4 text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all"
+                  className="w-full bg-white border border-[#e6e3da] rounded-xl py-3 pl-11 pr-4 text-[#1c1b18] placeholder:text-[#a09c94] text-sm focus:outline-none focus:border-[#8c7853] focus:ring-4 focus:ring-[#8c7853]/10 transition-all duration-300 shadow-sm"
                   placeholder="manager@useaxiom.com"
                 />
               </div>
             </div>
 
-            <div className="space-y-2">
-              <label className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black text-[#66635d] uppercase tracking-widest block">
                 Password
               </label>
               <div className="relative">
-                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
+                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#66635d]" />
                 <input
                   type="password"
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-zinc-950/50 border border-zinc-800 rounded-xl py-3 pl-11 pr-4 text-zinc-200 placeholder:text-zinc-600 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all"
+                  className="w-full bg-white border border-[#e6e3da] rounded-xl py-3 pl-11 pr-4 text-[#1c1b18] placeholder:text-[#a09c94] text-sm focus:outline-none focus:border-[#8c7853] focus:ring-4 focus:ring-[#8c7853]/10 transition-all duration-300 shadow-sm"
                   placeholder="••••••••"
                 />
               </div>
             </div>
 
             {error && (
-              <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 text-sm px-4 py-3 rounded-xl flex items-center gap-2">
-                <div className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
+              <div className="bg-[#fdf2f2] border border-[#fcdada] text-[#9f3a38] text-xs font-bold px-4 py-3 rounded-xl flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-[#9f3a38]" />
                 {error}
               </div>
             )}
@@ -104,20 +106,17 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full relative group overflow-hidden rounded-xl bg-white text-black font-bold py-3.5 px-4 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-70 disabled:hover:scale-100"
+              className="w-full relative rounded-xl bg-[#8c7853] text-white font-black uppercase text-xs tracking-widest py-3.5 px-4 transition-all duration-300 hover:bg-[#736243] hover:scale-[1.015] hover:shadow-md active:scale-[0.99] border border-[#7d6b4a] disabled:opacity-70 disabled:hover:scale-100 disabled:hover:shadow-sm flex items-center justify-center gap-2 cursor-pointer shadow-sm"
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 to-indigo-500/20 opacity-0 group-hover:opacity-100 transition-opacity" />
-              <div className="flex items-center justify-center gap-2 relative z-10">
-                <span>{loading ? 'Authenticating...' : 'Sign In'}</span>
-                {!loading && (
-                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                )}
-              </div>
+              <span>{loading ? 'Authenticating...' : 'Sign In'}</span>
+              {!loading && (
+                <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
+              )}
             </button>
           </form>
         </div>
 
-        <p className="text-center text-zinc-600 text-xs mt-8 font-medium">
+        <p className="text-center text-[#a09c94] text-[9px] font-black uppercase tracking-widest mt-8">
           Secure Access • useAxiom Platform Foundation
         </p>
       </div>

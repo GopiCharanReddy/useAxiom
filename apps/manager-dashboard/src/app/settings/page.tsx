@@ -1,48 +1,80 @@
-"use client";
+'use client';
 
-import { useState } from "react";
-import { 
-  Cpu, 
-  MessageSquare, 
-  Building2, 
-  Save, 
+import { useState } from 'react';
+import {
+  Cpu,
+  MessageSquare,
+  Building2,
+  Save,
   Sparkles,
   Link2,
   CheckCircle2,
-  Lock
-} from "lucide-react";
-import { Button, Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter, Input, Badge } from "@useaxiom/ui";
+  Lock,
+} from 'lucide-react';
+import {
+  Button,
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter,
+  Input,
+  Badge,
+} from '@useaxiom/ui';
 
 export default function SettingsPage() {
-  const [orgName, setOrgName] = useState("Axiom Core Labs");
-  const [automationMode, setAutomationMode] = useState<"assisted" | "manual" | "autonomous">("assisted");
+  const [orgName, setOrgName] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('axiom_org_name') || 'Axiom Core Labs';
+    }
+    return 'Axiom Core Labs';
+  });
+  const [automationMode, setAutomationMode] = useState<'assisted' | 'manual' | 'autonomous'>(() => {
+    if (typeof window !== 'undefined') {
+      return (
+        (localStorage.getItem('axiom_automation_mode') as 'assisted' | 'manual' | 'autonomous') ||
+        'assisted'
+      );
+    }
+    return 'assisted';
+  });
   const [isSaved, setIsSaved] = useState(false);
 
   const handleSave = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('axiom_org_name', orgName);
+      localStorage.setItem('axiom_automation_mode', automationMode);
+    }
     setIsSaved(true);
     setTimeout(() => setIsSaved(false), 3000);
   };
 
   return (
-    <div className="space-y-6 max-w-4xl animate-in fade-in duration-500">
+    <div className="space-y-8 max-w-4xl animate-in fade-in duration-500">
       {/* Page Header */}
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-zinc-100">Workspace Configurations</h1>
-        <p className="text-zinc-400 text-sm mt-1">Configure global automation settings, business integrations, and tenant options.</p>
+      <div className="space-y-1">
+        <h1 className="text-3xl font-serif font-black tracking-tight text-[#1c1b18]">
+          Workspace Configurations
+        </h1>
+        <p className="text-[#66635d] text-xs font-semibold uppercase tracking-widest">
+          Configure global automation settings, business integrations, and tenant options.
+        </p>
       </div>
 
       <div className="space-y-6">
-        
         {/* Organization settings */}
-        <Card>
+        <Card className="bg-white border border-[#e6e3da]/80 shadow-sm rounded-2xl">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-sm font-bold">
-              <Building2 className="w-4 h-4 text-purple-400" />
+            <CardTitle className="flex items-center gap-2.5 text-base font-serif font-black text-[#1c1b18]">
+              <Building2 className="w-4.5 h-4.5 text-[#8c7853]" />
               <span>Organization Workspace Details</span>
             </CardTitle>
-            <CardDescription>Setup details and identification labels for this tenant.</CardDescription>
+            <CardDescription className="text-xs font-semibold text-[#66635d] uppercase tracking-wider">
+              Setup details and identification labels for this tenant.
+            </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 pt-2">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input
                 label="Organization Profile Name"
@@ -54,35 +86,44 @@ export default function SettingsPage() {
                 label="System Tenant ID (Read Only)"
                 value="org_axiom_prod_008"
                 disabled
-                className="opacity-75 cursor-not-allowed font-mono text-xs text-zinc-400 bg-zinc-950"
+                className="opacity-75 cursor-not-allowed font-mono text-xs text-[#66635d] bg-[#faf8f5] border border-[#e6e3da]/60 rounded-xl py-3 px-4 shadow-sm"
               />
             </div>
           </CardContent>
         </Card>
 
         {/* Automation Settings */}
-        <Card>
+        <Card className="bg-white border border-[#e6e3da]/80 shadow-sm rounded-2xl">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-sm font-bold">
-              <Cpu className="w-4 h-4 text-purple-400" />
+            <CardTitle className="flex items-center gap-2.5 text-base font-serif font-black text-[#1c1b18]">
+              <Cpu className="w-4.5 h-4.5 text-[#8c7853]" />
               <span>AI Execution Strategy</span>
             </CardTitle>
-            <CardDescription>Select the integration authority level for AI task planning.</CardDescription>
+            <CardDescription className="text-xs font-semibold text-[#66635d] uppercase tracking-wider">
+              Select the integration authority level for AI task planning.
+            </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-2">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* Option 1: Manual */}
               <button
                 type="button"
-                onClick={() => setAutomationMode("manual")}
-                className={`p-4 rounded-xl border text-left transition-all ${
-                  automationMode === "manual"
-                    ? "border-purple-600 bg-purple-500/5 text-zinc-100"
-                    : "border-zinc-800 bg-zinc-900/10 text-zinc-400 hover:border-zinc-700/60"
+                onClick={() => setAutomationMode('manual')}
+                className={`p-5 rounded-2xl border text-left transition-all duration-300 relative shadow-sm cursor-pointer ${
+                  automationMode === 'manual'
+                    ? 'border-[#8c7853] bg-[#FAF4E8] text-[#1c1b18]'
+                    : 'border-[#e6e3da] bg-white text-[#66635d] hover:border-[#8c7853]/60'
                 }`}
               >
-                <span className="block font-bold text-sm text-zinc-200">Manual Planning</span>
-                <span className="block text-[10px] text-zinc-500 leading-normal mt-1">
+                {automationMode === 'manual' && (
+                  <div className="absolute -top-2.5 right-4 px-2.5 py-0.5 rounded-full bg-[#8c7853] text-white text-[8px] font-black uppercase tracking-widest shadow-sm animate-in fade-in">
+                    Active
+                  </div>
+                )}
+                <span className="block font-serif font-black text-sm text-[#1c1b18]">
+                  Manual Planning
+                </span>
+                <span className="block text-[10px] text-[#66635d] font-semibold leading-relaxed mt-2 uppercase tracking-wide">
                   Manager manually creates milestones, assigns resources, and starts task runs.
                 </span>
               </button>
@@ -90,41 +131,53 @@ export default function SettingsPage() {
               {/* Option 2: AI Assisted */}
               <button
                 type="button"
-                onClick={() => setAutomationMode("assisted")}
-                className={`p-4 rounded-xl border text-left transition-all relative ${
-                  automationMode === "assisted"
-                    ? "border-purple-600 bg-purple-500/5 text-zinc-100"
-                    : "border-zinc-800 bg-zinc-900/10 text-zinc-400 hover:border-zinc-700/60"
+                onClick={() => setAutomationMode('assisted')}
+                className={`p-5 rounded-2xl border text-left transition-all duration-300 relative shadow-sm cursor-pointer ${
+                  automationMode === 'assisted'
+                    ? 'border-[#8c7853] bg-[#FAF4E8] text-[#1c1b18]'
+                    : 'border-[#e6e3da] bg-white text-[#66635d] hover:border-[#8c7853]/60'
                 }`}
               >
-                <div className="absolute -top-2 right-3 px-2 py-0.5 rounded bg-purple-600 text-white text-[9px] font-bold uppercase tracking-widest">
-                  Active
-                </div>
-                <span className="block font-bold text-sm text-zinc-200 flex items-center gap-1">
-                  <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                {automationMode === 'assisted' && (
+                  <div className="absolute -top-2.5 right-4 px-2.5 py-0.5 rounded-full bg-[#8c7853] text-white text-[8px] font-black uppercase tracking-widest shadow-sm animate-in fade-in">
+                    Active
+                  </div>
+                )}
+                <span className="block font-serif font-black text-sm text-[#1c1b18] flex items-center gap-1">
+                  <Sparkles className="w-3.5 h-3.5 text-[#8c7853]" />
                   <span>AI Assisted</span>
                 </span>
-                <span className="block text-[10px] text-zinc-500 leading-normal mt-1">
-                  AI drafts the milestones and task lists. Active notification starts after Manager signs off.
+                <span className="block text-[10px] text-[#66635d] font-semibold leading-relaxed mt-2 uppercase tracking-wide">
+                  AI drafts the milestones and task lists. Active notification starts after Manager
+                  signs off.
                 </span>
               </button>
 
               {/* Option 3: Autonomous */}
               <button
                 type="button"
-                onClick={() => setAutomationMode("autonomous")}
-                className={`p-4 rounded-xl border text-left transition-all relative ${
-                  automationMode === "autonomous"
-                    ? "border-purple-600 bg-purple-500/5 text-zinc-100"
-                    : "border-zinc-800 bg-zinc-900/10 text-zinc-400 hover:border-zinc-700/60"
+                onClick={() => setAutomationMode('autonomous')}
+                className={`p-5 rounded-2xl border text-left transition-all duration-300 relative shadow-sm cursor-pointer ${
+                  automationMode === 'autonomous'
+                    ? 'border-[#8c7853] bg-[#FAF4E8] text-[#1c1b18]'
+                    : 'border-[#e6e3da] bg-white text-[#66635d] hover:border-[#8c7853]/60'
                 }`}
               >
-                <div className="absolute top-2 right-2 text-zinc-500">
-                  <Lock className="w-3 h-3" />
-                </div>
-                <span className="block font-bold text-sm text-zinc-200">Autonomous (Future)</span>
-                <span className="block text-[10px] text-zinc-500 leading-normal mt-1">
-                  AI plans, assigns, and schedules runs automatically. Manager receives dashboard feeds retrospectively.
+                {automationMode === 'autonomous' ? (
+                  <div className="absolute -top-2.5 right-4 px-2.5 py-0.5 rounded-full bg-[#8c7853] text-white text-[8px] font-black uppercase tracking-widest shadow-sm animate-in fade-in">
+                    Active
+                  </div>
+                ) : (
+                  <div className="absolute top-3 right-3 text-[#66635d]">
+                    <Lock className="w-3 h-3" />
+                  </div>
+                )}
+                <span className="block font-serif font-black text-sm text-[#1c1b18]">
+                  Autonomous
+                </span>
+                <span className="block text-[10px] text-[#a09c94] font-semibold leading-relaxed mt-2 uppercase tracking-wide">
+                  AI plans, assigns, and schedules runs automatically. Manager receives dashboard
+                  feeds retrospectively.
                 </span>
               </button>
             </div>
@@ -132,39 +185,53 @@ export default function SettingsPage() {
         </Card>
 
         {/* Integrations: WhatsApp Business API */}
-        <Card>
+        <Card className="bg-white border border-[#e6e3da]/80 shadow-sm rounded-2xl">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-sm font-bold">
-              <MessageSquare className="w-4 h-4 text-purple-400" />
+            <CardTitle className="flex items-center gap-2.5 text-base font-serif font-black text-[#1c1b18]">
+              <MessageSquare className="w-4.5 h-4.5 text-[#8c7853]" />
               <span>WhatsApp Integration Channel</span>
             </CardTitle>
-            <CardDescription>Connect Meta WhatsApp Business account for employee messaging.</CardDescription>
+            <CardDescription className="text-xs font-semibold text-[#66635d] uppercase tracking-wider">
+              Connect Meta WhatsApp Business account for employee messaging.
+            </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="p-4 bg-zinc-950/60 border border-zinc-850 rounded-2xl flex items-center justify-between">
+          <CardContent className="space-y-4 pt-2">
+            <div className="p-4 bg-[#faf8f5] border border-[#e6e3da] rounded-xl flex items-center justify-between shadow-sm">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
-                  <Link2 className="w-4 h-4" />
+                <div className="w-10 h-10 rounded-lg bg-[#3e593e]/10 border border-[#d5ebd5] flex items-center justify-center text-[#3e593e]">
+                  <Link2 className="w-4.5 h-4.5" />
                 </div>
-                <div>
-                  <span className="block text-xs font-bold text-zinc-200">Meta API Account connected</span>
-                  <span className="block text-[10px] text-zinc-500">Webhook: <code className="text-[10px] text-purple-400 font-mono">POST /webhooks/whatsapp</code></span>
+                <div className="space-y-0.5">
+                  <span className="block text-xs font-black text-[#1c1b18] uppercase tracking-wider">
+                    Meta API Account connected
+                  </span>
+                  <span className="block text-[9px] text-[#66635d] uppercase tracking-widest font-semibold">
+                    Webhook:{' '}
+                    <code className="text-[10px] text-[#8c7853] font-mono">
+                      POST /webhooks/whatsapp
+                    </code>
+                  </span>
                 </div>
               </div>
               <Badge variant="completed">Linked</Badge>
             </div>
           </CardContent>
-          <CardFooter className="justify-between">
+          <CardFooter className="justify-between pt-6 border-t border-[#e6e3da]/80">
             {isSaved ? (
-              <span className="text-emerald-400 text-xs font-semibold flex items-center gap-1.5 animate-in fade-in">
-                <CheckCircle2 className="w-4 h-4" />
+              <span className="text-[#3e593e] text-xs font-black uppercase tracking-widest flex items-center gap-1.5 animate-in fade-in duration-300">
+                <CheckCircle2 className="w-4.5 h-4.5" />
                 <span>Workspace settings updated!</span>
               </span>
             ) : (
               <div />
             )}
-            <Button variant="primary" size="sm" onClick={handleSave} className="rounded-xl font-semibold gap-1.5">
-              <Save className="w-4 h-4" />
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={handleSave}
+              className="h-10 px-4 text-[9px] font-black tracking-widest uppercase border border-[#7d6b4a] shadow-sm"
+            >
+              <Save className="w-3.5 h-3.5" />
               <span>Save Configurations</span>
             </Button>
           </CardFooter>

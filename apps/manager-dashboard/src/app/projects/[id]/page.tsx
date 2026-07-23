@@ -172,8 +172,7 @@ export default function ProjectDetailPage({ params }: PageProps) {
   };
 
   const handleResolveBlocker = () => {
-    // Implement API call if needed
-    // Reload manually or update state
+    // API Call triggers here if needed
   };
 
   const handleApprovePlan = async () => {
@@ -183,18 +182,25 @@ export default function ProjectDetailPage({ params }: PageProps) {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
       });
-      // Optionally trigger reload here
     } catch (e: unknown) {
       console.error(e);
     }
   };
 
   if (loading) {
-    return <div className="text-gray-400 p-8">Loading project details...</div>;
+    return (
+      <div className="text-[#66635d] text-xs font-black uppercase tracking-widest p-8">
+        Loading project details...
+      </div>
+    );
   }
 
   if (!project) {
-    return <div className="text-red-500 p-8">Project not found</div>;
+    return (
+      <div className="text-[#9f3a38] text-xs font-black uppercase tracking-widest p-8">
+        Project not found
+      </div>
+    );
   }
 
   const getTaskStatusBadge = (status: string) => {
@@ -214,21 +220,21 @@ export default function ProjectDetailPage({ params }: PageProps) {
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
+    <div className="space-y-8 animate-in fade-in duration-500">
       {/* Breadcrumb back navigation */}
       <Link
         href="/projects"
-        className="inline-flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-900 transition-colors font-bold"
+        className="inline-flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest text-[#66635d] hover:text-[#1c1b18] transition-colors"
       >
         <ArrowLeft className="w-3.5 h-3.5" />
         <span>Back to Projects</span>
       </Link>
 
       {/* Campaign Details Header */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 pb-6 border-b-2 border-gray-100">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 pb-6 border-b border-[#e6e3da]">
         <div className="space-y-2">
           <div className="flex items-center gap-2">
-            <span className="text-[10px] font-bold text-blue-600 uppercase tracking-widest bg-blue-50 px-2.5 py-0.5 rounded-sm">
+            <span className="text-[9px] font-black text-[#8c7853] uppercase tracking-widest bg-[#FAF4E8] px-2.5 py-0.5 rounded border border-[#eedebf]">
               {(project.status as string) || 'PROJECT'}
             </span>
             <Badge
@@ -247,10 +253,10 @@ export default function ProjectDetailPage({ params }: PageProps) {
                   : 'Awaiting Review'}
             </Badge>
           </div>
-          <h1 className="text-4xl font-extrabold tracking-tight text-gray-900">
+          <h1 className="text-3xl font-serif font-black tracking-tight text-[#1c1b18]">
             {project.name as string}
           </h1>
-          <p className="text-gray-500 text-base max-w-2xl font-medium">
+          <p className="text-[#66635d] text-sm leading-relaxed max-w-2xl font-semibold">
             {project.objective as string}
           </p>
           <div className="flex flex-wrap gap-2 pt-2">
@@ -270,40 +276,30 @@ export default function ProjectDetailPage({ params }: PageProps) {
         <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
           {project.healthScore !== undefined && project.healthScore !== null && (
             <div
-              className={`w-full lg:w-72 bg-white p-5 border-4 ${project.healthStatus === 'HIGH' ? 'border-red-600' : project.healthStatus === 'MEDIUM' ? 'border-amber-500' : 'border-emerald-500'} space-y-3`}
+              className={`w-full lg:w-72 bg-white p-5 rounded-xl border border-l-4 shadow-sm ${project.healthStatus === 'HIGH' ? 'border-[#e6e3da]/80 border-l-[#9f3a38] bg-[#fdf2f2]' : project.healthStatus === 'MEDIUM' ? 'border-[#e6e3da]/80 border-l-[#bda272] bg-[#FCF5EB]' : 'border-[#e6e3da]/80 border-l-[#3e593e] bg-[#f0f5f0]'} space-y-2`}
             >
-              <div className="flex justify-between items-center text-sm font-bold">
+              <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-[#1c1b18]">
                 <div className="flex items-center gap-2">
                   <AlertTriangle
-                    className={`w-4 h-4 ${project.healthStatus === 'HIGH' ? 'text-red-600' : project.healthStatus === 'MEDIUM' ? 'text-amber-600' : 'text-emerald-600'}`}
+                    className={`w-3.5 h-3.5 ${project.healthStatus === 'HIGH' ? 'text-[#9f3a38]' : project.healthStatus === 'MEDIUM' ? 'text-[#bda272]' : 'text-[#3e593e]'}`}
                   />
-                  <span className="text-gray-900 uppercase tracking-wider">AI Risk</span>
+                  <span>AI Risk</span>
                 </div>
-                <span
-                  className={
-                    project.healthStatus === 'HIGH'
-                      ? 'text-red-600'
-                      : project.healthStatus === 'MEDIUM'
-                        ? 'text-amber-600'
-                        : 'text-emerald-600'
-                  }
-                >
-                  {project.healthScore as number}/100
-                </span>
+                <span>{project.healthScore as number}/100</span>
               </div>
-              <p className="text-xs font-medium text-gray-600 line-clamp-2">
+              <p className="text-[10px] font-semibold text-[#66635d] line-clamp-2 leading-relaxed">
                 {project.healthReasoning as string}
               </p>
             </div>
           )}
-          <div className="w-full lg:w-72 bg-white p-5 border-4 border-gray-900 space-y-3">
-            <div className="flex justify-between items-center text-sm font-bold">
-              <span className="text-gray-900 uppercase tracking-wider">Campaign Progress</span>
-              <span className="text-blue-600">{project.status === 'ACTIVE' ? 10 : 0}%</span>
+          <div className="w-full lg:w-72 bg-white p-5 rounded-xl border border-[#e6e3da]/80 shadow-sm space-y-3">
+            <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-[#1c1b18]">
+              <span>Campaign Progress</span>
+              <span className="text-[#8c7853]">{project.status === 'ACTIVE' ? 10 : 0}%</span>
             </div>
-            <div className="w-full bg-gray-200 h-2">
+            <div className="w-full bg-[#f2efe9] h-2 rounded-full overflow-hidden">
               <div
-                className="bg-blue-600 h-full"
+                className="bg-[#8c7853] h-full rounded-full"
                 style={{ width: `${project.status === 'ACTIVE' ? 10 : 0}%` }}
               />
             </div>
@@ -312,17 +308,22 @@ export default function ProjectDetailPage({ params }: PageProps) {
       </div>
 
       {/* Actions Bar */}
-      <div className="flex justify-between items-center gap-4 bg-gray-50 p-4 rounded-md border-2 border-gray-100">
-        <div className="flex items-center gap-2">
-          <Activity className="w-5 h-5 text-blue-500" />
-          <span className="text-sm font-bold text-gray-900 tracking-wide">
+      <div className="flex justify-between items-center gap-4 bg-white p-4 rounded-xl border border-[#e6e3da]/85 shadow-sm">
+        <div className="flex items-center gap-2.5">
+          <Activity className="w-4.5 h-4.5 text-[#8c7853]" />
+          <span className="text-xs font-black uppercase tracking-widest text-[#1c1b18]">
             Campaign Execution Log
           </span>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-3">
           {tasks.some((t) => t.status === 'PROPOSED') && (
-            <Button variant="primary" size="sm" onClick={handleApprovePlan}>
-              <Play className="w-4 h-4" />
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={handleApprovePlan}
+              className="h-10 text-[9px] font-black tracking-widest uppercase border border-[#7d6b4a]"
+            >
+              <Play className="w-3.5 h-3.5" />
               <span>Approve Proposed Plan</span>
             </Button>
           )}
@@ -330,9 +331,9 @@ export default function ProjectDetailPage({ params }: PageProps) {
             variant="outline"
             size="sm"
             onClick={() => setShowTaskModal(true)}
-            className="cursor-pointer"
+            className="h-10 text-[9px] font-black tracking-widest uppercase border-[#e6e3da] text-[#66635d] hover:bg-[#faf8f5] shadow-sm"
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-3.5 h-3.5" />
             <span>Add Task</span>
           </Button>
         </div>
@@ -342,27 +343,25 @@ export default function ProjectDetailPage({ params }: PageProps) {
       <div className="space-y-6">
         {tasks.length > 0 ? (
           <div className="space-y-3">
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-2">
-                <ChevronRight className="w-5 h-5 text-gray-400" />
-                <h3 className="font-bold text-gray-900 text-lg tracking-tight">All Tasks</h3>
-              </div>
+            <div className="flex items-center gap-2 pb-2">
+              <ChevronRight className="w-4 h-4 text-[#8c7853]" />
+              <h3 className="font-serif font-black text-lg text-[#1c1b18]">All Tasks</h3>
             </div>
 
             {/* Task list inside card */}
-            <Card className="divide-y-2 divide-gray-100 p-0 overflow-hidden">
+            <Card className="p-0 overflow-hidden shadow-sm border border-[#e6e3da]/80 rounded-xl divide-y divide-[#e6e3da]/60 bg-white">
               {tasks.map((task) => (
                 <div
                   key={task.id}
-                  className="p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:bg-gray-50 transition-colors"
+                  className="p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:bg-[#faf8f5] transition-all duration-300"
                 >
                   <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <span className="text-base font-bold text-gray-900">{task.title}</span>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-sm font-black text-[#1c1b18]">{task.title}</span>
                       {getTaskStatusBadge(task.status)}
                     </div>
                     {task.description && (
-                      <span className="text-sm text-gray-500 font-medium block max-w-xl">
+                      <span className="text-xs text-[#66635d] font-semibold block max-w-xl leading-relaxed">
                         {task.description}
                       </span>
                     )}
@@ -370,8 +369,8 @@ export default function ProjectDetailPage({ params }: PageProps) {
 
                   <div className="flex items-center gap-4 self-end sm:self-auto">
                     {/* Task Metadata */}
-                    <div className="flex items-center gap-3 text-xs text-gray-500">
-                      <span className="font-bold bg-gray-100 px-3 py-1.5 rounded-sm">
+                    <div className="flex items-center gap-3">
+                      <span className="text-[10px] font-black bg-[#f2efe9] text-[#1c1b18] border border-[#e6e3da]/80 px-2.5 py-1 rounded-lg">
                         {task.estimatedHours || 1} hrs
                       </span>
                     </div>
@@ -382,13 +381,13 @@ export default function ProjectDetailPage({ params }: PageProps) {
                         variant="danger"
                         size="sm"
                         onClick={() => handleResolveBlocker()}
-                        className="h-9"
+                        className="h-9 px-3 text-[9px] font-black tracking-widest uppercase rounded-lg shadow-sm"
                       >
                         Resolve Blocker
                       </Button>
                     )}
-                    <button className="p-2 rounded-md bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-900 transition-colors cursor-pointer border-0">
-                      <MessageSquare className="w-4 h-4" />
+                    <button className="h-9 w-9 rounded-lg bg-white border border-[#e6e3da]/80 hover:border-[#8c7853] hover:bg-[#faf8f5] text-[#66635d] hover:text-[#1c1b18] transition-all flex items-center justify-center cursor-pointer shadow-sm">
+                      <MessageSquare className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 </div>
@@ -396,28 +395,30 @@ export default function ProjectDetailPage({ params }: PageProps) {
             </Card>
           </div>
         ) : (
-          <div className="text-gray-500 font-medium py-4">No tasks found for this project yet.</div>
+          <div className="text-[#66635d] text-xs font-black uppercase tracking-widest py-4">
+            No tasks found for this project yet.
+          </div>
         )}
       </div>
 
       {/* Team Assignment Section */}
       <div className="space-y-6 pt-4">
         <div className="flex items-center gap-2">
-          <h3 className="font-bold text-gray-900 text-lg tracking-tight">Project Team Members</h3>
+          <h3 className="font-serif font-black text-lg text-[#1c1b18]">Project Team Members</h3>
         </div>
-        <Card className="p-6 space-y-4">
+        <Card className="p-6 space-y-4 rounded-xl border border-[#e6e3da]/80 shadow-sm bg-white">
           <form
             onSubmit={handleAssignMember}
-            className="flex gap-4 items-end bg-gray-50 p-4 rounded-xl border border-gray-255"
+            className="flex flex-col sm:flex-row gap-4 items-end bg-[#faf8f5] p-5 rounded-xl border border-[#e6e3da] shadow-inner w-full"
           >
-            <div className="flex-1 space-y-1">
-              <label className="text-xs font-bold text-gray-700 uppercase">
+            <div className="flex-1 space-y-1 w-full">
+              <label className="text-[9px] font-black text-[#66635d] uppercase tracking-widest block mb-1">
                 Assign Team Member
               </label>
               <select
                 value={selectedUserId}
                 onChange={(e) => setSelectedUserId(e.target.value)}
-                className="w-full bg-white border border-gray-300 rounded-lg p-2 text-sm text-gray-900 focus:outline-none focus:border-blue-500"
+                className="w-full bg-white border border-[#e6e3da] rounded-xl p-2.5 text-xs text-[#1c1b18] focus:outline-none focus:border-[#8c7853] focus:ring-4 focus:ring-[#8c7853]/10 shadow-sm cursor-pointer"
               >
                 <option value="">Select an employee...</option>
                 {allUsers
@@ -433,19 +434,19 @@ export default function ProjectDetailPage({ params }: PageProps) {
               variant="primary"
               type="submit"
               disabled={!selectedUserId}
-              className="h-10 cursor-pointer"
+              className="h-10 text-[9px] font-black tracking-widest uppercase border border-[#7d6b4a] w-full sm:w-auto shadow-sm"
             >
               Assign to Project
             </Button>
           </form>
 
           {assignedMembers.length > 0 ? (
-            <div className="divide-y divide-gray-150">
+            <div className="divide-y divide-[#faf8f5]">
               {assignedMembers.map((member) => (
                 <div key={member.id} className="py-3 flex justify-between items-center">
-                  <div>
-                    <h4 className="font-bold text-gray-900">{member.user.name}</h4>
-                    <span className="text-xs text-gray-500 font-semibold">
+                  <div className="space-y-0.5">
+                    <h4 className="font-black text-xs text-[#1c1b18]">{member.user.name}</h4>
+                    <span className="text-[10px] text-[#66635d] font-semibold uppercase tracking-wider block">
                       Role: {member.user.role}
                     </span>
                   </div>
@@ -454,7 +455,7 @@ export default function ProjectDetailPage({ params }: PageProps) {
               ))}
             </div>
           ) : (
-            <p className="text-xs text-gray-500 font-medium">
+            <p className="text-xs text-[#66635d] font-black uppercase tracking-widest">
               No team members assigned to this project yet.
             </p>
           )}
@@ -463,60 +464,72 @@ export default function ProjectDetailPage({ params }: PageProps) {
 
       {/* New Task Modal */}
       {showTaskModal && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-zinc-900 border-4 border-gray-900 max-w-md w-full p-6 space-y-4">
-            <div className="flex justify-between items-center pb-2 border-b-2 border-zinc-800">
-              <h2 className="text-lg font-black text-white">Create New Task</h2>
+        <div className="fixed inset-0 bg-[#1c1b18]/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white border border-[#e6e3da] max-w-md w-full p-8 space-y-6 rounded-3xl shadow-[0_20px_50px_rgba(28,27,24,0.1)] animate-in fade-in zoom-in-95 duration-300">
+            <div className="flex justify-between items-center pb-4 border-b border-[#e6e3da]">
+              <h2 className="text-lg font-serif font-black text-[#1c1b18]">Create New Task</h2>
               <button
                 onClick={() => setShowTaskModal(false)}
-                className="text-zinc-400 hover:text-white cursor-pointer"
+                className="p-1.5 bg-[#faf8f5] hover:bg-[#e6e3da] text-[#66635d] rounded-lg transition-colors cursor-pointer border border-[#e6e3da]/80"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
             <form onSubmit={handleCreateTask} className="space-y-4">
               <div className="space-y-1">
-                <label className="text-xs font-bold text-zinc-300 uppercase">Task Title</label>
+                <label className="text-[10px] font-black text-[#66635d] uppercase tracking-widest block mb-1">
+                  Task Title
+                </label>
                 <input
                   type="text"
                   required
                   value={taskTitle}
                   onChange={(e) => setTaskTitle(e.target.value)}
                   placeholder="e.g. Implement user login API"
-                  className="w-full bg-zinc-950 border-2 border-zinc-800 p-2 text-sm text-white focus:outline-none focus:border-purple-500"
+                  className="w-full bg-white border border-[#e6e3da] rounded-xl py-2.5 px-3.5 text-xs text-[#1c1b18] placeholder:text-[#a09c94] focus:outline-none focus:border-[#8c7853] focus:ring-4 focus:ring-[#8c7853]/10 transition-all duration-300 shadow-sm"
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-bold text-zinc-300 uppercase">Description</label>
+                <label className="text-[10px] font-black text-[#66635d] uppercase tracking-widest block mb-1">
+                  Description
+                </label>
                 <textarea
                   required
                   rows={3}
                   value={taskDescription}
                   onChange={(e) => setTaskDescription(e.target.value)}
                   placeholder="Detail the technical implementation steps..."
-                  className="w-full bg-zinc-950 border-2 border-zinc-800 p-2 text-sm text-white focus:outline-none focus:border-purple-500"
+                  className="w-full bg-white border border-[#e6e3da] rounded-xl py-2.5 px-3.5 text-xs text-[#1c1b18] placeholder:text-[#a09c94] focus:outline-none focus:border-[#8c7853] focus:ring-4 focus:ring-[#8c7853]/10 transition-all duration-300 shadow-sm resize-none"
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-bold text-zinc-300 uppercase">Estimated Hours</label>
+                <label className="text-[10px] font-black text-[#66635d] uppercase tracking-widest block mb-1">
+                  Estimated Hours
+                </label>
                 <input
                   type="number"
                   value={taskHours}
                   onChange={(e) => setTaskHours(e.target.value)}
                   placeholder="e.g. 8"
-                  className="w-full bg-zinc-950 border-2 border-zinc-800 p-2 text-sm text-white focus:outline-none focus:border-purple-500"
+                  className="w-full bg-white border border-[#e6e3da] rounded-xl py-2.5 px-3.5 text-xs text-[#1c1b18] placeholder:text-[#a09c94] focus:outline-none focus:border-[#8c7853] focus:ring-4 focus:ring-[#8c7853]/10 transition-all duration-300 shadow-sm"
                 />
               </div>
-              <div className="flex justify-end gap-2 pt-2">
+              <div className="flex justify-end gap-3 pt-4 border-t border-[#e6e3da]">
                 <Button
                   variant="outline"
                   size="sm"
                   type="button"
                   onClick={() => setShowTaskModal(false)}
+                  className="h-10 text-[9px] font-black tracking-widest uppercase border-[#e6e3da] text-[#66635d] hover:bg-[#faf8f5]"
                 >
                   Cancel
                 </Button>
-                <Button variant="primary" size="sm" type="submit">
+                <Button
+                  variant="primary"
+                  size="sm"
+                  type="submit"
+                  className="h-10 text-[9px] font-black tracking-widest uppercase border border-[#7d6b4a]"
+                >
                   Create Task
                 </Button>
               </div>

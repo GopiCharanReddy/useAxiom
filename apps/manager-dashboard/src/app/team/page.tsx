@@ -91,7 +91,6 @@ export default function TeamPage() {
       if (res.ok) {
         alert('Project assigned and WhatsApp alert sent successfully!');
         setAssigningMap((prev) => ({ ...prev, [userId]: '' }));
-        // Reload employee details from database to show real time updates on page
         fetchWorkloads();
       }
     } catch (err) {
@@ -155,23 +154,27 @@ export default function TeamPage() {
   };
 
   const getLoadColor = (load: number) => {
-    if (load >= 85) return 'bg-rose-500';
-    if (load >= 60) return 'bg-purple-500';
-    return 'bg-emerald-500';
+    if (load >= 85) return 'bg-[#9f3a38]';
+    if (load >= 60) return 'bg-[#8c7853]';
+    return 'bg-[#3e593e]';
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
+    <div className="space-y-8 animate-in fade-in duration-500">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-zinc-100">Team Workloads</h1>
-        <p className="text-zinc-400 text-sm mt-1">
+      <div className="space-y-1">
+        <h1 className="text-3xl font-serif font-black tracking-tight text-[#1c1b18]">
+          Team Workloads
+        </h1>
+        <p className="text-[#66635d] text-xs font-semibold uppercase tracking-widest">
           Review resource allocation, active tasks, and employee status details.
         </p>
       </div>
 
       {loading ? (
-        <div className="text-zinc-400 py-8">Loading team workloads...</div>
+        <div className="text-[#66635d] text-xs font-black uppercase tracking-widest py-8">
+          Loading team workloads...
+        </div>
       ) : employees.length > 0 ? (
         /* Team grid */
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -182,21 +185,23 @@ export default function TeamPage() {
             return (
               <Card
                 key={member.id}
-                className="flex flex-col justify-between hover:border-zinc-700/80 transition-all duration-300"
+                className="flex flex-col justify-between hover:border-[#8c7853] group shadow-sm border border-[#e6e3da]/80 hover:shadow-md transition-all duration-300 bg-white"
               >
                 <div className="space-y-6">
                   {/* Member profile header */}
                   <div className="flex justify-between items-start">
                     <div className="flex gap-3">
-                      <div className="w-11 h-11 rounded-xl bg-zinc-800 border border-zinc-700 flex items-center justify-center font-bold text-zinc-300 text-sm">
+                      <div className="w-11 h-11 rounded-lg bg-[#8c7853]/10 border border-[#8c7853]/10 flex items-center justify-center font-serif font-black text-[#8c7853] text-sm shadow-inner">
                         {getInitials(member.name)}
                       </div>
                       <div>
-                        <h3 className="font-bold text-zinc-200 text-base">{member.name}</h3>
-                        <span className="block text-xs text-purple-400 font-semibold">
+                        <h3 className="font-serif font-black text-[#1c1b18] text-base">
+                          {member.name}
+                        </h3>
+                        <span className="block text-xs text-[#8c7853] font-semibold">
                           Specialty: {member.specialty || 'General'}
                         </span>
-                        <span className="block text-[10px] text-zinc-500 font-bold uppercase mt-0.5">
+                        <span className="block text-[9px] text-[#66635d] font-black uppercase tracking-widest mt-0.5">
                           ID: {member.employeeId || 'None'} • Phone: {member.phoneNumber}
                         </span>
                       </div>
@@ -207,17 +212,17 @@ export default function TeamPage() {
                   </div>
 
                   {/* Project Assignment Control */}
-                  <div className="space-y-2 p-3 bg-zinc-950/40 border border-zinc-850 rounded-xl">
-                    <label className="block text-[10px] font-bold text-zinc-400 uppercase tracking-wider">
-                      Assign to Project
+                  <div className="space-y-2.5 p-3.5 bg-[#faf8f5] border border-[#e6e3da]/80 rounded-xl shadow-inner">
+                    <label className="block text-[9px] font-black text-[#66635d] uppercase tracking-widest">
+                      Assign to Campaign
                     </label>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 w-full">
                       <select
                         value={assigningMap[member.id] || ''}
                         onChange={(e) =>
                           setAssigningMap((prev) => ({ ...prev, [member.id]: e.target.value }))
                         }
-                        className="flex-1 bg-zinc-950 border border-zinc-800 rounded-lg px-2 py-1.5 text-xs text-zinc-200 outline-none focus:border-purple-500"
+                        className="flex-1 bg-white border border-[#e6e3da] rounded-lg px-2 py-1.5 text-xs text-[#1c1b18] outline-none focus:border-[#8c7853] shadow-sm cursor-pointer"
                       >
                         <option value="">Select project...</option>
                         {projects
@@ -233,7 +238,7 @@ export default function TeamPage() {
                         size="sm"
                         onClick={() => handleAssignProject(member.id)}
                         disabled={!assigningMap[member.id]}
-                        className="h-8 text-xs cursor-pointer shadow-md"
+                        className="h-8 px-3 text-[9px] font-black tracking-widest uppercase cursor-pointer rounded-lg border border-[#7d6b4a]"
                       >
                         Assign
                       </Button>
@@ -241,46 +246,46 @@ export default function TeamPage() {
                   </div>
 
                   {/* Workload Stats */}
-                  <div className="space-y-2.5">
-                    <div className="flex justify-between items-center text-xs font-semibold text-zinc-400">
+                  <div className="space-y-3 pt-4 border-t border-[#faf8f5]">
+                    <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-[#66635d]">
                       <span>Current Allocation Load</span>
                       <span
                         className={
                           stats.load >= 85
-                            ? 'text-rose-400'
+                            ? 'text-[#9f3a38]'
                             : stats.load >= 60
-                              ? 'text-purple-400'
-                              : 'text-emerald-400'
+                              ? 'text-[#8c7853]'
+                              : 'text-[#3e593e]'
                         }
                       >
                         {stats.load}%
                       </span>
                     </div>
-                    <div className="w-full bg-zinc-850 h-2 rounded-full overflow-hidden">
+                    <div className="w-full bg-[#f2efe9] h-2 rounded-full overflow-hidden">
                       <div
                         className={`h-full rounded-full transition-all duration-500 ${getLoadColor(stats.load)}`}
                         style={{ width: `${stats.load}%` }}
                       />
                     </div>
-                    <div className="grid grid-cols-3 gap-2 text-center pt-2">
-                      <div className="bg-zinc-950 p-2 rounded-lg border border-zinc-850">
-                        <span className="block text-zinc-500 text-[9px] font-bold uppercase">
+                    <div className="grid grid-cols-3 gap-2.5 text-center pt-2">
+                      <div className="bg-[#faf8f5] p-2.5 rounded-lg border border-[#e6e3da]/80 shadow-sm">
+                        <span className="block text-[#66635d] text-[8px] font-black uppercase tracking-widest">
                           Active Tasks
                         </span>
-                        <span className="text-zinc-200 text-xs font-bold">{stats.active}</span>
+                        <span className="text-[#1c1b18] text-xs font-black">{stats.active}</span>
                       </div>
-                      <div className="bg-zinc-950 p-2 rounded-lg border border-zinc-850">
-                        <span className="block text-zinc-500 text-[9px] font-bold uppercase">
+                      <div className="bg-[#faf8f5] p-2.5 rounded-lg border border-[#e6e3da]/80 shadow-sm">
+                        <span className="block text-[#66635d] text-[8px] font-black uppercase tracking-widest">
                           Queued Tasks
                         </span>
-                        <span className="text-zinc-200 text-xs font-bold">{stats.queued}</span>
+                        <span className="text-[#1c1b18] text-xs font-black">{stats.queued}</span>
                       </div>
-                      <div className="bg-zinc-950 p-2 rounded-lg border border-zinc-850">
-                        <span className="block text-zinc-500 text-[9px] font-bold uppercase">
+                      <div className="bg-[#faf8f5] p-2.5 rounded-lg border border-[#e6e3da]/80 shadow-sm">
+                        <span className="block text-[#66635d] text-[8px] font-black uppercase tracking-widest">
                           Blocked Tasks
                         </span>
                         <span
-                          className={`text-xs font-bold ${stats.blocked > 0 ? 'text-rose-400 animate-pulse' : 'text-zinc-400'}`}
+                          className={`text-xs font-black ${stats.blocked > 0 ? 'text-[#9f3a38] animate-pulse' : 'text-[#66635d]'}`}
                         >
                           {stats.blocked}
                         </span>
@@ -294,51 +299,53 @@ export default function TeamPage() {
                       assignedProjects.map((pm) => (
                         <div
                           key={pm.project.id}
-                          className="bg-zinc-950/60 p-3 rounded-xl border border-zinc-850 space-y-2 relative group"
+                          className="bg-[#faf8f5] p-4 rounded-xl border border-[#e6e3da] space-y-2 relative group"
                         >
                           <div className="flex justify-between items-center">
-                            <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">
-                              Assigned Project
+                            <span className="text-[8px] text-[#66635d] font-black uppercase tracking-widest">
+                              Assigned Campaign
                             </span>
                             <div className="flex items-center gap-1.5">
                               <Badge variant="progress">{pm.project.domain || 'General'}</Badge>
                               <button
                                 onClick={() => handleUnassignProject(member.id, pm.project.id)}
-                                className="p-1 rounded bg-red-950/40 hover:bg-red-950 border border-red-900/50 hover:border-red-500 text-red-400 cursor-pointer border-0 flex items-center justify-center transition-all opacity-0 group-hover:opacity-100"
+                                className="p-1 rounded bg-[#fdf2f2] hover:bg-[#fcdada] text-[#9f3a38] border border-[#fcdada] cursor-pointer flex items-center justify-center transition-all opacity-0 group-hover:opacity-100 shadow-sm"
                                 title="Unassign Project"
                               >
                                 <Trash2 className="w-3 h-3" />
                               </button>
                             </div>
                           </div>
-                          <h4 className="text-xs font-bold text-zinc-200">{pm.project.name}</h4>
-                          <p className="text-[11px] text-zinc-400 leading-relaxed min-h-[30px]">
+                          <h4 className="text-xs font-serif font-black text-[#1c1b18] leading-tight">
+                            {pm.project.name}
+                          </h4>
+                          <p className="text-[10px] text-[#66635d] font-semibold leading-relaxed line-clamp-2 min-h-[30px]">
                             {pm.project.objective}
                           </p>
                           <div className="flex flex-wrap gap-1 pt-1">
                             {(pm.project.techStack || []).map((tech) => (
                               <span
                                 key={tech}
-                                className="text-[9px] font-semibold bg-zinc-900 border border-zinc-850 text-zinc-400 px-1.5 py-0.5 rounded"
+                                className="text-[8px] font-black bg-white border border-[#e6e3da] text-[#66635d] px-1.5 py-0.5 rounded-md uppercase tracking-wider"
                               >
                                 {tech}
                               </span>
                             ))}
                           </div>
                           {pm.project.targetDeadline && (
-                            <span className="block text-[9px] text-zinc-500 font-bold uppercase mt-1">
+                            <span className="block text-[8px] text-[#66635d] font-black uppercase tracking-widest mt-1">
                               Deadline: {new Date(pm.project.targetDeadline).toLocaleDateString()}
                             </span>
                           )}
                         </div>
                       ))
                     ) : (
-                      <div className="bg-zinc-950/40 p-4 border border-dashed border-zinc-850 rounded-xl text-center">
-                        <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider block">
+                      <div className="bg-white p-4 border border-dashed border-[#e6e3da] rounded-xl text-center shadow-sm">
+                        <span className="text-[9px] text-[#66635d] font-black uppercase tracking-widest block">
                           No Assigned Work
                         </span>
-                        <p className="text-xs text-zinc-600 mt-1 font-medium">
-                          Waiting to be assigned to a project
+                        <p className="text-[10px] text-[#a09c94] mt-1 font-semibold">
+                          Waiting to be assigned to a campaign
                         </p>
                       </div>
                     )}
@@ -346,11 +353,11 @@ export default function TeamPage() {
                 </div>
 
                 {/* Actions Footer */}
-                <div className="mt-6 pt-4 border-t border-zinc-800 flex justify-between gap-2">
+                <div className="mt-6 pt-4 border-t border-[#e6e3da]/80 flex justify-between gap-2.5">
                   <Button
                     variant="outline"
                     size="sm"
-                    className="flex-1 rounded-xl text-xs gap-1.5 h-9"
+                    className="flex-1 rounded-lg text-[9px] tracking-widest uppercase gap-1.5 h-9 border-[#e6e3da] text-[#66635d] hover:bg-[#faf8f5] shadow-sm"
                   >
                     <MessageSquare className="w-3.5 h-3.5" />
                     <span>Text Agent</span>
@@ -358,9 +365,9 @@ export default function TeamPage() {
                   <Button
                     variant="secondary"
                     size="sm"
-                    className="flex-1 rounded-xl text-xs gap-1.5 h-9 border border-zinc-700/60 hover:bg-zinc-800"
+                    className="flex-1 rounded-lg text-[9px] tracking-widest uppercase gap-1.5 h-9 border border-[#e6e3da] hover:bg-[#e6e3da]/10 bg-white text-[#1c1b18] shadow-sm"
                   >
-                    <UserCheck className="w-3.5 h-3.5 text-purple-400" />
+                    <UserCheck className="w-3.5 h-3.5 text-[#8c7853]" />
                     <span>Reallocate task</span>
                   </Button>
                 </div>
@@ -369,7 +376,9 @@ export default function TeamPage() {
           })}
         </div>
       ) : (
-        <div className="text-zinc-400 py-8">No employees found.</div>
+        <div className="text-[#66635d] text-xs font-black uppercase tracking-widest py-8">
+          No employees found.
+        </div>
       )}
     </div>
   );

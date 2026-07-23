@@ -83,32 +83,32 @@ export default function Home() {
 
   const stats = [
     {
-      name: 'Active Projects',
+      name: 'Active Campaigns',
       value: statsData?.active_projects.toString() || '0',
       icon: FolderKanban,
-      bg: 'bg-purple-600',
-      text: 'text-purple-600',
+      bg: 'bg-[#8c7853]/10 text-[#8c7853]',
+      text: 'text-[#8c7853]',
     },
     {
       name: 'AI Interventions',
       value: statsData?.ai_interventions_count.toString() || '0',
       icon: FileText,
-      bg: 'bg-amber-500',
-      text: 'text-amber-600',
+      bg: 'bg-[#bda272]/10 text-[#bda272]',
+      text: 'text-[#bda272]',
     },
     {
       name: 'Tasks Blocked',
       value: statsData?.blocked_tasks.toString() || '0',
       icon: AlertTriangle,
-      bg: 'bg-red-600',
-      text: 'text-red-600',
+      bg: 'bg-[#9f3a38]/10 text-[#9f3a38]',
+      text: 'text-[#9f3a38]',
     },
     {
       name: 'Team Velocity',
       value: `${statsData?.team_velocity || 100}%`,
       icon: Cpu,
-      bg: 'bg-emerald-500',
-      text: 'text-emerald-600',
+      bg: 'bg-[#3e593e]/10 text-[#3e593e]',
+      text: 'text-[#3e593e]',
     },
   ];
 
@@ -148,19 +148,19 @@ export default function Home() {
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       {/* Welcome Banner */}
-      <div className="relative overflow-hidden bg-blue-600 p-8 sm:p-10">
-        <div className="absolute top-[-50%] right-[-10%] w-96 h-96 bg-white/10 rounded-full pointer-events-none" />
-        <div className="absolute bottom-[-20%] right-[10%] w-64 h-64 bg-white/10 rotate-45 pointer-events-none" />
+      <div className="relative overflow-hidden bg-gradient-to-r from-[#1c1b18] to-[#3a3731] text-white p-8 sm:p-10 rounded-2xl shadow-[0_10px_30px_-10px_rgba(28,27,24,0.15)] border border-[#e6e3da]/10">
+        <div className="absolute top-[-50%] right-[-10%] w-96 h-96 bg-white/5 rounded-full pointer-events-none" />
+        <div className="absolute bottom-[-20%] right-[10%] w-64 h-64 bg-[#8c7853]/10 rotate-45 pointer-events-none" />
 
         <div className="relative max-w-2xl z-10">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-white text-blue-800 text-xs font-bold uppercase tracking-wider mb-6 shadow-none">
-            <Sparkles className="w-4 h-4" />
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#8c7853] text-white text-[9px] font-black uppercase tracking-widest rounded-full mb-6 border border-[#8c7853]/20">
+            <Sparkles className="w-3.5 h-3.5" />
             <span>Sprint 1 Foundations Operational</span>
           </div>
-          <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight text-white mb-4">
+          <h1 className="text-4xl sm:text-5xl font-serif font-black tracking-tight text-white mb-4">
             Welcome back, David
           </h1>
-          <p className="text-blue-100 text-lg font-medium leading-relaxed max-w-xl">
+          <p className="text-[#a8a49c] text-sm font-bold tracking-wide leading-relaxed max-w-xl">
             Your execution assistants are actively listening on employee WhatsApp channels. You have{' '}
             {hasApprovedPlan
               ? 'no plans awaiting review'
@@ -173,17 +173,17 @@ export default function Home() {
       {/* KPI Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
         {stats.map((stat) => (
-          <Card key={stat.name} className="hover:-translate-y-1 transition-transform duration-200">
+          <Card key={stat.name} className="hover:-translate-y-1 transition-transform duration-300">
             <CardHeader className="flex flex-row items-center justify-between pb-2 mb-0">
-              <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">
+              <span className="text-[10px] font-black text-[#66635d] uppercase tracking-widest">
                 {stat.name}
               </span>
-              <div className={`w-8 h-8 ${stat.bg} flex items-center justify-center`}>
-                <stat.icon className="w-4 h-4 text-white" />
+              <div className={`w-8 h-8 ${stat.bg} flex items-center justify-center rounded-lg`}>
+                <stat.icon className="w-4 h-4" />
               </div>
             </CardHeader>
             <CardContent>
-              <span className={`text-4xl font-extrabold ${stat.text}`}>{stat.value}</span>
+              <span className={`text-3xl font-serif font-black ${stat.text}`}>{stat.value}</span>
             </CardContent>
           </Card>
         ))}
@@ -195,72 +195,70 @@ export default function Home() {
         <div className="lg:col-span-2 space-y-8">
           {/* Pending Approvals Widget */}
           {!hasApprovedPlan ? (
-            <div className="bg-amber-400 p-8 sm:p-10 relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-64 h-64 bg-white/20 rounded-full translate-x-1/3 -translate-y-1/3 pointer-events-none" />
+            <div className="bg-[#FAF6EE] p-8 sm:p-10 border border-[#eedebf] rounded-2xl relative overflow-hidden group shadow-sm transition-all duration-300">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-[#bda272]/5 rounded-full translate-x-1/3 -translate-y-1/3 pointer-events-none" />
               <div className="relative z-10">
                 <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-6">
                   <div>
                     <div className="flex items-center gap-3 mb-2">
-                      <h2 className="text-2xl font-black text-amber-950">
+                      <h2 className="text-2xl font-serif font-black text-[#736243]">
                         Awaiting Manager Approval
                       </h2>
-                      <span className="bg-white text-amber-900 text-[10px] font-bold uppercase px-2 py-1 tracking-wider">
+                      <span className="bg-[#8c7853]/15 text-[#8c7853] text-[9px] font-black uppercase px-2.5 py-1 tracking-widest rounded-full border border-[#8c7853]/10">
                         Proposed Plan
                       </span>
                     </div>
-                    <p className="text-amber-900 font-medium text-sm max-w-lg">
+                    <p className="text-[#736243] font-bold text-xs max-w-lg leading-relaxed uppercase tracking-wider">
                       AI generated a structured plan for{' '}
-                      <span className="font-bold">&quot;{proposedProject?.name}&quot;</span> based
-                      on objective:{' '}
-                      <span className="font-bold">&quot;{proposedProject?.objective}&quot;</span>
+                      <span className="text-[#1c1b18] font-black">
+                        &quot;{proposedProject?.name}&quot;
+                      </span>{' '}
+                      based on objective:{' '}
+                      <span className="text-[#1c1b18] font-black">
+                        &quot;{proposedProject?.objective}&quot;
+                      </span>
                     </p>
                   </div>
-                  <div className="w-12 h-12 bg-white flex items-center justify-center shrink-0">
-                    <Sparkles className="w-6 h-6 text-amber-600" />
+                  <div className="w-10 h-10 bg-white border border-[#eedebf] rounded-lg flex items-center justify-center shrink-0 shadow-sm">
+                    <Sparkles className="w-5 h-5 text-[#8c7853]" />
                   </div>
                 </div>
 
-                <div className="bg-white p-6 space-y-4 mb-6 shadow-none">
-                  <div className="flex justify-between items-center pb-4 border-b-4 border-gray-100">
-                    <span className="text-sm font-black text-gray-900 uppercase tracking-wide">
-                      AI Plan Ready
-                    </span>
-                  </div>
-                  <div className="space-y-3">
-                    <p className="text-sm font-medium text-gray-700">
-                      The AI has generated tasks, milestones, and resource allocations for this
-                      project. Please review and customize the plan before approving.
-                    </p>
-                  </div>
+                <div className="bg-white p-6 rounded-xl border border-[#eedebf]/60 shadow-sm space-y-3 mb-6">
+                  <span className="text-[10px] font-black text-[#8c7853] uppercase tracking-widest block border-b border-[#faf8f5] pb-2">
+                    AI Plan Ready
+                  </span>
+                  <p className="text-xs font-semibold text-[#66635d] leading-relaxed">
+                    The AI has generated tasks, milestones, and resource allocations for this
+                    project. Please review and customize the plan before approving.
+                  </p>
                 </div>
 
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                   <Link
                     href={`/projects/${proposedProject?.id}`}
-                    className="text-sm font-bold text-amber-950 hover:text-white transition-colors flex items-center gap-2 group/link"
+                    className="text-xs font-black text-[#8c7853] hover:text-[#736243] transition-colors flex items-center gap-2 group/link uppercase tracking-widest"
                   >
-                    <span className="border-b-2 border-transparent group-hover/link:border-white pb-0.5 transition-all">
-                      Review & Customize Plan
-                    </span>
-                    <ArrowRight className="w-4 h-4 group-hover/link:translate-x-1 transition-transform" />
+                    <span>Review & Customize Plan</span>
+                    <ArrowRight className="w-3.5 h-3.5 group-hover/link:translate-x-1 transition-transform" />
                   </Link>
                   <div className="flex gap-3 w-full sm:w-auto">
                     <Button
                       variant="outline"
-                      className="bg-white border-4 border-amber-900 text-amber-900 hover:bg-amber-900 hover:text-white flex-1 sm:flex-none"
+                      className="bg-white border-[#8c7853] text-[#8c7853] hover:bg-[#8c7853]/10 flex-1 sm:flex-none h-10"
                     >
                       Reject
                     </Button>
                     <Button
                       variant="primary"
-                      className="bg-amber-900 text-amber-400 hover:bg-amber-950 hover:text-amber-400 flex-1 sm:flex-none"
+                      className="flex-1 sm:flex-none h-10"
                       onClick={() => {
                         if (proposedProject) {
                           handleApprove(proposedProject.id);
                         }
                       }}
                     >
-                      <Play className="w-4 h-4 fill-current" />
+                      <Play className="w-3.5 h-3.5 fill-current" />
                       <span>Approve & Start</span>
                     </Button>
                   </div>
@@ -268,12 +266,14 @@ export default function Home() {
               </div>
             </div>
           ) : (
-            <div className="bg-emerald-500 p-10 flex flex-col items-center justify-center text-center">
-              <div className="w-16 h-16 bg-white flex items-center justify-center mb-6">
-                <CheckCircle2 className="w-8 h-8 text-emerald-600" />
+            <div className="bg-[#f0f5f0] border border-[#d5ebd5] rounded-2xl p-10 flex flex-col items-center justify-center text-center shadow-sm">
+              <div className="w-12 h-12 bg-white border border-[#d5ebd5] rounded-lg flex items-center justify-center mb-4 shadow-sm">
+                <CheckCircle2 className="w-6 h-6 text-[#3e593e]" />
               </div>
-              <h3 className="text-white font-black text-2xl mb-2">All plans have been reviewed</h3>
-              <p className="text-emerald-100 font-medium max-w-md">
+              <h3 className="text-[#3e593e] font-serif font-black text-2xl mb-2">
+                All plans have been reviewed
+              </h3>
+              <p className="text-[#66635d] text-xs font-semibold max-w-md leading-relaxed">
                 The Q3 Product Marketing campaign plan has been moved to active execution. Tasks are
                 queued for employee notification.
               </p>
@@ -282,11 +282,11 @@ export default function Home() {
 
           {/* Active Projects List */}
           <div className="space-y-6">
-            <div className="flex justify-between items-end border-b-4 border-gray-900 pb-2">
-              <h2 className="text-2xl font-black text-gray-900">Active Campaigns</h2>
+            <div className="flex justify-between items-end border-b border-[#e6e3da] pb-3">
+              <h2 className="text-xl font-serif font-black text-[#1c1b18]">Active Campaigns</h2>
               <Link
                 href="/projects"
-                className="text-sm font-bold text-blue-600 hover:text-blue-800"
+                className="text-xs font-black uppercase tracking-widest text-[#8c7853] hover:text-[#736243]"
               >
                 View all
               </Link>
@@ -295,13 +295,13 @@ export default function Home() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {projects.map((project) => (
                 <Link href={`/projects/${project.id}`} key={project.id} className="block group">
-                  <Card className="h-full border-4 border-gray-200 group-hover:border-gray-900 transition-colors duration-200">
+                  <Card className="h-full border border-[#e6e3da]/80 group-hover:border-[#8c7853] group-hover:shadow-md transition-all duration-300 flex flex-col">
                     <div className="flex justify-between items-start mb-6">
-                      <div>
-                        <h3 className="font-black text-lg text-gray-900 group-hover:text-blue-600 transition-colors leading-tight mb-2">
+                      <div className="space-y-2">
+                        <h3 className="font-serif font-black text-lg text-[#1c1b18] group-hover:text-[#8c7853] transition-colors leading-tight">
                           {project.name}
                         </h3>
-                        <p className="text-xs text-gray-600 font-bold line-clamp-2 leading-relaxed">
+                        <p className="text-xs text-[#66635d] font-semibold line-clamp-2 leading-relaxed">
                           {project.objective}
                         </p>
                       </div>
@@ -311,50 +311,50 @@ export default function Home() {
                     </div>
 
                     {/* Progress bar */}
-                    <div className="space-y-2 mt-auto pt-6">
-                      <div className="flex justify-between text-xs font-bold text-gray-500 uppercase tracking-wider">
+                    <div className="space-y-2 mt-auto pt-6 border-t border-[#faf8f5]">
+                      <div className="flex justify-between text-[10px] font-black text-[#66635d] uppercase tracking-widest">
                         <span>Progress</span>
-                        <span className="text-gray-900">
+                        <span className="text-[#1c1b18]">
                           {project.status === 'ACTIVE' ? '5%' : '0%'}
                         </span>
                       </div>
-                      <div className="w-full bg-gray-200 h-3">
+                      <div className="w-full bg-[#f2efe9] h-2 rounded-full overflow-hidden">
                         <div
-                          className="bg-blue-600 h-full"
+                          className="bg-[#8c7853] h-full rounded-full"
                           style={{ width: project.status === 'ACTIVE' ? '5%' : '0%' }}
                         />
                       </div>
                     </div>
                     {project.healthScore !== undefined && project.healthScore !== null && (
                       <div
-                        className={`mt-4 p-3 border-l-4 ${project.healthStatus === 'HIGH' ? 'border-red-600 bg-red-50' : project.healthStatus === 'MEDIUM' ? 'border-amber-500 bg-amber-50' : 'border-emerald-500 bg-emerald-50'} flex justify-between items-center`}
+                        className={`mt-4 p-3 rounded-lg border border-l-4 ${project.healthStatus === 'HIGH' ? 'border-red-200 border-l-[#9f3a38] bg-[#fdf2f2]' : project.healthStatus === 'MEDIUM' ? 'border-amber-200 border-l-[#bda272] bg-[#FCF5EB]' : 'border-emerald-200 border-l-[#3e593e] bg-[#f0f5f0]'} flex justify-between items-center`}
                       >
                         <div className="flex items-center gap-2">
                           <AlertTriangle
-                            className={`w-4 h-4 ${project.healthStatus === 'HIGH' ? 'text-red-600' : project.healthStatus === 'MEDIUM' ? 'text-amber-600' : 'text-emerald-600'}`}
+                            className={`w-3.5 h-3.5 ${project.healthStatus === 'HIGH' ? 'text-[#9f3a38]' : project.healthStatus === 'MEDIUM' ? 'text-[#bda272]' : 'text-[#3e593e]'}`}
                           />
-                          <span className="text-xs font-bold text-gray-900 uppercase tracking-wider">
+                          <span className="text-[10px] font-black text-[#1c1b18] uppercase tracking-widest">
                             AI Risk
                           </span>
                         </div>
                         <span
-                          className={`text-xs font-black ${project.healthStatus === 'HIGH' ? 'text-red-600' : project.healthStatus === 'MEDIUM' ? 'text-amber-600' : 'text-emerald-600'}`}
+                          className={`text-xs font-black ${project.healthStatus === 'HIGH' ? 'text-[#9f3a38]' : project.healthStatus === 'MEDIUM' ? 'text-[#bda272]' : 'text-[#3e593e]'}`}
                         >
                           {project.healthScore}/100
                         </span>
                       </div>
                     )}
-                    <div className="mt-6 pt-4 border-t-4 border-gray-100 flex items-center justify-between text-xs font-bold">
+                    <div className="mt-6 pt-4 border-t border-[#e6e3da]/80 flex items-center justify-between text-[10px] font-black tracking-widest">
                       <span
                         className={
-                          project.status === 'ACTIVE' ? 'text-emerald-600' : 'text-amber-600'
+                          project.status === 'ACTIVE' ? 'text-[#3e593e]' : 'text-[#bda272]'
                         }
                       >
                         {project.status === 'ACTIVE' ? 'ON TRACK' : 'NEEDS REVIEW'}
                       </span>
                       <span className="flex gap-2">
                         <button
-                          className="text-gray-500 hover:text-gray-900 transition-colors uppercase tracking-wider text-[10px]"
+                          className="text-[#66635d] hover:text-[#1c1b18] transition-colors uppercase tracking-widest text-[9px] cursor-pointer"
                           onClick={(e) => {
                             e.preventDefault();
                             handleGenerate(project.id);
@@ -363,7 +363,7 @@ export default function Home() {
                           Generate
                         </button>
                         <button
-                          className="text-blue-600 hover:text-blue-800 transition-colors uppercase tracking-wider text-[10px]"
+                          className="text-[#8c7853] hover:text-[#736243] transition-colors uppercase tracking-widest text-[9px] cursor-pointer"
                           onClick={(e) => {
                             e.preventDefault();
                             handleApprove(project.id);
@@ -384,104 +384,105 @@ export default function Home() {
         <div className="space-y-8">
           {/* Active Alerts Widget */}
           <div
-            className={
-              !hasResolvedBlocker ? 'bg-red-600 p-6 sm:p-8 text-white' : 'bg-white p-6 sm:p-8'
-            }
+            className={`border rounded-2xl p-6 sm:p-8 transition-all duration-300 shadow-sm ${
+              !hasResolvedBlocker
+                ? 'bg-[#fdf2f2] border-[#fcdada] text-[#9f3a38]'
+                : 'bg-white border-[#e6e3da]/80 text-[#1c1b18]'
+            }`}
           >
             <div className="flex items-center gap-3 mb-6">
               <div
-                className={`w-10 h-10 flex items-center justify-center ${!hasResolvedBlocker ? 'bg-white text-red-600' : 'bg-gray-100 text-gray-400'}`}
+                className={`w-9 h-9 flex items-center justify-center rounded-lg border ${
+                  !hasResolvedBlocker
+                    ? 'bg-white border-[#fcdada] text-[#9f3a38]'
+                    : 'bg-[#faf8f5] border-[#e6e3da] text-[#66635d]'
+                }`}
               >
-                <AlertTriangle className="w-5 h-5" />
+                <AlertTriangle className="w-4 h-4" />
               </div>
               <div>
-                <h3
-                  className={`font-black text-lg ${!hasResolvedBlocker ? 'text-white' : 'text-gray-900'}`}
-                >
-                  Active Alerts
-                </h3>
-                <span
-                  className={`text-[10px] font-bold uppercase tracking-wider ${!hasResolvedBlocker ? 'text-red-200' : 'text-gray-500'}`}
-                >
+                <h3 className="font-serif font-black text-lg text-[#1c1b18]">Active Alerts</h3>
+                <span className="text-[9px] font-black uppercase tracking-widest text-[#66635d]">
                   SMS/WhatsApp Streams
                 </span>
               </div>
             </div>
 
             {!hasResolvedBlocker && statsData && statsData.blocked_tasks > 0 ? (
-              <div className="bg-white p-5 text-gray-900 flex flex-col items-center justify-center text-center">
-                <div className="w-16 h-16 bg-red-100 text-red-600 flex items-center justify-center rounded-full mb-4">
-                  <AlertTriangle className="w-8 h-8" />
+              <div className="bg-white border border-[#fcdada] rounded-xl p-5 text-gray-900 flex flex-col items-center justify-center text-center shadow-sm">
+                <div className="w-12 h-12 bg-[#fdf2f2] border border-[#fcdada] text-[#9f3a38] flex items-center justify-center rounded-lg mb-3">
+                  <AlertTriangle className="w-6 h-6" />
                 </div>
-                <span className="text-gray-900 text-sm font-black">
+                <span className="text-[#1c1b18] text-xs font-black uppercase tracking-wider">
                   {statsData.blocked_tasks} Active Blockers!
                 </span>
-                <p className="text-xs text-gray-500 font-bold mt-2 mb-4">
-                  There are tasks currently blocked by employees.
+                <p className="text-[10px] text-[#66635d] font-bold mt-1 mb-4 uppercase tracking-wide">
+                  Tasks blocked by employees.
                 </p>
-                <div className="flex flex-col gap-2 w-full">
-                  <Button
-                    variant="outline"
-                    className="w-full text-xs"
-                    onClick={() => router.push('/projects')}
-                  >
-                    View Projects
-                  </Button>
-                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full text-[10px] tracking-widest uppercase border-[#9f3a38] text-[#9f3a38] hover:bg-[#fdf2f2] h-9 rounded-md"
+                  onClick={() => router.push('/projects')}
+                >
+                  View Projects
+                </Button>
               </div>
             ) : (
-              <div className="text-center py-10 flex flex-col items-center justify-center">
-                <div className="w-16 h-16 bg-emerald-100 text-emerald-600 flex items-center justify-center rounded-full mb-4">
-                  <CheckCircle2 className="w-8 h-8" />
+              <div className="text-center py-6 flex flex-col items-center justify-center bg-white border border-[#e6e3da]/60 rounded-xl">
+                <div className="w-12 h-12 bg-[#f0f5f0] border border-[#d5ebd5] text-[#3e593e] flex items-center justify-center rounded-lg mb-3 shadow-sm">
+                  <CheckCircle2 className="w-6 h-6" />
                 </div>
-                <span className="text-gray-900 text-sm font-black">No active blockers!</span>
-                <p className="text-xs text-gray-500 font-bold mt-2">
-                  All employee feedback streams are green.
+                <span className="text-[#1c1b18] text-xs font-black uppercase tracking-wider">
+                  No active blockers!
+                </span>
+                <p className="text-[10px] text-[#66635d] font-bold mt-1 uppercase tracking-wide">
+                  Feedback streams are green.
                 </p>
               </div>
             )}
           </div>
 
           {/* Team Workload Widget */}
-          <Card className="bg-white border-4 border-gray-100">
-            <CardHeader className="border-b-4 border-gray-100 pb-4 mb-6">
-              <CardTitle className="text-lg font-black flex items-center gap-3 text-gray-900">
-                <div className="w-8 h-8 bg-purple-100 flex items-center justify-center">
-                  <Users className="w-4 h-4 text-purple-600" />
+          <Card className="bg-white border border-[#e6e3da]/80 shadow-sm rounded-2xl">
+            <CardHeader className="border-b border-[#faf8f5] pb-4 mb-6">
+              <CardTitle className="text-lg font-serif font-black flex items-center gap-3 text-[#1c1b18]">
+                <div className="w-8 h-8 rounded-lg bg-[#8c7853]/10 border border-[#8c7853]/10 flex items-center justify-center">
+                  <Users className="w-4 h-4 text-[#8c7853]" />
                 </div>
                 Team Workloads
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="space-y-6">
+              <div className="space-y-5">
                 {workloads.map((emp) => (
                   <div key={emp.employee_id} className="space-y-2">
-                    <div className="flex justify-between items-center text-sm font-black text-gray-900">
+                    <div className="flex justify-between items-center text-xs font-black text-[#1c1b18] uppercase tracking-wider">
                       <span>{emp.employee_name}</span>
                       <span>{emp.capacity_percentage}% Load</span>
                     </div>
-                    <div className="w-full bg-gray-200 h-3">
+                    <div className="w-full bg-[#f2efe9] h-2 rounded-full overflow-hidden">
                       <div
-                        className="bg-purple-600 h-full"
+                        className="bg-[#8c7853] h-full rounded-full"
                         style={{ width: `${emp.capacity_percentage}%` }}
                       />
                     </div>
-                    <span className="block text-[10px] text-gray-500 font-bold uppercase tracking-wider">
+                    <span className="block text-[9px] text-[#66635d] font-bold uppercase tracking-widest">
                       Active: {emp.active_tasks} tasks
                     </span>
                   </div>
                 ))}
                 {workloads.length === 0 && (
-                  <div className="text-gray-500 text-sm font-bold text-center py-4">
+                  <div className="text-[#66635d] text-xs font-bold text-center py-4 uppercase tracking-widest">
                     No employee data found.
                   </div>
                 )}
               </div>
             </CardContent>
-            <CardFooter className="pt-6 border-t-4 border-gray-100">
+            <CardFooter className="pt-6 border-t border-[#e6e3da]/80">
               <Link
                 href="/team"
-                className="text-sm font-black text-gray-900 hover:text-blue-600 w-full text-center transition-colors uppercase tracking-wider"
+                className="text-xs font-black text-[#8c7853] hover:text-[#736243] w-full text-center transition-colors uppercase tracking-widest"
               >
                 Manage Allocations
               </Link>

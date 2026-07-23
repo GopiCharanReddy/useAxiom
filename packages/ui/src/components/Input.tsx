@@ -8,21 +8,25 @@ export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 export const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ className = '', label, error, type = 'text', ...props }, ref) => {
     return (
-      <div className="flex flex-col gap-1.5 w-full">
+      <div className="flex flex-col gap-1 w-full">
         {label && (
-          <label className="text-sm font-semibold text-gray-900 tracking-wide">{label}</label>
+          <label className="text-[10px] font-black text-[#66635d] tracking-widest uppercase mb-1">
+            {label}
+          </label>
         )}
         <input
           ref={ref}
           type={type}
-          className={`px-4 py-3 bg-gray-100 border-2 ${
+          className={`px-4 py-3 bg-white border ${
             error
-              ? 'border-red-500 bg-white'
-              : 'border-transparent focus:border-blue-500 focus:bg-white'
-          } rounded-md text-gray-900 placeholder-gray-400 text-base focus:outline-none transition-all duration-200 shadow-none ${className}`}
+              ? 'border-[#9f3a38] focus:ring-[#9f3a38]/20'
+              : 'border-[#e6e3da] focus:border-[#8c7853] focus:ring-4 focus:ring-[#8c7853]/10'
+          } rounded-lg text-[#1c1b18] placeholder-[#a09c94] text-sm focus:outline-none transition-all duration-300 shadow-sm ${className}`}
           {...props}
         />
-        {error && <span className="text-sm text-red-500 font-bold">{error}</span>}
+        {error && (
+          <span className="text-xs text-[#9f3a38] font-bold mt-1 tracking-wide">{error}</span>
+        )}
       </div>
     );
   },
@@ -37,20 +41,24 @@ export interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElemen
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
   ({ className = '', label, error, ...props }, ref) => {
     return (
-      <div className="flex flex-col gap-1.5 w-full">
+      <div className="flex flex-col gap-1 w-full">
         {label && (
-          <label className="text-sm font-semibold text-gray-900 tracking-wide">{label}</label>
+          <label className="text-[10px] font-black text-[#66635d] tracking-widest uppercase mb-1">
+            {label}
+          </label>
         )}
         <textarea
           ref={ref}
-          className={`px-4 py-3 bg-gray-100 border-2 ${
+          className={`px-4 py-3 bg-white border ${
             error
-              ? 'border-red-500 bg-white'
-              : 'border-transparent focus:border-blue-500 focus:bg-white'
-          } rounded-md text-gray-900 placeholder-gray-400 text-base focus:outline-none transition-all duration-200 resize-none min-h-[100px] shadow-none ${className}`}
+              ? 'border-[#9f3a38] focus:ring-[#9f3a38]/20'
+              : 'border-[#e6e3da] focus:border-[#8c7853] focus:ring-4 focus:ring-[#8c7853]/10'
+          } rounded-lg text-[#1c1b18] placeholder-[#a09c94] text-sm focus:outline-none transition-all duration-300 resize-none min-h-[100px] shadow-sm ${className}`}
           {...props}
         />
-        {error && <span className="text-sm text-red-500 font-bold">{error}</span>}
+        {error && (
+          <span className="text-xs text-[#9f3a38] font-bold mt-1 tracking-wide">{error}</span>
+        )}
       </div>
     );
   },
