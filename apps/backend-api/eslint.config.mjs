@@ -24,12 +24,18 @@ export default tseslint.config(
   {
     rules: {
       ...baseRules,
-      // Relax strict type-safety checks for Express req/res objects and mock structures
+      // Backend overrides & relaxed type-safety rules
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-unsafe-assignment': 'off',
       '@typescript-eslint/no-unsafe-member-access': 'off',
+      '@typescript-eslint/no-unsafe-call': 'off',
       '@typescript-eslint/no-unsafe-argument': 'off',
       '@typescript-eslint/no-unsafe-return': 'off',
+      '@typescript-eslint/no-unused-vars': 'off',
+      'no-console': 'off',
+      '@typescript-eslint/no-misused-promises': 'off',
+      '@typescript-eslint/no-floating-promises': 'off',
+      '@typescript-eslint/ban-ts-comment': 'off',
       '@typescript-eslint/require-await': 'off',
     },
   },

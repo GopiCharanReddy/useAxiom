@@ -1,20 +1,24 @@
-"use client";
+'use client';
 
-import { useState, useRef, useEffect } from "react";
-import { Sparkles, X, Send, Bot, User, Loader2 } from "lucide-react";
+import { useState, useRef, useEffect } from 'react';
+import { Sparkles, X, Send, Bot, User, Loader2 } from 'lucide-react';
 
 interface Message {
   id: string;
-  role: "user" | "assistant";
+  role: 'user' | 'assistant';
   content: string;
 }
 
 export function AiChatPanel() {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
-    { id: '1', role: 'assistant', content: 'Hello! I am Axiom AI. How can I help you manage your projects today?' }
+    {
+      id: '1',
+      role: 'assistant',
+      content: 'Hello! I am Axiom AI. How can I help you manage your projects today?',
+    },
   ]);
-  const [input, setInput] = useState("");
+  const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -22,7 +26,7 @@ export function AiChatPanel() {
   const [threadId] = useState(() => Math.random().toString(36).substring(2, 15));
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   useEffect(() => {
@@ -32,42 +36,42 @@ export function AiChatPanel() {
   const handleSend = async () => {
     if (!input.trim() || isLoading) return;
 
-    const userMessage: Message = { id: Date.now().toString(), role: "user", content: input.trim() };
-    setMessages(prev => [...prev, userMessage]);
-    setInput("");
+    const userMessage: Message = { id: Date.now().toString(), role: 'user', content: input.trim() };
+    setMessages((prev) => [...prev, userMessage]);
+    setInput('');
     setIsLoading(true);
 
     try {
       const token = localStorage.getItem('axiom_token');
-      const res = await fetch("/api/v1/ai/chat", {
-        method: "POST",
+      const res = await fetch('/api/v1/ai/chat', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
-          ...(token && { "Authorization": `Bearer ${token}` })
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
         },
-        body: JSON.stringify({ message: userMessage.content, threadId })
+        body: JSON.stringify({ message: userMessage.content, threadId }),
       });
 
       if (!res.ok) {
-        throw new Error("Failed to send message");
+        throw new Error('Failed to send message');
       }
 
       const data = await res.json();
-      
-      const assistantMessage: Message = { 
-        id: (Date.now() + 1).toString(), 
-        role: "assistant", 
-        content: data?.data?.reply || "I'm sorry, I couldn't process that request." 
+
+      const assistantMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: data?.data?.reply || "I'm sorry, I couldn't process that request.",
       };
-      setMessages(prev => [...prev, assistantMessage]);
+      setMessages((prev) => [...prev, assistantMessage]);
     } catch (error) {
-      console.error("Chat error:", error);
-      const errorMessage: Message = { 
-        id: (Date.now() + 1).toString(), 
-        role: "assistant", 
-        content: "Error communicating with AI. Please try again later." 
+      console.error('Chat error:', error);
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: 'Error communicating with AI. Please try again later.',
       };
-      setMessages(prev => [...prev, errorMessage]);
+      setMessages((prev) => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
     }
@@ -85,14 +89,14 @@ export function AiChatPanel() {
 
       {/* Chat Panel Backdrop (mobile mainly) */}
       {isOpen && (
-        <div 
-          className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 sm:hidden" 
+        <div
+          className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 sm:hidden"
           onClick={() => setIsOpen(false)}
         />
       )}
 
       {/* Slide-over Chat Panel */}
-      <div 
+      <div
         className={`fixed top-0 right-0 h-full w-full sm:w-[400px] bg-zinc-950 border-l border-zinc-800 shadow-2xl z-50 transform transition-transform duration-500 ease-in-out flex flex-col ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
       >
         {/* Header */}
@@ -106,7 +110,7 @@ export function AiChatPanel() {
               <p className="text-zinc-500 text-xs">Orchestrator Agent</p>
             </div>
           </div>
-          <button 
+          <button
             onClick={() => setIsOpen(false)}
             className="text-zinc-400 hover:text-white p-2 rounded-full hover:bg-zinc-800 transition-colors"
           >
@@ -117,11 +121,22 @@ export function AiChatPanel() {
         {/* Chat History */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {messages.map((msg) => (
-            <div key={msg.id} className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${msg.role === 'user' ? 'bg-zinc-800' : 'bg-purple-900/50 border border-purple-500/30'}`}>
-                {msg.role === 'user' ? <User className="w-4 h-4 text-zinc-400" /> : <Bot className="w-4 h-4 text-purple-400" />}
+            <div
+              key={msg.id}
+              className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}
+            >
+              <div
+                className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${msg.role === 'user' ? 'bg-zinc-800' : 'bg-purple-900/50 border border-purple-500/30'}`}
+              >
+                {msg.role === 'user' ? (
+                  <User className="w-4 h-4 text-zinc-400" />
+                ) : (
+                  <Bot className="w-4 h-4 text-purple-400" />
+                )}
               </div>
-              <div className={`max-w-[80%] rounded-2xl p-4 text-sm leading-relaxed ${msg.role === 'user' ? 'bg-zinc-800 text-zinc-200 rounded-tr-sm' : 'bg-zinc-900 border border-zinc-800 text-zinc-300 rounded-tl-sm shadow-sm'}`}>
+              <div
+                className={`max-w-[80%] rounded-2xl p-4 text-sm leading-relaxed ${msg.role === 'user' ? 'bg-zinc-800 text-zinc-200 rounded-tr-sm' : 'bg-zinc-900 border border-zinc-800 text-zinc-300 rounded-tl-sm shadow-sm'}`}
+              >
                 {msg.content}
               </div>
             </div>
@@ -142,8 +157,11 @@ export function AiChatPanel() {
 
         {/* Input Area */}
         <div className="p-4 border-t border-zinc-800 bg-zinc-950">
-          <form 
-            onSubmit={(e) => { e.preventDefault(); handleSend(); }}
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleSend();
+            }}
             className="relative flex items-center"
           >
             <input
@@ -162,7 +180,9 @@ export function AiChatPanel() {
             </button>
           </form>
           <div className="text-center mt-3">
-            <span className="text-[10px] text-zinc-600 font-medium tracking-wide uppercase">AI can make mistakes. Verify critical actions.</span>
+            <span className="text-[10px] text-zinc-600 font-medium tracking-wide uppercase">
+              AI can make mistakes. Verify critical actions.
+            </span>
           </div>
         </div>
       </div>

@@ -1,25 +1,25 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 :root {
-  --background: #F3F4F6;
-  --foreground: #111827;
-  --card: #FFFFFF;
-  --card-foreground: #111827;
-  --popover: #FFFFFF;
-  --popover-foreground: #111827;
-  --primary: #2563EB;
-  --primary-foreground: #FFFFFF;
-  --secondary: #10B981;
-  --secondary-foreground: #FFFFFF;
-  --muted: #E5E7EB;
-  --muted-foreground: #4B5563;
-  --accent: #F59E0B;
-  --accent-foreground: #111827;
-  --destructive: #DC2626;
-  --destructive-foreground: #FFFFFF;
-  --border: #D1D5DB;
-  --input: #E5E7EB;
-  --ring: #2563EB;
+  --background: #faf8f5;
+  --foreground: #1c1b18;
+  --card: #ffffff;
+  --card-foreground: #1c1b18;
+  --popover: #ffffff;
+  --popover-foreground: #1c1b18;
+  --primary: #8c7853;
+  --primary-foreground: #ffffff;
+  --secondary: #484b43;
+  --secondary-foreground: #ffffff;
+  --muted: #f2efe9;
+  --muted-foreground: #66635d;
+  --accent: #bda272;
+  --accent-foreground: #1c1b18;
+  --destructive: #9f3a38;
+  --destructive-foreground: #ffffff;
+  --border: #e6e3da;
+  --input: #faf8f5;
+  --ring: #8c7853;
 }
 
 @theme inline {
@@ -39,6 +39,7 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
   --font-sans: var(--font-outfit);
+  --font-serif: var(--font-playfair);
 }
 
 body {
@@ -46,25 +47,32 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
   overflow-x: hidden;
+  letter-spacing: -0.01em;
 }
 
-/* Custom Scrollbar - updated for light mode */
+/* Custom Scrollbar - refined minimal style */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #F3F4F6;
+  background: var(--background);
 }
 ::-webkit-scrollbar-thumb {
-  background: #D1D5DB;
+  background: var(--border);
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #9CA3AF;
+  background: var(--primary);
 }
 
-/* Utilities to enforce no-shadows */
-* {
-  box-shadow: none !important;
+/* Micro-interaction classes */
+.transition-smooth {
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.text-gradient {
+  background: linear-gradient(135deg, var(--foreground) 0%, var(--primary) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }

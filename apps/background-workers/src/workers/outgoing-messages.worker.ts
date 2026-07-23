@@ -32,7 +32,6 @@ export function createOutgoingMessagesWorker(redisConnection: any) {
         console.info(
           `[OutgoingWorker] Dispatching real message via Meta WhatsApp Graph API to: ${to}`,
         );
-
         try {
           const response = await fetch(
             `https://graph.facebook.com/v19.0/${phoneNumberId}/messages`,

@@ -3,12 +3,14 @@ import { Queue } from 'bullmq';
 import IORedis from 'ioredis';
 
 const prisma = new PrismaClient();
-const redisConnection = new IORedis(process.env.REDIS_URL || 'redis://localhost:6379', { maxRetriesPerRequest: null });
+const redisConnection = new IORedis(process.env.REDIS_URL || 'redis://localhost:6379', {
+  maxRetriesPerRequest: null,
+});
 const assignmentQueue = new Queue('assignment_jobs', { connection: redisConnection as any });
 
 async function main() {
   console.log('Seeding database for Assignment Agent test...');
-  
+
   // 1. Ensure Organization
   let org = await prisma.organization.findFirst({ where: { name: 'Axiom Test Org' } });
   if (!org) {
@@ -25,7 +27,7 @@ async function main() {
       name: 'Test Manager',
       email: 'manager@test.com',
       phoneNumber: '+19998880000',
-    }
+    },
   });
 
   // 3. Create 2 Employees with different workloads
@@ -37,8 +39,8 @@ async function main() {
       role: 'EMPLOYEE',
       name: 'Alice Frontend',
       email: 'emp1@test.com',
-      phoneNumber: '+19998881111'
-    }
+      phoneNumber: '+19998881111',
+    },
   });
 
   const employee2 = await prisma.user.upsert({
@@ -49,8 +51,8 @@ async function main() {
       role: 'EMPLOYEE',
       name: 'Bob Backend',
       email: 'emp2@test.com',
-      phoneNumber: '+19998882222'
-    }
+      phoneNumber: '+19998882222',
+    },
   });
 
   // 4. Create a Project
@@ -61,7 +63,7 @@ async function main() {
       status: 'ACTIVE',
       organizationId: org.id,
       managerId: manager.id,
-    }
+    },
   });
 
   // 5. Create 3 PENDING tasks
@@ -90,8 +92,8 @@ async function main() {
         organizationId: org.id,
         status: 'PENDING',
         estimatedHours: 3,
-      }
-    ]
+      },
+    ],
   });
 
   console.log(`Created Project: ${project.id}`);
@@ -107,7 +109,7 @@ async function main() {
   process.exit(0);
 }
 
-main().catch(err => {
+main().catch((err) => {
   console.error(err);
   process.exit(1);
 });

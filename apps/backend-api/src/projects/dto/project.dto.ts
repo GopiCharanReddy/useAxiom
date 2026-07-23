@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, IsOptional, IsDateString } from 'class-validator';
+import { IsNotEmpty, IsString, IsOptional, IsDateString, IsArray } from 'class-validator';
 
 export class CreateProjectDto {
   @IsString()
@@ -12,4 +12,20 @@ export class CreateProjectDto {
   @IsDateString()
   @IsOptional()
   targetDeadline?: string;
+
+  @IsString()
+  @IsOptional()
+  domain?: string;
+
+  @IsString({ each: true })
+  @IsOptional()
+  techStack?: string[];
+
+  @IsArray()
+  @IsOptional()
+  tasks?: {
+    title: string;
+    description: string;
+    estimatedHours?: number;
+  }[];
 }

@@ -51,4 +51,32 @@ export class UsersService {
       data,
     });
   }
+
+  async findAllByOrg(organizationId: string): Promise<any[]> {
+    return this.prisma.user.findMany({
+      where: {
+        organizationId,
+        deletedAt: null,
+      },
+      include: {
+        projectMembers: {
+          where: {
+            project: {
+              deletedAt: null,
+            },
+          },
+          include: {
+            project: {
+              include: {
+                tasks: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        name: 'asc',
+      },
+    });
+  }
 }

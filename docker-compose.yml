@@ -5,11 +5,11 @@ services:
     image: pgvector/pgvector:pg15
     restart: always
     environment:
-      POSTGRES_USER: useaxiom
-      POSTGRES_PASSWORD: useaxiompassword
-      POSTGRES_DB: useaxiomdb
+      POSTGRES_USER: axiom_user
+      POSTGRES_PASSWORD: axiom_password
+      POSTGRES_DB: axiom_db
     ports:
-      - '5432:5432'
+      - '5433:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
 

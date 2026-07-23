@@ -1,9 +1,9 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { UserPlus, Mail, Shield, Phone, CheckCircle2 } from "lucide-react";
-import { Button, Card, Badge } from "@useaxiom/ui";
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { UserPlus, Mail, Shield, Phone, CheckCircle2 } from 'lucide-react';
+import { Button, Card, Badge } from '@useaxiom/ui';
 
 interface UserProfile {
   id: string;
@@ -15,57 +15,57 @@ interface UserProfile {
 
 export default function UsersAdminPage() {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
-  const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteName, setInviteName] = useState("");
-  const [invitePhone, setInvitePhone] = useState("");
-  const [inviteRole, setInviteRole] = useState("MANAGER");
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviteName, setInviteName] = useState('');
+  const [invitePhone, setInvitePhone] = useState('');
+  const [inviteRole, setInviteRole] = useState('MANAGER');
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
-  const [error, setError] = useState("");
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
   const router = useRouter();
 
   useEffect(() => {
-    const token = localStorage.getItem("axiom_token");
+    const token = localStorage.getItem('axiom_token');
     if (!token) {
-      router.push("/login");
+      router.push('/login');
       return;
     }
 
-    fetch("/api/v1/auth/me", {
+    fetch('/api/v1/auth/me', {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((r) => {
-        if (r.status === 401) throw new Error("Unauthorized");
+        if (r.status === 401) throw new Error('Unauthorized');
         return r.json();
       })
       .then((data) => {
-        if (data.role !== "ADMIN") {
+        if (data.role !== 'ADMIN') {
           // If not an admin, redirect back to projects
-          router.push("/projects");
+          router.push('/projects');
         } else {
           setUserProfile(data);
         }
       })
       .catch(() => {
-        localStorage.removeItem("axiom_token");
-        router.push("/login");
+        localStorage.removeItem('axiom_token');
+        router.push('/login');
       });
   }, [router]);
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
-    setMessage("");
-    setError("");
+    setMessage('');
+    setError('');
     setLoading(true);
 
-    const token = localStorage.getItem("axiom_token");
+    const token = localStorage.getItem('axiom_token');
     if (!token || !userProfile) return;
 
     try {
       const res = await fetch(`/api/v1/organizations/${userProfile.organizationId}/invite-user`, {
-        method: "POST",
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
@@ -78,19 +78,19 @@ export default function UsersAdminPage() {
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        throw new Error(data.message || "Failed to invite user");
+        throw new Error(data.message || 'Failed to invite user');
       }
 
-      setMessage("User successfully invited and added to organization!");
-      setInviteEmail("");
-      setInviteName("");
-      setInvitePhone("");
-      setInviteRole("MANAGER");
+      setMessage('User successfully invited and added to organization!');
+      setInviteEmail('');
+      setInviteName('');
+      setInvitePhone('');
+      setInviteRole('MANAGER');
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
       } else {
-        setError("An unknown error occurred.");
+        setError('An unknown error occurred.');
       }
     } finally {
       setLoading(false);
@@ -105,7 +105,9 @@ export default function UsersAdminPage() {
     <div className="space-y-8 animate-in fade-in duration-500 max-w-4xl">
       <div>
         <h1 className="text-3xl font-extrabold tracking-tight text-white mb-2">Users & Invites</h1>
-        <p className="text-zinc-400 text-sm">Add and manage organization roles, workspace members, and permissions.</p>
+        <p className="text-zinc-400 text-sm">
+          Add and manage organization roles, workspace members, and permissions.
+        </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -123,7 +125,9 @@ export default function UsersAdminPage() {
 
           <form onSubmit={handleInvite} className="space-y-4">
             <div className="space-y-1">
-              <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Full Name</label>
+              <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">
+                Full Name
+              </label>
               <input
                 type="text"
                 required
@@ -135,7 +139,9 @@ export default function UsersAdminPage() {
             </div>
 
             <div className="space-y-1">
-              <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Email Address</label>
+              <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">
+                Email Address
+              </label>
               <div className="relative">
                 <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
                 <input
@@ -150,7 +156,9 @@ export default function UsersAdminPage() {
             </div>
 
             <div className="space-y-1">
-              <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">WhatsApp Phone Number</label>
+              <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">
+                WhatsApp Phone Number
+              </label>
               <div className="relative">
                 <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
                 <input
@@ -165,7 +173,9 @@ export default function UsersAdminPage() {
             </div>
 
             <div className="space-y-1">
-              <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">Workspace Role</label>
+              <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">
+                Workspace Role
+              </label>
               <div className="relative">
                 <Shield className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
                 <select
@@ -173,9 +183,15 @@ export default function UsersAdminPage() {
                   onChange={(e) => setInviteRole(e.target.value)}
                   className="w-full bg-zinc-950/50 border border-zinc-800 rounded-xl py-2.5 pl-10 pr-4 text-sm text-zinc-200 focus:outline-none focus:border-purple-500 transition-all appearance-none"
                 >
-                  <option value="MANAGER" className="bg-zinc-950">MANAGER</option>
-                  <option value="EMPLOYEE" className="bg-zinc-950">EMPLOYEE</option>
-                  <option value="ADMIN" className="bg-zinc-950">ADMIN</option>
+                  <option value="MANAGER" className="bg-zinc-950">
+                    MANAGER
+                  </option>
+                  <option value="EMPLOYEE" className="bg-zinc-950">
+                    EMPLOYEE
+                  </option>
+                  <option value="ADMIN" className="bg-zinc-950">
+                    ADMIN
+                  </option>
                 </select>
               </div>
             </div>
@@ -198,7 +214,7 @@ export default function UsersAdminPage() {
               disabled={loading}
               className="w-full bg-purple-600 text-white font-bold py-2.5 rounded-xl hover:bg-purple-500"
             >
-              {loading ? "Sending invitation..." : "Send Invitation"}
+              {loading ? 'Sending invitation...' : 'Send Invitation'}
             </Button>
           </form>
         </Card>
@@ -216,15 +232,21 @@ export default function UsersAdminPage() {
           <div className="space-y-4 text-sm">
             <div className="flex gap-3">
               <span className="text-purple-400 font-bold shrink-0">ADMIN:</span>
-              <span className="text-zinc-400">Full platform controls, billing, and invitation capabilities.</span>
+              <span className="text-zinc-400">
+                Full platform controls, billing, and invitation capabilities.
+              </span>
             </div>
             <div className="flex gap-3">
               <span className="text-purple-400 font-bold shrink-0">MANAGER:</span>
-              <span className="text-zinc-400">Can create projects, milestones, tasks, and view execution metrics.</span>
+              <span className="text-zinc-400">
+                Can create projects, milestones, tasks, and view execution metrics.
+              </span>
             </div>
             <div className="flex gap-3">
               <span className="text-purple-400 font-bold shrink-0">EMPLOYEE:</span>
-              <span className="text-zinc-400">Can be assigned tasks. Receives reminders and reports details strictly via WhatsApp.</span>
+              <span className="text-zinc-400">
+                Can be assigned tasks. Receives reminders and reports details strictly via WhatsApp.
+              </span>
             </div>
           </div>
         </div>

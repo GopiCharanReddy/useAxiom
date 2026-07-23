@@ -1,33 +1,33 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { CreditCard, AlertCircle } from "lucide-react";
-import { Card, Badge, Button } from "@useaxiom/ui";
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { CreditCard, AlertCircle } from 'lucide-react';
+import { Card, Badge, Button } from '@useaxiom/ui';
 
 export default function BillingPage() {
   const [isAdmin, setIsAdmin] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
-    const token = localStorage.getItem("axiom_token");
+    const token = localStorage.getItem('axiom_token');
     if (!token) {
-      router.push("/login");
+      router.push('/login');
       return;
     }
 
-    fetch("/api/v1/auth/me", {
+    fetch('/api/v1/auth/me', {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((r) => r.json())
       .then((data) => {
-        if (data.role !== "ADMIN") {
-          router.push("/projects");
+        if (data.role !== 'ADMIN') {
+          router.push('/projects');
         } else {
           setIsAdmin(true);
         }
       })
-      .catch(() => router.push("/login"));
+      .catch(() => router.push('/login'));
   }, [router]);
 
   if (!isAdmin) {
@@ -38,7 +38,9 @@ export default function BillingPage() {
     <div className="space-y-8 animate-in fade-in duration-500 max-w-4xl">
       <div>
         <h1 className="text-3xl font-extrabold tracking-tight text-white mb-2">Billing & Limits</h1>
-        <p className="text-zinc-400 text-sm">Manage subscription levels, AI token usage limits, and active billing information.</p>
+        <p className="text-zinc-400 text-sm">
+          Manage subscription levels, AI token usage limits, and active billing information.
+        </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -50,7 +52,9 @@ export default function BillingPage() {
               </div>
               <div>
                 <h3 className="font-bold text-zinc-100 text-lg">Platform Plan</h3>
-                <span className="text-xs text-zinc-500 block">Organization Level: Developer Sandbox</span>
+                <span className="text-xs text-zinc-500 block">
+                  Organization Level: Developer Sandbox
+                </span>
               </div>
             </div>
             <Badge variant="progress">Free Sandbox</Badge>
@@ -81,7 +85,8 @@ export default function BillingPage() {
           <div className="space-y-2">
             <h4 className="font-bold text-zinc-200">Developer Environment</h4>
             <p className="text-zinc-500 text-xs leading-relaxed">
-              This organization is currently linked to the default developer seed workspace configuration. Payments and card validation checks are bypassed on all mock pipelines.
+              This organization is currently linked to the default developer seed workspace
+              configuration. Payments and card validation checks are bypassed on all mock pipelines.
             </p>
           </div>
         </Card>

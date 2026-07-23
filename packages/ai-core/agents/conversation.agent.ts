@@ -23,7 +23,7 @@ const conversationJsonSchema = {
     reply: { type: 'string' },
     intent: {
       type: 'string',
-      enum: ['COMPLETED', 'BLOCKED', 'DELAYED', 'QUESTION', 'OTHER']
+      enum: ['COMPLETED', 'BLOCKED', 'DELAYED', 'QUESTION', 'OTHER'],
     },
     confidenceScore: { type: 'number' },
     extractedParameters: {
@@ -31,14 +31,14 @@ const conversationJsonSchema = {
       properties: {
         blockReason: { type: ['string', 'null'] },
         delayReason: { type: ['string', 'null'] },
-        estimatedCompletionDate: { type: ['string', 'null'] }
+        estimatedCompletionDate: { type: ['string', 'null'] },
       },
       required: ['blockReason', 'delayReason', 'estimatedCompletionDate'],
-      additionalProperties: false
-    }
+      additionalProperties: false,
+    },
   },
   required: ['reply', 'intent', 'confidenceScore', 'extractedParameters'],
-  additionalProperties: false
+  additionalProperties: false,
 };
 
 export class ConversationAgent extends BaseAgent {
@@ -46,31 +46,31 @@ export class ConversationAgent extends BaseAgent {
     const history = await this.memory.getShortTermContext(input.threadId);
     const historyMessages = history.map((h) => ({
       role: h.role as 'user' | 'assistant' | 'system',
-      content: h.content
+      content: h.content,
     }));
 
     const messages = [
       {
         role: 'system' as const,
-        content: this.systemPrompt || CONVERSATION_SYSTEM_PROMPT
+        content: this.systemPrompt || CONVERSATION_SYSTEM_PROMPT,
       },
       ...historyMessages,
       {
         role: 'user' as const,
-        content: `Message: "${input.message}"`
-      }
+        content: `Message: "${input.message}"`,
+      },
     ];
 
     const response = await this.provider.generateStructuredResponse<ConversationResponse>(
       messages,
       conversationJsonSchema,
-      { temperature: 0.2, model: 'gpt-4o-mini' }
+      { temperature: 0.2, model: 'gpt-4o-mini' },
     );
 
     await this.memory.appendShortTermMessage(input.threadId, {
       role: 'user',
       content: input.message,
-      timestamp: new Date()
+      timestamp: new Date(),
     });
 
     await this.memory.appendShortTermMessage(input.threadId, {
@@ -80,8 +80,8 @@ export class ConversationAgent extends BaseAgent {
       metadata: {
         intent: response.intent,
         confidenceScore: response.confidenceScore,
-        extractedParameters: response.extractedParameters
-      }
+        extractedParameters: response.extractedParameters,
+      },
     });
 
     return response;

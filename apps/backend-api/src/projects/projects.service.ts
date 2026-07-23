@@ -4,6 +4,7 @@ import { Project, ProjectStatus } from '@useaxiom/database';
 import { CreateProjectDto } from './dto/project.dto';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class ProjectsService {
@@ -11,6 +12,7 @@ export class ProjectsService {
     private readonly prisma: PrismaService,
     @InjectQueue('planner_jobs') private readonly plannerQueue: Queue,
     @InjectQueue('assignment_jobs') private readonly assignmentQueue: Queue,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async create(organizationId: string, managerId: string, dto: CreateProjectDto): Promise<Project> {
@@ -20,11 +22,22 @@ export class ProjectsService {
         objective: dto.objective,
         targetDeadline: dto.targetDeadline ? new Date(dto.targetDeadline) : null,
         status: ProjectStatus.PLANNING,
+        domain: dto.domain || null,
+        techStack: dto.techStack || [],
         organization: {
           connect: { id: organizationId },
         },
         manager: {
           connect: { id: managerId },
+        },
+        tasks: {
+          create: (dto.tasks || []).map((task) => ({
+            organizationId,
+            title: task.title,
+            description: task.description,
+            estimatedHours: task.estimatedHours,
+            status: 'PROPOSED',
+          })),
         },
       },
     });
@@ -37,6 +50,7 @@ export class ProjectsService {
         deletedAt: null,
       },
       include: {
+        members: true,
         tasks: {
           select: {
             id: true,
@@ -156,6 +170,93 @@ export class ProjectsService {
       where: {
         projectId: projectId,
         deletedAt: null,
+      },
+    });
+  }
+
+  async assignMember(organizationId: string, projectId: string, userId: string) {
+    const project = await this.findOne(organizationId, projectId);
+    if (!project) {
+      throw new NotFoundException(`Project with ID ${projectId} not found under your organization`);
+    }
+
+    const user = await this.prisma.user.findFirst({
+      where: {
+        id: userId,
+        organizationId,
+        deletedAt: null,
+      },
+    });
+    if (!user) {
+      throw new NotFoundException(`User with ID ${userId} not found under your organization`);
+    }
+
+    const member = await this.prisma.projectMember.upsert({
+      where: {
+        projectId_userId: {
+          projectId,
+          userId,
+        },
+      },
+      update: {},
+      create: {
+        projectId,
+        userId,
+      },
+    });
+
+    const deadlineString = project.targetDeadline
+      ? project.targetDeadline.toDateString()
+      : 'No deadline set';
+    await this.notificationsService.sendProjectAssignedAlert(
+      projectId,
+      user.phoneNumber,
+      project.name,
+      deadlineString,
+      project.domain || 'Not specified',
+      project.techStack,
+    );
+
+    return member;
+  }
+
+  async getMembers(organizationId: string, projectId: string) {
+    const project = await this.findOne(organizationId, projectId);
+    if (!project) {
+      throw new NotFoundException(`Project with ID ${projectId} not found under your organization`);
+    }
+
+    return this.prisma.projectMember.findMany({
+      where: {
+        projectId,
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phoneNumber: true,
+            employeeId: true,
+            role: true,
+          },
+        },
+      },
+    });
+  }
+
+  async unassignMember(organizationId: string, projectId: string, userId: string) {
+    const project = await this.findOne(organizationId, projectId);
+    if (!project) {
+      throw new NotFoundException(`Project with ID ${projectId} not found under your organization`);
+    }
+
+    return this.prisma.projectMember.delete({
+      where: {
+        projectId_userId: {
+          projectId,
+          userId,
+        },
       },
     });
   }

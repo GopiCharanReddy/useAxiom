@@ -81,4 +81,27 @@ export class ProjectsController {
   async getProjectMilestones(@CurrentUser() user: ActiveUser, @Param('id') id: string) {
     return this.projectsService.getProjectMilestones(user.organizationId, id);
   }
+
+  @Post(':id/assign')
+  async assignMember(
+    @CurrentUser() user: ActiveUser,
+    @Param('id') id: string,
+    @Body('userId') userId: string,
+  ) {
+    return this.projectsService.assignMember(user.organizationId, id, userId);
+  }
+
+  @Get(':id/members')
+  async getMembers(@CurrentUser() user: ActiveUser, @Param('id') id: string) {
+    return this.projectsService.getMembers(user.organizationId, id);
+  }
+
+  @Delete(':id/assign/:userId')
+  async unassignMember(
+    @CurrentUser() user: ActiveUser,
+    @Param('id') id: string,
+    @Param('userId') userId: string,
+  ) {
+    return this.projectsService.unassignMember(user.organizationId, id, userId);
+  }
 }

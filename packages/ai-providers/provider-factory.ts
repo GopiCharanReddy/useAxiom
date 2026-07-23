@@ -22,6 +22,8 @@ export function getLlmProvider(): ILlmProvider {
     return new OpenRouterProvider();
   }
 
-  console.warn('No LLM_PROVIDER specified, falling back to MockLlmProvider. Set LLM_PROVIDER=gemini or openai in env to use real integrations.');
+  console.warn(
+    'No LLM_PROVIDER specified, falling back to MockLlmProvider. Set LLM_PROVIDER=gemini or openai in env to use real integrations.',
+  );
   return new MockLlmProvider();
 }

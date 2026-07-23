@@ -162,4 +162,42 @@ export class NotificationsService {
       },
     );
   }
+
+  async sendProjectAssignedAlert(
+    projectId: string,
+    employeePhone: string,
+    projectName: string,
+    dueDate: string,
+    domain: string,
+    techStack: string[],
+  ): Promise<void> {
+    console.info(
+      `[NotificationsService] Triggering project assignment alert for project ${projectId} to employee ${employeePhone}`,
+    );
+
+    await this.notificationsQueue.add(
+      'send-notification',
+      {
+        recipient: {
+          phone: employeePhone,
+        },
+        channels: ['WHATSAPP', 'EMAIL', 'SMS', 'IN_APP'],
+        template: 'PROJECT_ASSIGNED',
+        variables: {
+          projectId,
+          projectName,
+          dueDate,
+          domain: domain || 'Not specified',
+          techStack: techStack && techStack.length > 0 ? techStack.join(', ') : 'Not specified',
+        },
+      },
+      {
+        attempts: 3,
+        backoff: {
+          type: 'exponential',
+          delay: 1000,
+        },
+      },
+    );
+  }
 }

@@ -18,6 +18,8 @@ export interface User {
   phoneNumber: string;
   createdAt: Date;
   deletedAt?: Date | null;
+  employeeId?: string | null;
+  specialty?: string | null;
 }
 
 export type ProjectStatus = 'DRAFT' | 'ACTIVE' | 'COMPLETED' | 'ARCHIVED';
@@ -32,6 +34,15 @@ export interface Project {
   targetDeadline?: Date | null;
   createdAt: Date;
   deletedAt?: Date | null;
+  domain?: string | null;
+  techStack?: string[] | null;
+}
+
+export interface ProjectMember {
+  id: string;
+  projectId: string;
+  userId: string;
+  assignedAt: Date;
 }
 
 export type TaskStatus = 'PROPOSED' | 'PENDING' | 'IN_PROGRESS' | 'BLOCKED' | 'COMPLETED';

@@ -1,33 +1,33 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { MessageSquare, CheckCircle2, RefreshCw } from "lucide-react";
-import { Card, Badge } from "@useaxiom/ui";
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { MessageSquare, CheckCircle2, RefreshCw } from 'lucide-react';
+import { Card, Badge } from '@useaxiom/ui';
 
 export default function IntegrationsPage() {
   const [isAdmin, setIsAdmin] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
-    const token = localStorage.getItem("axiom_token");
+    const token = localStorage.getItem('axiom_token');
     if (!token) {
-      router.push("/login");
+      router.push('/login');
       return;
     }
 
-    fetch("/api/v1/auth/me", {
+    fetch('/api/v1/auth/me', {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((r) => r.json())
       .then((data) => {
-        if (data.role !== "ADMIN") {
-          router.push("/projects");
+        if (data.role !== 'ADMIN') {
+          router.push('/projects');
         } else {
           setIsAdmin(true);
         }
       })
-      .catch(() => router.push("/login"));
+      .catch(() => router.push('/login'));
   }, [router]);
 
   if (!isAdmin) {
@@ -38,7 +38,9 @@ export default function IntegrationsPage() {
     <div className="space-y-8 animate-in fade-in duration-500 max-w-4xl">
       <div>
         <h1 className="text-3xl font-extrabold tracking-tight text-white mb-2">Integrations</h1>
-        <p className="text-zinc-400 text-sm">Connect useAxiom to outward communication channels and development tools.</p>
+        <p className="text-zinc-400 text-sm">
+          Connect useAxiom to outward communication channels and development tools.
+        </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -50,7 +52,9 @@ export default function IntegrationsPage() {
               </div>
               <div>
                 <h3 className="font-bold text-zinc-100 text-lg">WhatsApp Business API</h3>
-                <span className="text-xs text-zinc-500 block">Communication engine for employee updates</span>
+                <span className="text-xs text-zinc-500 block">
+                  Communication engine for employee updates
+                </span>
               </div>
             </div>
             <Badge variant="progress">Simulated</Badge>
@@ -69,7 +73,10 @@ export default function IntegrationsPage() {
               </span>
             </div>
             <p className="text-xs text-zinc-500 leading-relaxed pt-2">
-              The integration is configured in simulated development mode (`WHATSAPP_SIMULATE=true`). Outbound WhatsApp messages will print directly to the worker terminal instead of invoking Meta API endpoints, protecting your billing from 401 exceptions.
+              The integration is configured in simulated development mode
+              (`WHATSAPP_SIMULATE=true`). Outbound WhatsApp messages will print directly to the
+              worker terminal instead of invoking Meta API endpoints, protecting your billing from
+              401 exceptions.
             </p>
           </div>
         </Card>
@@ -81,7 +88,8 @@ export default function IntegrationsPage() {
           <div>
             <h4 className="font-bold text-zinc-200">More Connectors Coming Soon</h4>
             <p className="text-zinc-500 text-xs mt-1 max-w-xs leading-relaxed">
-              We are working on Slack, MS Teams, and GitHub Webhooks integrations for deeper platform automation.
+              We are working on Slack, MS Teams, and GitHub Webhooks integrations for deeper
+              platform automation.
             </p>
           </div>
         </Card>

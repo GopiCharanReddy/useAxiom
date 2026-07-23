@@ -58,7 +58,7 @@ async function setupRepeatableJobs() {
       await reminderSchedulerQueue.removeRepeatableByKey(job.key);
     }
 
-    const checkDeadlinesPattern = process.env.CRON_CHECK_DEADLINES || '0 * * * *';
+    const checkDeadlinesPattern = process.env.CRON_CHECK_DEADLINES || '*/1 * * * *';
     await reminderSchedulerQueue.add(
       'check_deadlines',
       {},
@@ -76,7 +76,7 @@ async function setupRepeatableJobs() {
     for (const job of reportingJobs) {
       await reportingSchedulerQueue.removeRepeatableByKey(job.key);
     }
-    const checkHealthPattern = process.env.CRON_CHECK_HEALTH || '0 * * * *';
+    const checkHealthPattern = process.env.CRON_CHECK_HEALTH || '*/1 * * * *';
     await reportingSchedulerQueue.add(
       'check_health',
       {},
