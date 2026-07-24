@@ -43,6 +43,7 @@ export default function TeamPage() {
   const [loading, setLoading] = useState(true);
   const [assigningMap, setAssigningMap] = useState<Record<string, string>>({});
   const [reminderModalOpen, setReminderModalOpen] = useState(false);
+  const [selectedMemberId, setSelectedMemberId] = useState('');
   const [selectedMemberName, setSelectedMemberName] = useState('');
   const [selectedMemberPhone, setSelectedMemberPhone] = useState('');
   const router = useRouter();
@@ -366,6 +367,7 @@ export default function TeamPage() {
                     variant="outline"
                     size="sm"
                     onClick={() => {
+                      setSelectedMemberId(member.id);
                       setSelectedMemberName(member.name);
                       setSelectedMemberPhone(member.phoneNumber || '');
                       setReminderModalOpen(true);
@@ -400,6 +402,33 @@ export default function TeamPage() {
         onClose={() => setReminderModalOpen(false)}
         defaultRecipientName={selectedMemberName}
         defaultPhoneNumber={selectedMemberPhone}
+        onSuccess={async (newPhoneNumber: string) => {
+          if (!selectedMemberId) return;
+
+          // 1. Update local state so card immediately displays new phone number
+          setEmployees((prev) =>
+            prev.map((emp) =>
+              emp.id === selectedMemberId ? { ...emp, phoneNumber: newPhoneNumber } : emp,
+            ),
+          );
+
+          // 2. Persist updated phone number to database via API
+          try {
+            const token = localStorage.getItem('axiom_token');
+            if (token) {
+              await fetch(`/api/v1/users/${selectedMemberId}/phone`, {
+                method: 'PATCH',
+                headers: {
+                  'Content-Type': 'application/json',
+                  Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({ phoneNumber: newPhoneNumber }),
+              });
+            }
+          } catch (err) {
+            console.error('Error persisting user phone update:', err);
+          }
+        }}
       />
     </div>
   );

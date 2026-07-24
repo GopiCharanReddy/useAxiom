@@ -11,6 +11,7 @@ interface SendReminderModalProps {
   defaultPhoneNumber?: string;
   defaultMessage?: string;
   taskId?: string;
+  onSuccess?: (newPhoneNumber: string) => void;
 }
 
 export function SendReminderModal({
@@ -20,6 +21,7 @@ export function SendReminderModal({
   defaultPhoneNumber = '',
   defaultMessage = '',
   taskId,
+  onSuccess,
 }: SendReminderModalProps) {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [messageText, setMessageText] = useState('');
@@ -84,6 +86,7 @@ export function SendReminderModal({
 
     setIsSending(true);
     const token = localStorage.getItem('axiom_token');
+    const targetPhone = phoneNumber.trim().replace(/[\s\-\(\)]/g, '');
 
     try {
       const res = await fetch('/api/v1/notifications/send-reminder', {
@@ -93,7 +96,7 @@ export function SendReminderModal({
           ...(token && { Authorization: `Bearer ${token}` }),
         },
         body: JSON.stringify({
-          recipientPhone: phoneNumber.trim().replace(/[\s\-\(\)]/g, ''),
+          recipientPhone: targetPhone,
           message: messageText.trim(),
           recipientName: defaultRecipientName,
           taskId: taskId || undefined,
@@ -105,7 +108,11 @@ export function SendReminderModal({
         throw new Error(errorData.message || 'Failed to dispatch WhatsApp reminder.');
       }
 
-      setSuccessMessage(`WhatsApp reminder sent successfully to ${phoneNumber.trim()}!`);
+      if (onSuccess) {
+        onSuccess(targetPhone);
+      }
+
+      setSuccessMessage(`WhatsApp reminder sent successfully to ${targetPhone}!`);
       setTimeout(() => {
         onClose();
         setSuccessMessage('');
