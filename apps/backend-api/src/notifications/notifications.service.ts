@@ -200,4 +200,49 @@ export class NotificationsService {
       },
     );
   }
+
+  async sendCustomReminder(
+    phone: string,
+    message: string,
+    name?: string,
+    taskId?: string,
+  ): Promise<{
+    success: boolean;
+    jobId: string | number;
+    recipientPhone: string;
+    message: string;
+  }> {
+    console.info(`[NotificationsService] Triggering custom WhatsApp reminder to phone: ${phone}`);
+
+    const job = await this.notificationsQueue.add(
+      'send-notification',
+      {
+        recipient: {
+          phone,
+          name: name || 'Team Member',
+        },
+        channels: ['WHATSAPP', 'EMAIL', 'SMS'],
+        template: 'CUSTOM_REMINDER',
+        variables: {
+          message,
+          taskId,
+          recipientName: name,
+        },
+      },
+      {
+        attempts: 3,
+        backoff: {
+          type: 'exponential',
+          delay: 1000,
+        },
+      },
+    );
+
+    return {
+      success: true,
+      jobId: job.id || 'job-queued',
+      recipientPhone: phone,
+      message: 'WhatsApp reminder queued successfully',
+    };
+  }
 }

@@ -68,4 +68,22 @@ export class NotificationsController {
     );
     return { status: 'task_assignment_alert_sent', taskId };
   }
+
+  @Post('send-reminder')
+  async sendReminder(
+    @Body('recipientPhone') recipientPhone: string,
+    @Body('message') message: string,
+    @Body('recipientName') recipientName?: string,
+    @Body('taskId') taskId?: string,
+  ) {
+    console.info(
+      `[NotificationsController] Received send-reminder request for recipient phone: ${recipientPhone}`,
+    );
+    return this.notificationsService.sendCustomReminder(
+      recipientPhone,
+      message,
+      recipientName,
+      taskId,
+    );
+  }
 }

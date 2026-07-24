@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { UserCheck, MessageSquare, Trash2 } from 'lucide-react';
 import { Button, Card, Badge } from '@useaxiom/ui';
+import { SendReminderModal } from '../components/SendReminderModal';
 
 interface DBUser {
   id: string;
@@ -36,25 +37,14 @@ interface DBProject {
   members?: unknown[];
 }
 
-interface DBWorkload {
-  employee_id: string;
-  employee_name: string;
-  role: string;
-  avatar: string;
-  load: number;
-  active_tasks: number;
-  queued_tasks: number;
-  blocked_tasks: number;
-  status: 'active' | 'offline';
-  current_task_name: string;
-}
-
 export default function TeamPage() {
   const [employees, setEmployees] = useState<DBUser[]>([]);
   const [projects, setProjects] = useState<DBProject[]>([]);
-  const [team, setTeam] = useState<TeamMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [assigningMap, setAssigningMap] = useState<Record<string, string>>({});
+  const [reminderModalOpen, setReminderModalOpen] = useState(false);
+  const [selectedMemberName, setSelectedMemberName] = useState('');
+  const [selectedMemberPhone, setSelectedMemberPhone] = useState('');
   const router = useRouter();
 
   const fetchWorkloads = async () => {
@@ -375,10 +365,15 @@ export default function TeamPage() {
                   <Button
                     variant="outline"
                     size="sm"
-                    className="flex-1 rounded-lg text-[9px] tracking-widest uppercase gap-1.5 h-9 border-[#e6e3da] text-[#66635d] hover:bg-[#faf8f5] shadow-sm"
+                    onClick={() => {
+                      setSelectedMemberName(member.name);
+                      setSelectedMemberPhone(member.phoneNumber || '');
+                      setReminderModalOpen(true);
+                    }}
+                    className="flex-1 rounded-lg text-[9px] tracking-widest uppercase gap-1.5 h-9 border-[#e6e3da] text-[#66635d] hover:bg-[#faf8f5] shadow-sm cursor-pointer"
                   >
                     <MessageSquare className="w-3.5 h-3.5" />
-                    <span>Text Agent</span>
+                    <span>Send Reminder</span>
                   </Button>
                   <Button
                     variant="secondary"
@@ -398,6 +393,14 @@ export default function TeamPage() {
           No employees found.
         </div>
       )}
+
+      {/* Manual Phone Number Entry WhatsApp Reminder Modal */}
+      <SendReminderModal
+        isOpen={reminderModalOpen}
+        onClose={() => setReminderModalOpen(false)}
+        defaultRecipientName={selectedMemberName}
+        defaultPhoneNumber={selectedMemberPhone}
+      />
     </div>
   );
 }

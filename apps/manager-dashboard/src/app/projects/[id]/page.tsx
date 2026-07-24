@@ -14,6 +14,7 @@ import {
   X,
 } from 'lucide-react';
 import { Button, Card, Badge } from '@useaxiom/ui';
+import { SendReminderModal } from '../../components/SendReminderModal';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -58,6 +59,9 @@ export default function ProjectDetailPage({ params }: PageProps) {
   const [taskTitle, setTaskTitle] = useState('');
   const [taskDescription, setTaskDescription] = useState('');
   const [taskHours, setTaskHours] = useState('');
+  const [reminderModalOpen, setReminderModalOpen] = useState(false);
+  const [selectedTaskTitle, setSelectedTaskTitle] = useState('');
+  const [selectedTaskId, setSelectedTaskId] = useState('');
 
   const router = useRouter();
 
@@ -402,7 +406,15 @@ export default function ProjectDetailPage({ params }: PageProps) {
                         Resolve Blocker
                       </Button>
                     )}
-                    <button className="h-9 w-9 rounded-lg bg-white border border-[#e6e3da]/80 hover:border-[#8c7853] hover:bg-[#faf8f5] text-[#66635d] hover:text-[#1c1b18] transition-all flex items-center justify-center cursor-pointer shadow-sm">
+                    <button
+                      onClick={() => {
+                        setSelectedTaskId(task.id);
+                        setSelectedTaskTitle(task.title);
+                        setReminderModalOpen(true);
+                      }}
+                      className="h-9 w-9 rounded-lg bg-white border border-[#e6e3da]/80 hover:border-[#8c7853] hover:bg-[#faf8f5] text-[#66635d] hover:text-[#1c1b18] transition-all flex items-center justify-center cursor-pointer shadow-sm"
+                      title="Send WhatsApp Reminder"
+                    >
                       <MessageSquare className="w-3.5 h-3.5" />
                     </button>
                   </div>
@@ -553,6 +565,18 @@ export default function ProjectDetailPage({ params }: PageProps) {
           </div>
         </div>
       )}
+
+      {/* Manual Phone Number WhatsApp Reminder Modal */}
+      <SendReminderModal
+        isOpen={reminderModalOpen}
+        onClose={() => setReminderModalOpen(false)}
+        defaultMessage={
+          selectedTaskTitle
+            ? `Reminder: Please provide a status update on task "${selectedTaskTitle}".`
+            : undefined
+        }
+        taskId={selectedTaskId}
+      />
     </div>
   );
 }
