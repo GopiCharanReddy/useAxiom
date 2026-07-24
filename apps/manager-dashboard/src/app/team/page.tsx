@@ -223,7 +223,7 @@ export default function TeamPage() {
                   {/* Project Assignment Control */}
                   <div className="space-y-2.5 p-3.5 bg-[#faf8f5] border border-[#e6e3da]/80 rounded-xl shadow-inner">
                     <label className="block text-[9px] font-black text-[#66635d] uppercase tracking-widest">
-                      Assign to Campaign
+                      Assign to Project
                     </label>
                     <div className="flex gap-2 w-full">
                       <select
@@ -312,7 +312,7 @@ export default function TeamPage() {
                         >
                           <div className="flex justify-between items-center">
                             <span className="text-[8px] text-[#66635d] font-black uppercase tracking-widest">
-                              Assigned Campaign
+                              Assigned Project
                             </span>
                             <div className="flex items-center gap-1.5">
                               <Badge variant="progress">{pm.project.domain || 'General'}</Badge>
@@ -354,7 +354,7 @@ export default function TeamPage() {
                           No Assigned Work
                         </span>
                         <p className="text-[10px] text-[#a09c94] mt-1 font-semibold">
-                          Waiting to be assigned to a campaign
+                          Waiting to be assigned to a project
                         </p>
                       </div>
                     )}

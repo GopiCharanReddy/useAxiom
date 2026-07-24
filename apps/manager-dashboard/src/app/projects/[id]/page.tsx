@@ -234,7 +234,7 @@ export default function ProjectDetailPage({ params }: PageProps) {
         <span>Back to Projects</span>
       </Link>
 
-      {/* Campaign Details Header */}
+      {/* Project Details Header */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 pb-6 border-b border-[#e6e3da]">
         <div className="space-y-2">
           <div className="flex items-center gap-2">
@@ -311,7 +311,7 @@ export default function ProjectDetailPage({ params }: PageProps) {
               return (
                 <>
                   <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-[#1c1b18]">
-                    <span>Campaign Progress</span>
+                    <span>Project Progress</span>
                     <span className="text-[#8c7853]">{progressPercent}%</span>
                   </div>
                   <div className="w-full bg-[#f2efe9] h-2 rounded-full overflow-hidden">
@@ -332,7 +332,7 @@ export default function ProjectDetailPage({ params }: PageProps) {
         <div className="flex items-center gap-2.5">
           <Activity className="w-4.5 h-4.5 text-[#8c7853]" />
           <span className="text-xs font-black uppercase tracking-widest text-[#1c1b18]">
-            Campaign Execution Log
+            Project Execution Log
           </span>
         </div>
         <div className="flex gap-3">

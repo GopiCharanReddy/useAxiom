@@ -211,7 +211,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
               <Search className="w-4 h-4 text-[#66635d]" />
               <input
                 type="text"
-                placeholder="Search campaigns, tasks..."
+                placeholder="Search projects, tasks..."
                 className="bg-transparent text-xs font-bold text-[#1c1b18] placeholder-[#a09c94] outline-none w-full uppercase tracking-wider"
               />
             </div>
@@ -240,7 +240,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
                 className="h-10 px-4 font-black tracking-widest text-[10px] uppercase shadow-sm border border-[#7d6b4a]"
               >
                 <Plus className="w-3.5 h-3.5" />
-                <span>New Campaign</span>
+                <span>New Project Goal</span>
               </Button>
             </Link>
           </div>

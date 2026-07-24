@@ -89,7 +89,7 @@ export default function Home() {
 
   const stats = [
     {
-      name: 'Active Campaigns',
+      name: 'Active Projects',
       value: statsData?.active_projects.toString() || '0',
       icon: FolderKanban,
       bg: 'bg-[#8c7853]/10 text-[#8c7853]',
@@ -280,7 +280,7 @@ export default function Home() {
                 All plans have been reviewed
               </h3>
               <p className="text-[#66635d] text-xs font-semibold max-w-md leading-relaxed">
-                The Q3 Product Marketing campaign plan has been moved to active execution. Tasks are
+                The Q3 Product Marketing project plan has been moved to active execution. Tasks are
                 queued for employee notification.
               </p>
             </div>
@@ -289,7 +289,7 @@ export default function Home() {
           {/* Active Projects List */}
           <div className="space-y-6">
             <div className="flex justify-between items-end border-b border-[#e6e3da] pb-3">
-              <h2 className="text-xl font-serif font-black text-[#1c1b18]">Active Campaigns</h2>
+              <h2 className="text-xl font-serif font-black text-[#1c1b18]">Active Projects</h2>
               <Link
                 href="/projects"
                 className="text-xs font-black uppercase tracking-widest text-[#8c7853] hover:text-[#736243]"
