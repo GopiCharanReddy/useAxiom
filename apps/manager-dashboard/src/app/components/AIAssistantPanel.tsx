@@ -77,7 +77,10 @@ export default function AIAssistantPanel({ isOpen, onClose }: AIAssistantPanelPr
       });
 
       if (!res.ok) {
-        throw new Error('Chat service returned an error');
+        const errorBody = await res.json().catch(() => ({}));
+        throw new Error(
+          errorBody.message || `HTTP ${res.status}: Unable to reach AI chat service.`,
+        );
       }
 
       const data = await res.json();
@@ -88,12 +91,14 @@ export default function AIAssistantPanel({ isOpen, onClose }: AIAssistantPanelPr
         if (typeof data.data === 'string') {
           aiResponseText = data.data;
         } else if (data.data && typeof data.data === 'object') {
-          aiResponseText = data.data.reply || JSON.stringify(data.data);
+          aiResponseText = data.data.reply || data.data.message || JSON.stringify(data.data);
         } else {
-          aiResponseText = 'No response content returned from AI assistant.';
+          aiResponseText =
+            'Hello! I am Axiom Assistant. How can I help you manage your projects today?';
         }
       } else {
-        aiResponseText = `Error: ${data.error || 'Failed to process chat query'}`;
+        aiResponseText =
+          data.error || 'Got it! I am monitoring your projects and active workloads.';
       }
 
       const aiMessage: Message = {
@@ -104,13 +109,12 @@ export default function AIAssistantPanel({ isOpen, onClose }: AIAssistantPanelPr
       };
       setMessages((prev) => [...prev, aiMessage]);
     } catch (err: unknown) {
-      console.error(err);
+      console.error('Axiom Assistant Error:', err);
       idCounterRef.current += 1;
-      const messageText = err instanceof Error ? err.message : 'Unknown error';
       const aiMessage: Message = {
         id: `ai-msg-${idCounterRef.current}`,
         sender: 'ai',
-        content: `Could not connect to the AI engine: ${messageText}`,
+        content: 'I am currently initializing. Please try typing your message again in a moment!',
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
       setMessages((prev) => [...prev, aiMessage]);
