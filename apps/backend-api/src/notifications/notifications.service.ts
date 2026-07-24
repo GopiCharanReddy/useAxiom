@@ -323,7 +323,7 @@ export class NotificationsService {
   }) {
     const id = `rem_sched_${Date.now()}`;
     const targetDeadline = data.deadline || '2026-07-30';
-    const targetPhone = data.employeePhone.trim().replace(/[\s\-\(\)]/g, '');
+    const targetPhone = data.employeePhone.trim().replace(/[\s\-()]/g, '');
 
     const newSchedule = {
       id,

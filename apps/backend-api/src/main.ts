@@ -1,8 +1,10 @@
 import { NestFactory } from '@nestjs/core';
 import * as dotenv from 'dotenv';
+import { expand as dotenvExpand } from 'dotenv-expand';
 import * as path from 'path';
 
-dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
+const env = dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
+dotenvExpand(env);
 dotenv.config();
 
 import { AppModule } from './app.module';

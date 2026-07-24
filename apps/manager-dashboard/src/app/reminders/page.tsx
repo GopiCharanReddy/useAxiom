@@ -154,7 +154,7 @@ export default function AutomaticRemindersPage() {
       });
       if (res.ok) {
         setSchedules((prev) =>
-          prev.map((s) => (s.id === id ? { ...s, status: newStatus as any } : s)),
+          prev.map((s) => (s.id === id ? { ...s, status: newStatus as ReminderSchedule['status'] } : s)),
         );
         setActionMessage(`Schedule ${id} updated to ${newStatus}`);
         setTimeout(() => setActionMessage(''), 3000);
