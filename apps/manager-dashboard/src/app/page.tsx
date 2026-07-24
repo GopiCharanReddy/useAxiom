@@ -47,7 +47,7 @@ export default function Home() {
 
   const router = useRouter();
 
-  useEffect(() => {
+  const loadDashboardData = () => {
     const token = localStorage.getItem('axiom_token');
     if (!token) {
       router.push('/login');
@@ -82,6 +82,22 @@ export default function Home() {
         }
         console.error('Failed to fetch dashboard data:', err);
       });
+  };
+
+  useEffect(() => {
+    loadDashboardData();
+
+    const handleProjectCreated = () => {
+      loadDashboardData();
+    };
+
+    window.addEventListener('axiom_project_created', handleProjectCreated);
+    window.addEventListener('focus', handleProjectCreated);
+
+    return () => {
+      window.removeEventListener('axiom_project_created', handleProjectCreated);
+      window.removeEventListener('focus', handleProjectCreated);
+    };
   }, [router]);
 
   const hasApprovedPlan = !projects.some((p) => p.status === 'PROPOSED');
