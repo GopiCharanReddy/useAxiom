@@ -49,8 +49,20 @@ export class ProjectsService {
         organizationId,
         deletedAt: null,
       },
-      include: {
-        members: true,
+      select: {
+        id: true,
+        name: true,
+        objective: true,
+        status: true,
+        domain: true,
+        techStack: true,
+        createdAt: true,
+        members: {
+          select: {
+            id: true,
+            userId: true,
+          },
+        },
         tasks: {
           select: {
             id: true,

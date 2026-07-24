@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { X, Send, Sparkles, Bot, User, RefreshCw, AlertCircle } from 'lucide-react';
 import { Button } from '@useaxiom/ui';
 
@@ -30,12 +30,15 @@ export default function AIAssistantPanel({ isOpen, onClose }: AIAssistantPanelPr
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const suggestions = [
-    'Why is Milestone 2 delayed?',
-    'Show tasks blocked on Dave',
-    'Ping Sarah for task update',
-    'Review draft project plan',
-  ];
+  const suggestions = useMemo(
+    () => [
+      'Why is Milestone 2 delayed?',
+      'Show tasks blocked on Dave',
+      'Ping Sarah for task update',
+      'Review draft project plan',
+    ],
+    [],
+  );
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

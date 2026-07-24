@@ -164,79 +164,59 @@ function ProjectsPageContent() {
     e.preventDefault();
     try {
       const token = localStorage.getItem('axiom_token');
+      const payload = {
+        name: newName,
+        objective: newObjective,
+        targetDeadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        domain: newDomain,
+        techStack: newTechStack
+          .split(',')
+          .map((t) => t.trim())
+          .filter(Boolean),
+        tasks: modalTasks,
+      };
+
+      // Optimistically create new project model for instant UI response
+      const tempId = `proj_${Date.now()}`;
+      const optimisticProject: Project = {
+        id: tempId,
+        name: newName,
+        category: newDomain || 'Frontend',
+        description: newObjective,
+        status: 'proposed',
+        progress: 0,
+        health: 'review',
+        tasksDone: 0,
+        tasksTotal: modalTasks.length,
+        members: [],
+      };
+
+      setProjects((prev) => [optimisticProject, ...prev]);
+      setShowModal(false);
+      setNewName('');
+      setNewObjective('');
+      setNewDomain('Frontend');
+      setNewTechStack('');
+      setModalTasks([]);
+
       const res = await fetch('/api/v1/projects', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          name: newName,
-          objective: newObjective,
-          targetDeadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-          domain: newDomain,
-          techStack: newTechStack
-            .split(',')
-            .map((t) => t.trim())
-            .filter(Boolean),
-          tasks: modalTasks,
-        }),
+        body: JSON.stringify(payload),
       });
 
       if (res.ok) {
-        setShowModal(false);
-        setNewName('');
-        setNewObjective('');
-        setNewDomain('Frontend');
-        setNewTechStack('');
-        setModalTasks([]);
-        // Reload projects
-        const fetchProjects = async () => {
-          const token = localStorage.getItem('axiom_token');
-          if (!token) return;
-          const res = await fetch('/api/v1/projects', {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          const data = await res.json();
-          if (Array.isArray(data)) {
-            const mapped: Project[] = data.map((p: DBProject) => {
-              let status: 'progress' | 'proposed' | 'completed' = 'proposed';
-              if (p.status === 'ACTIVE') status = 'progress';
-              else if (p.status === 'COMPLETED') status = 'completed';
-
-              let health: 'on_track' | 'at_risk' | 'review' = 'review';
-              if (p.healthStatus === 'LOW') health = 'on_track';
-              else if (p.healthStatus === 'HIGH') health = 'at_risk';
-
-              const tasksTotal = p.tasks?.length || 0;
-              const tasksDone = p.tasks?.filter((t) => t.status === 'COMPLETED').length || 0;
-              const progress =
-                tasksTotal > 0
-                  ? Math.round((tasksDone / tasksTotal) * 100)
-                  : p.status === 'ACTIVE'
-                    ? 10
-                    : 0;
-
-              return {
-                id: p.id,
-                name: p.name,
-                category: p.category || 'General',
-                description: p.objective,
-                status,
-                progress,
-                health,
-                tasksDone,
-                tasksTotal,
-                members: p.members || [],
-              };
-            });
-            setProjects(mapped);
-          }
-        };
-        fetchProjects();
+        const createdData = await res.json();
+        // Replace tempId with actual DB project ID
+        setProjects((prev) =>
+          prev.map((p) => (p.id === tempId ? { ...p, id: createdData.id || tempId } : p)),
+        );
       }
     } catch (err) {
-      console.error(err);
+      console.error('Error creating project:', err);
     }
   };
 
@@ -334,8 +314,30 @@ function ProjectsPageContent() {
 
       {/* Projects Grid */}
       {loading ? (
-        <div className="text-[#66635d] text-xs font-black uppercase tracking-widest py-8">
-          Loading projects...
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-pulse">
+          {[1, 2, 3, 4, 5, 6].map((idx) => (
+            <div
+              key={idx}
+              className="bg-white border border-[#e6e3da]/80 rounded-2xl p-6 h-64 flex flex-col justify-between shadow-sm space-y-4"
+            >
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <div className="h-4 bg-[#e6e3da] rounded w-20" />
+                  <div className="h-4 bg-[#e6e3da] rounded w-16" />
+                </div>
+                <div className="h-6 bg-[#e6e3da] rounded w-3/4" />
+                <div className="h-3 bg-[#e6e3da] rounded w-full" />
+                <div className="h-3 bg-[#e6e3da] rounded w-2/3" />
+              </div>
+              <div className="space-y-2 pt-4 border-t border-[#e6e3da]">
+                <div className="flex justify-between items-center">
+                  <div className="h-3 bg-[#e6e3da] rounded w-24" />
+                  <div className="h-3 bg-[#e6e3da] rounded w-12" />
+                </div>
+                <div className="h-2 bg-[#e6e3da] rounded w-full" />
+              </div>
+            </div>
+          ))}
         </div>
       ) : filteredProjects.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

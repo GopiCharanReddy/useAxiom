@@ -165,7 +165,37 @@ export default function TeamPage() {
   };
 
   if (loading) {
-    return <div className="text-zinc-400 py-8">Loading workloads...</div>;
+    return (
+      <div className="space-y-8 animate-in fade-in duration-500">
+        <div className="space-y-1">
+          <div className="h-8 bg-[#e6e3da] rounded w-48" />
+          <div className="h-4 bg-[#e6e3da] rounded w-96" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-pulse">
+          {[1, 2, 3, 4, 5, 6].map((idx) => (
+            <div
+              key={idx}
+              className="bg-white border border-[#e6e3da]/80 rounded-2xl p-6 h-72 flex flex-col justify-between shadow-sm space-y-4"
+            >
+              <div className="space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-[#e6e3da] rounded-xl" />
+                  <div className="space-y-1.5 flex-1">
+                    <div className="h-4 bg-[#e6e3da] rounded w-32" />
+                    <div className="h-3 bg-[#e6e3da] rounded w-20" />
+                  </div>
+                </div>
+                <div className="h-3 bg-[#e6e3da] rounded w-full" />
+                <div className="h-3 bg-[#e6e3da] rounded w-3/4" />
+              </div>
+              <div className="space-y-2 pt-4 border-t border-[#e6e3da]">
+                <div className="h-4 bg-[#e6e3da] rounded w-full" />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
   }
 
   return (

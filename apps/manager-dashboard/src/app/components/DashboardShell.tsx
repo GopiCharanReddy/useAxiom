@@ -42,6 +42,16 @@ export default function DashboardShell({ children }: { children: React.ReactNode
     const token = localStorage.getItem('axiom_token');
     if (!token) return;
 
+    // Fast path: load cached user profile from sessionStorage
+    const cachedUser = sessionStorage.getItem('axiom_user_profile');
+    if (cachedUser) {
+      try {
+        setUser(JSON.parse(cachedUser));
+      } catch (e) {
+        // Fallthrough to fetch
+      }
+    }
+
     fetch('/api/v1/auth/me', {
       headers: { Authorization: `Bearer ${token}` },
     })
@@ -50,7 +60,10 @@ export default function DashboardShell({ children }: { children: React.ReactNode
         return r.json();
       })
       .then((data) => {
-        if (data) setUser(data);
+        if (data) {
+          setUser(data);
+          sessionStorage.setItem('axiom_user_profile', JSON.stringify(data));
+        }
       })
       .catch((err) => console.error('Error fetching user profile:', err));
   }, []);
@@ -106,6 +119,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
               <Link
                 key={item.name}
                 href={item.href}
+                prefetch={true}
                 className={`flex items-center gap-3 px-4 py-3 text-xs font-black uppercase tracking-widest transition-all duration-300 rounded-lg border ${
                   isActive
                     ? 'bg-[#faf8f5] text-[#8c7853] border-[#e6e3da] border-l-4 border-l-[#8c7853] shadow-[0_2px_10px_-4px_rgba(140,120,83,0.1)]'
@@ -167,6 +181,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
                   <Link
                     key={item.name}
                     href={item.href}
+                    prefetch={true}
                     onClick={() => setIsSidebarOpen(false)}
                     className={`flex items-center gap-3 px-4 py-3 text-xs font-black uppercase tracking-widest transition-all rounded-lg border ${
                       isActive
