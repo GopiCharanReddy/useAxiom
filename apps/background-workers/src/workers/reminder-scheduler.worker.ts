@@ -1,10 +1,11 @@
 import { Worker, Job, Queue } from 'bullmq';
 import { getMockTasks } from '../utils/mock-db';
+import { generateAiReminderMessage } from '@useaxiom/ai-providers';
 
 const remindedTasks = new Set<string>();
 
 export function createReminderSchedulerWorker(redisConnection: any, outgoingQueue: Queue) {
-  console.info('[ReminderScheduler] Starting reminder scheduler worker...');
+  console.info('[ReminderScheduler] Starting automatic AI reminder scheduler worker...');
 
   const worker = new Worker(
     'reminder_scheduler',
@@ -13,7 +14,7 @@ export function createReminderSchedulerWorker(redisConnection: any, outgoingQueu
         return { skipped: true };
       }
 
-      console.info('[ReminderScheduler] Scanning tasks for deadline reminders...');
+      console.info('[ReminderScheduler] Scanning active projects for daily AI reminders...');
       const tasks = getMockTasks();
       const now = new Date();
 
@@ -23,36 +24,53 @@ export function createReminderSchedulerWorker(redisConnection: any, outgoingQueu
         }
 
         const timeDiffMs = task.deadline.getTime() - now.getTime();
+        const daysRemaining = Math.ceil(timeDiffMs / (24 * 60 * 60 * 1000));
         const hoursDiff = timeDiffMs / (60 * 60 * 1000);
 
         // 1. Overdue Tasks (Deadline in past)
         if (hoursDiff < 0) {
           const trackerKey = `${task.id}:overdue`;
           if (!remindedTasks.has(trackerKey)) {
+            const aiMessage = generateAiReminderMessage({
+              employeeName: task.assigneeName || 'Team Member',
+              projectName: task.title,
+              deadline: task.deadline.toLocaleDateString(),
+              daysRemaining,
+              aiTone: 'Strict',
+            });
+
             console.info(
-              `[ReminderScheduler] Task ${task.id} is OVERDUE. Enqueuing alert to ${task.assigneePhone}.`,
+              `[ReminderScheduler] Project ${task.id} is OVERDUE. Enqueuing AI reminder to ${task.assigneePhone}.`,
             );
 
             await outgoingQueue.add('send_message', {
               to: task.assigneePhone,
-              content: `⚠️ Overdue Alert: Your task "${task.title}" (ID: ${task.id}) is past its deadline. Please reply "Done" to mark it complete, or text us what is blocking you.`,
+              content: aiMessage,
               timestamp: new Date().toISOString(),
             });
 
             remindedTasks.add(trackerKey);
           }
         }
-        // 2. Approaching Tasks (Deadline within 2 hours)
-        else if (hoursDiff <= 2.0) {
-          const trackerKey = `${task.id}:approaching`;
+        // 2. Approaching Tasks (Daily or Deadline approaching)
+        else if (hoursDiff <= 48.0) {
+          const trackerKey = `${task.id}:approaching_${daysRemaining}`;
           if (!remindedTasks.has(trackerKey)) {
+            const aiMessage = generateAiReminderMessage({
+              employeeName: task.assigneeName || 'Team Member',
+              projectName: task.title,
+              deadline: task.deadline.toLocaleDateString(),
+              daysRemaining,
+              aiTone: 'Professional',
+            });
+
             console.info(
-              `[ReminderScheduler] Task ${task.id} is approaching deadline. Enqueuing reminder to ${task.assigneePhone}.`,
+              `[ReminderScheduler] Enqueuing daily AI WhatsApp reminder for ${task.title} to ${task.assigneePhone}.`,
             );
 
             await outgoingQueue.add('send_message', {
               to: task.assigneePhone,
-              content: `⏰ Reminder: Your task "${task.title}" (ID: ${task.id}) is approaching its deadline. You have ${hoursDiff.toFixed(1)} hour(s) remaining. Reply "Done" when finished!`,
+              content: aiMessage,
               timestamp: new Date().toISOString(),
             });
 

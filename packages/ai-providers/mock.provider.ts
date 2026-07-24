@@ -243,3 +243,62 @@ export class MockLlmProvider implements ILlmProvider {
       .map(() => Math.random());
   }
 }
+
+export function generateAiReminderMessage(params: {
+  employeeName: string;
+  projectName: string;
+  deadline: string;
+  daysRemaining: number;
+  aiTone?: 'Professional' | 'Friendly' | 'Strict' | string;
+  managerName?: string;
+}): string {
+  const tone = params.aiTone || 'Professional';
+  const name = params.employeeName || 'Team Member';
+  const project = params.projectName || 'Assigned Project';
+  const days = params.daysRemaining;
+  const deadline = params.deadline || 'Upcoming';
+
+  const daysText =
+    days < 0
+      ? `is currently OVERDUE by ${Math.abs(days)} day(s)`
+      : days === 0
+        ? 'is due TODAY'
+        : days === 1
+          ? 'is due TOMORROW (1 day remaining)'
+          : `has ${days} days remaining until deadline (${days} days remaining)`;
+
+  if (tone === 'Friendly') {
+    return (
+      `Hi ${name}! 👋\n\n` +
+      `Hope you're having a great day! Here is your quick friendly project update from Axiom:\n\n` +
+      `📌 Project: ${project}\n` +
+      `⏳ Status: ${daysText}\n` +
+      `📅 Target Date: ${deadline}\n\n` +
+      `Keep up the fantastic work! If you need any assistance or run into any blockers, just reply here.\n\n` +
+      `Best,\nAxiom Assistant 🚀`
+    );
+  }
+
+  if (tone === 'Strict') {
+    return (
+      `ATTENTION: ${name.toUpperCase()}\n\n` +
+      `Urgent Project Status Update from Axiom Engine:\n\n` +
+      `📌 Project: ${project}\n` +
+      `🚨 Deadline Notice: ${daysText}\n` +
+      `📅 Deadline: ${deadline}\n\n` +
+      `Please ensure all pending tasks are completed immediately. If any issue is causing delays, report it to your manager without delay.\n\n` +
+      `Axiom Control System`
+    );
+  }
+
+  // Default: Professional
+  return (
+    `Hello ${name},\n\n` +
+    `This is your daily project reminder from Axiom.\n\n` +
+    `• Project: ${project}\n` +
+    `• Deadline: ${deadline}\n` +
+    `• Time Remaining: ${days < 0 ? `${Math.abs(days)} days overdue` : `${days} days`}\n\n` +
+    `Please ensure your project is progressing according to schedule. If you expect any delays, kindly inform your manager.\n\n` +
+    `Best regards,\nAxiom Assistant`
+  );
+}

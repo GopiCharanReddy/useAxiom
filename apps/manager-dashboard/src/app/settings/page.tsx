@@ -40,6 +40,33 @@ export default function SettingsPage() {
     }
     return 'assisted';
   });
+  const [autoRemindersEnabled, setAutoRemindersEnabled] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('axiom_auto_reminders_enabled') !== 'false';
+    }
+    return true;
+  });
+  const [reminderFrequency, setReminderFrequency] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('axiom_reminder_frequency') || 'Daily';
+    }
+    return 'Daily';
+  });
+  const [reminderTime, setReminderTime] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('axiom_reminder_time') || '09:00';
+    }
+    return '09:00';
+  });
+  const [aiTone, setAiTone] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('axiom_ai_tone') || 'Professional';
+    }
+    return 'Professional';
+  });
+  const [finalReminderDeadline, setFinalReminderDeadline] = useState<boolean>(true);
+  const [overdueAlerts, setOverdueAlerts] = useState<boolean>(true);
+
   const [isSaved, setIsSaved] = useState(false);
   const router = useRouter();
 
@@ -54,6 +81,10 @@ export default function SettingsPage() {
     if (typeof window !== 'undefined') {
       localStorage.setItem('axiom_org_name', orgName);
       localStorage.setItem('axiom_automation_mode', automationMode);
+      localStorage.setItem('axiom_auto_reminders_enabled', String(autoRemindersEnabled));
+      localStorage.setItem('axiom_reminder_frequency', reminderFrequency);
+      localStorage.setItem('axiom_reminder_time', reminderTime);
+      localStorage.setItem('axiom_ai_tone', aiTone);
     }
     setIsSaved(true);
     setTimeout(() => setIsSaved(false), 3000);
@@ -182,13 +213,119 @@ export default function SettingsPage() {
                   </div>
                 )}
                 <span className="block font-serif font-black text-sm text-[#1c1b18]">
-                  Autonomous
+                  Autonomous Mode
                 </span>
                 <span className="block text-[10px] text-[#a09c94] font-semibold leading-relaxed mt-2 uppercase tracking-wide">
-                  AI plans, assigns, and schedules runs automatically. Manager receives dashboard
-                  feeds retrospectively.
+                  AI plans, assigns, and schedules automatic WhatsApp reminders until project
+                  completion.
                 </span>
               </button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Automatic Reminders Configurations Card */}
+        <Card className="bg-white border border-[#e6e3da]/80 shadow-sm rounded-2xl">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2.5 text-base font-serif font-black text-[#1c1b18]">
+              <Sparkles className="w-4.5 h-4.5 text-[#8c7853]" />
+              <span>Automatic AI Reminders Configurations</span>
+            </CardTitle>
+            <CardDescription className="text-xs font-semibold text-[#66635d] uppercase tracking-wider">
+              Configure automatic WhatsApp reminder rules, schedules, and AI wording tone.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-5 pt-2">
+            <div className="flex items-center justify-between p-4 bg-[#faf8f5] border border-[#e6e3da] rounded-xl shadow-sm">
+              <div>
+                <span className="block text-xs font-black text-[#1c1b18] uppercase tracking-wider">
+                  Automatic AI Reminders Engine
+                </span>
+                <span className="block text-[10px] text-[#66635d] font-semibold mt-0.5">
+                  Automatically dispatch daily context-aware AI WhatsApp reminders to employees.
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAutoRemindersEnabled(!autoRemindersEnabled)}
+                className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all cursor-pointer border ${
+                  autoRemindersEnabled
+                    ? 'bg-[#3e593e] text-white border-[#3e593e]'
+                    : 'bg-[#faf8f5] text-[#66635d] border-[#e6e3da]'
+                }`}
+              >
+                {autoRemindersEnabled ? 'Enabled' : 'Disabled'}
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-[#66635d] uppercase tracking-widest block mb-1">
+                  Reminder Frequency
+                </label>
+                <select
+                  value={reminderFrequency}
+                  onChange={(e) => setReminderFrequency(e.target.value)}
+                  className="w-full bg-white border border-[#e6e3da] rounded-xl p-2.5 text-xs font-semibold text-[#1c1b18] focus:outline-none focus:border-[#8c7853] shadow-sm cursor-pointer"
+                >
+                  <option value="Daily">Daily (Every 24 Hours)</option>
+                  <option value="Every 2 Days">Every 2 Days</option>
+                  <option value="Weekly">Weekly</option>
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-[#66635d] uppercase tracking-widest block mb-1">
+                  Scheduled Delivery Time
+                </label>
+                <input
+                  type="time"
+                  value={reminderTime}
+                  onChange={(e) => setReminderTime(e.target.value)}
+                  className="w-full bg-white border border-[#e6e3da] rounded-xl p-2 text-xs font-semibold text-[#1c1b18] focus:outline-none focus:border-[#8c7853] shadow-sm"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-[#66635d] uppercase tracking-widest block mb-1">
+                  AI Wording Tone
+                </label>
+                <select
+                  value={aiTone}
+                  onChange={(e) => setAiTone(e.target.value)}
+                  className="w-full bg-white border border-[#e6e3da] rounded-xl p-2.5 text-xs font-semibold text-[#1c1b18] focus:outline-none focus:border-[#8c7853] shadow-sm cursor-pointer"
+                >
+                  <option value="Professional">Professional & Encouraging</option>
+                  <option value="Friendly">Friendly & Informal</option>
+                  <option value="Strict">Strict & Urgent</option>
+                </select>
+              </div>
+
+              <div className="space-y-2 pt-1">
+                <label className="text-[10px] font-black text-[#66635d] uppercase tracking-widest block">
+                  Additional Rules
+                </label>
+                <div className="flex gap-4">
+                  <label className="flex items-center gap-2 text-xs font-semibold text-[#1c1b18] cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={finalReminderDeadline}
+                      onChange={(e) => setFinalReminderDeadline(e.target.checked)}
+                      className="rounded border-[#e6e3da] text-[#8c7853] focus:ring-[#8c7853]"
+                    />
+                    Final Deadline Notice
+                  </label>
+                  <label className="flex items-center gap-2 text-xs font-semibold text-[#1c1b18] cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={overdueAlerts}
+                      onChange={(e) => setOverdueAlerts(e.target.checked)}
+                      className="rounded border-[#e6e3da] text-[#8c7853] focus:ring-[#8c7853]"
+                    />
+                    Overdue Alerts
+                  </label>
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>

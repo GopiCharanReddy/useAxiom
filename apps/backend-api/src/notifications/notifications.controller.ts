@@ -86,4 +86,26 @@ export class NotificationsController {
       taskId,
     );
   }
+
+  @Get('reminders/schedules')
+  async getReminderSchedules() {
+    return this.notificationsService.getReminderSchedules();
+  }
+
+  @Post('reminders/trigger')
+  async triggerReminder(
+    @Body('scheduleId') scheduleId: string,
+    @Body('phone') phone?: string,
+    @Body('aiTone') aiTone?: string,
+  ) {
+    return this.notificationsService.triggerScheduledReminder(scheduleId, phone, aiTone);
+  }
+
+  @Patch('reminders/:id/status')
+  async updateScheduleStatus(
+    @Param('id') id: string,
+    @Body('status') status: 'ACTIVE' | 'PAUSED' | 'CANCELLED' | 'COMPLETED',
+  ) {
+    return this.notificationsService.updateScheduleStatus(id, status);
+  }
 }

@@ -17,6 +17,7 @@ import {
   ShieldAlert,
   CreditCard,
   Link2,
+  Clock,
 } from 'lucide-react';
 import { Button } from '@useaxiom/ui';
 import AIAssistantPanel from './AIAssistantPanel';
@@ -67,6 +68,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
     { name: 'Dashboard', href: '/', icon: LayoutDashboard },
     { name: 'Projects', href: '/projects', icon: FolderKanban },
     { name: 'Team Workload', href: '/team', icon: Users },
+    { name: 'Automatic Reminders', href: '/reminders', icon: Clock },
     ...(user?.role === 'ADMIN'
       ? [
           { name: 'Users & Invites', href: '/admin/users', icon: ShieldAlert },
