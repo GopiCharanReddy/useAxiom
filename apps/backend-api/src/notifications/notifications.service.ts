@@ -313,6 +313,47 @@ export class NotificationsService {
     return this.reminderSchedules;
   }
 
+  async createReminderSchedule(data: {
+    employeeName: string;
+    employeeId?: string;
+    employeePhone: string;
+    projectName: string;
+    projectDescription?: string;
+    deadline?: string;
+  }) {
+    const id = `rem_sched_${Date.now()}`;
+    const targetDeadline = data.deadline || '2026-07-30';
+    const targetPhone = data.employeePhone.trim().replace(/[\s\-\(\)]/g, '');
+
+    const newSchedule = {
+      id,
+      employeeName: data.employeeName || 'Team Member',
+      employeeId: data.employeeId || 'EMP-' + Math.floor(100 + Math.random() * 900),
+      employeePhone: targetPhone,
+      projectName: data.projectName || 'Assigned Project',
+      projectDescription: data.projectDescription || 'Custom project assigned by manager.',
+      priority: 'HIGH',
+      startDate: new Date().toISOString().split('T')[0],
+      deadline: targetDeadline,
+      assignedManager: 'Manager Lead',
+      status: 'ACTIVE' as const,
+      nextReminderDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+      history: [],
+    };
+
+    // Unshift so manager created schedule appears at the top!
+    this.reminderSchedules.unshift(newSchedule);
+
+    // Trigger immediate initial WhatsApp reminder
+    await this.triggerScheduledReminder(id, targetPhone);
+
+    return {
+      success: true,
+      schedule: newSchedule,
+      message: `Automatic reminder schedule created for ${data.employeeName} (${targetPhone})!`,
+    };
+  }
+
   async triggerScheduledReminder(scheduleId: string, customPhone?: string, aiTone?: string) {
     const schedule = this.reminderSchedules.find((s) => s.id === scheduleId);
     const targetPhone = customPhone || schedule?.employeePhone || '+918105670193';

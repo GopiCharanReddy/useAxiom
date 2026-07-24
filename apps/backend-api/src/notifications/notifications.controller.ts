@@ -92,6 +92,25 @@ export class NotificationsController {
     return this.notificationsService.getReminderSchedules();
   }
 
+  @Post('reminders/schedules')
+  async createReminderSchedule(
+    @Body('employeeName') employeeName: string,
+    @Body('employeeId') employeeId: string,
+    @Body('employeePhone') employeePhone: string,
+    @Body('projectName') projectName: string,
+    @Body('projectDescription') projectDescription?: string,
+    @Body('deadline') deadline?: string,
+  ) {
+    return this.notificationsService.createReminderSchedule({
+      employeeName,
+      employeeId,
+      employeePhone,
+      projectName,
+      projectDescription,
+      deadline,
+    });
+  }
+
   @Post('reminders/trigger')
   async triggerReminder(
     @Body('scheduleId') scheduleId: string,

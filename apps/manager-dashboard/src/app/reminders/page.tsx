@@ -45,6 +45,16 @@ export default function AutomaticRemindersPage() {
   const [loading, setLoading] = useState(true);
   const [actionMessage, setActionMessage] = useState('');
   const [triggeringId, setTriggeringId] = useState<string | null>(null);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [newEmployeeName, setNewEmployeeName] = useState('');
+  const [newEmployeeId, setNewEmployeeId] = useState('');
+  const [newEmployeePhone, setNewEmployeePhone] = useState('');
+  const [newProjectName, setNewProjectName] = useState('');
+  const [newProjectDesc, setNewProjectDesc] = useState('');
+  const [newDeadline, setNewDeadline] = useState('2026-07-30');
+  const [phoneError, setPhoneError] = useState('');
+  const [isCreating, setIsCreating] = useState(false);
+
   const router = useRouter();
 
   const fetchSchedules = async () => {
@@ -71,6 +81,64 @@ export default function AutomaticRemindersPage() {
   useEffect(() => {
     fetchSchedules();
   }, []);
+
+  const validatePhone = (num: string): boolean => {
+    const cleanNum = num.trim();
+    if (!cleanNum) {
+      setPhoneError('Phone number is required.');
+      return false;
+    }
+    const phoneRegex = /^\+?[1-9]\d{6,14}$/;
+    if (!phoneRegex.test(cleanNum.replace(/[\s\-\(\)]/g, ''))) {
+      setPhoneError('Please enter a valid phone number with country code (e.g. +918105670193).');
+      return false;
+    }
+    setPhoneError('');
+    return true;
+  };
+
+  const handleCreateSchedule = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validatePhone(newEmployeePhone)) return;
+
+    setIsCreating(true);
+    try {
+      const token = localStorage.getItem('axiom_token');
+      const res = await fetch('/api/v1/notifications/reminders/schedules', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          employeeName: newEmployeeName,
+          employeeId: newEmployeeId,
+          employeePhone: newEmployeePhone,
+          projectName: newProjectName,
+          projectDescription: newProjectDesc,
+          deadline: newDeadline,
+        }),
+      });
+
+      if (res.ok) {
+        setActionMessage(
+          `Automatic reminder schedule created & initial WhatsApp message sent to ${newEmployeePhone}!`,
+        );
+        setShowCreateModal(false);
+        setNewEmployeeName('');
+        setNewEmployeeId('');
+        setNewEmployeePhone('');
+        setNewProjectName('');
+        setNewProjectDesc('');
+        fetchSchedules();
+        setTimeout(() => setActionMessage(''), 4000);
+      }
+    } catch (err) {
+      console.error('Error creating schedule:', err);
+    } finally {
+      setIsCreating(false);
+    }
+  };
 
   const handleToggleStatus = async (id: string, currentStatus: string) => {
     const newStatus = currentStatus === 'ACTIVE' ? 'PAUSED' : 'ACTIVE';
@@ -115,7 +183,6 @@ export default function AutomaticRemindersPage() {
       });
 
       if (res.ok) {
-        const data = await res.json();
         setActionMessage(
           `AI WhatsApp reminder triggered successfully to ${schedule.employeePhone}!`,
         );
@@ -144,15 +211,26 @@ export default function AutomaticRemindersPage() {
             Manage automated daily WhatsApp reminder schedules, delivery logs, and AI wording tone.
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={fetchSchedules}
-          className="rounded-lg border-[#e6e3da] text-[#66635d] hover:bg-[#faf8f5]"
-        >
-          <RefreshCw className="w-3.5 h-3.5" />
-          <span>Refresh Schedules</span>
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={() => setShowCreateModal(true)}
+            className="rounded-lg shadow-sm border border-[#7d6b4a] text-[9px] font-black uppercase tracking-widest cursor-pointer"
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>+ Create Schedule</span>
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={fetchSchedules}
+            className="rounded-lg border-[#e6e3da] text-[#66635d] hover:bg-[#faf8f5]"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            <span>Refresh Schedules</span>
+          </Button>
+        </div>
       </div>
 
       {/* Action Notification Message */}
@@ -355,6 +433,159 @@ export default function AutomaticRemindersPage() {
           </div>
         )}
       </div>
+
+      {/* Create Automatic Reminder Schedule Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white border border-[#e6e3da] max-w-lg w-full p-6 space-y-5 rounded-2xl shadow-2xl animate-in fade-in zoom-in-95 duration-200 text-[#1c1b18]">
+            <div className="flex justify-between items-center pb-3 border-b border-[#e6e3da]">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-[#8c7853]/10 border border-[#8c7853]/20 flex items-center justify-center text-[#8c7853]">
+                  <Sparkles className="w-4.5 h-4.5" />
+                </div>
+                <div>
+                  <h3 className="font-serif font-black text-[#1c1b18] text-base leading-tight">
+                    Create Automatic Reminder Schedule
+                  </h3>
+                  <p className="text-[10px] text-[#66635d] font-semibold uppercase tracking-wider">
+                    Initial Message + Daily Automatic AI Reminders
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowCreateModal(false)}
+                type="button"
+                className="p-1.5 rounded-lg text-[#66635d] hover:text-[#1c1b18] hover:bg-[#faf8f5] border border-[#e6e3da]/80"
+              >
+                <XCircle className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateSchedule} className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-[#66635d] uppercase tracking-widest block">
+                    Employee Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={newEmployeeName}
+                    onChange={(e) => setNewEmployeeName(e.target.value)}
+                    placeholder="e.g. Rahul Sharma"
+                    className="w-full bg-white border border-[#e6e3da] rounded-xl p-2.5 text-xs font-semibold text-[#1c1b18] focus:border-[#8c7853] focus:outline-none shadow-sm"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-[#66635d] uppercase tracking-widest block">
+                    Employee ID
+                  </label>
+                  <input
+                    type="text"
+                    value={newEmployeeId}
+                    onChange={(e) => setNewEmployeeId(e.target.value)}
+                    placeholder="e.g. EMP-005"
+                    className="w-full bg-white border border-[#e6e3da] rounded-xl p-2.5 text-xs font-semibold text-[#1c1b18] focus:border-[#8c7853] focus:outline-none shadow-sm"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-[#66635d] uppercase tracking-widest block">
+                  WhatsApp Recipient Phone *
+                </label>
+                <div className="relative">
+                  <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8c7853]" />
+                  <input
+                    type="text"
+                    required
+                    value={newEmployeePhone}
+                    onChange={(e) => {
+                      setNewEmployeePhone(e.target.value);
+                      if (phoneError) validatePhone(e.target.value);
+                    }}
+                    placeholder="e.g. +918105670193"
+                    className={`w-full bg-white border ${
+                      phoneError ? 'border-[#9f3a38]' : 'border-[#e6e3da] focus:border-[#8c7853]'
+                    } rounded-xl py-2.5 pl-10 pr-4 text-xs font-semibold text-[#1c1b18] focus:outline-none shadow-sm`}
+                  />
+                </div>
+                {phoneError && (
+                  <p className="text-[11px] text-[#9f3a38] font-bold flex items-center gap-1 mt-1">
+                    <AlertCircle className="w-3 h-3 shrink-0" />
+                    {phoneError}
+                  </p>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-[#66635d] uppercase tracking-widest block">
+                    Project Name *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={newProjectName}
+                    onChange={(e) => setNewProjectName(e.target.value)}
+                    placeholder="e.g. Mobile Banking Dashboard"
+                    className="w-full bg-white border border-[#e6e3da] rounded-xl p-2.5 text-xs font-semibold text-[#1c1b18] focus:border-[#8c7853] focus:outline-none shadow-sm"
+                  />
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black text-[#66635d] uppercase tracking-widest block">
+                    Target Deadline Date *
+                  </label>
+                  <input
+                    type="date"
+                    required
+                    value={newDeadline}
+                    onChange={(e) => setNewDeadline(e.target.value)}
+                    className="w-full bg-white border border-[#e6e3da] rounded-xl p-2 text-xs font-semibold text-[#1c1b18] focus:border-[#8c7853] focus:outline-none shadow-sm"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-[#66635d] uppercase tracking-widest block">
+                  Project Description / Context
+                </label>
+                <textarea
+                  rows={2}
+                  value={newProjectDesc}
+                  onChange={(e) => setNewProjectDesc(e.target.value)}
+                  placeholder="Describe key deliverables or goals..."
+                  className="w-full bg-white border border-[#e6e3da] rounded-xl p-2.5 text-xs font-semibold text-[#1c1b18] focus:border-[#8c7853] focus:outline-none shadow-sm resize-none"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2.5 pt-3 border-t border-[#e6e3da]">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowCreateModal(false)}
+                  className="px-4 py-2 text-[9px] font-black tracking-widest uppercase border-[#e6e3da] text-[#66635d]"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  variant="primary"
+                  size="sm"
+                  disabled={isCreating}
+                  className="px-4 py-2 text-[9px] font-black tracking-widest uppercase border border-[#7d6b4a] gap-1.5"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>{isCreating ? 'Creating...' : 'Create & Start Reminders'}</span>
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
