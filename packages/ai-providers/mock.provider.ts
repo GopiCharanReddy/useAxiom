@@ -134,6 +134,24 @@ export class MockLlmProvider implements ILlmProvider {
       const userMessage = [...messages].reverse().find((m) => m.role === 'user')?.content || '';
       const lower = userMessage.toLowerCase();
 
+      // 1. Greetings & Openers
+      if (
+        /^(hi|hii|hello|hey|greetings|help|njh|who are you|what can you do)$/i.test(lower) ||
+        lower === 'hi' ||
+        lower === 'hii' ||
+        lower === 'hello' ||
+        lower === 'hey'
+      ) {
+        return {
+          reply:
+            'Hello! I am Axiom Assistant, your AI project management co-pilot. I can help you track project deadlines, assign projects to employees, monitor team workloads, flag project risks, and automatically dispatch daily WhatsApp reminders. How can I assist you with your workspace today?',
+          intent: 'QUESTION',
+          confidenceScore: 0.98,
+          extractedParameters: {},
+        } as unknown as T;
+      }
+
+      // 2. Milestone 2 / Delays
       if (lower.includes('milestone 2') || lower.includes('delayed') || lower.includes('delay')) {
         return {
           reply:
@@ -147,6 +165,7 @@ export class MockLlmProvider implements ILlmProvider {
         } as unknown as T;
       }
 
+      // 3. Blocked / Dave
       if (lower.includes('dave') || lower.includes('blocked')) {
         return {
           reply:
@@ -159,6 +178,7 @@ export class MockLlmProvider implements ILlmProvider {
         } as unknown as T;
       }
 
+      // 4. Sarah / Ping
       if (lower.includes('sarah') || lower.includes('ping')) {
         return {
           reply:
@@ -169,6 +189,7 @@ export class MockLlmProvider implements ILlmProvider {
         } as unknown as T;
       }
 
+      // 5. Plan / Review
       if (lower.includes('plan') || lower.includes('draft') || lower.includes('review')) {
         return {
           reply:
@@ -179,9 +200,70 @@ export class MockLlmProvider implements ILlmProvider {
         } as unknown as T;
       }
 
+      // 6. Projects / Goals / Deadlines
+      if (
+        lower.includes('project') ||
+        lower.includes('goal') ||
+        lower.includes('status') ||
+        lower.includes('deadline')
+      ) {
+        return {
+          reply:
+            'Here is your current project workspace summary:\n\n• **Mobile Banking Dashboard** (High Priority) — Target Deadline: 30 July 2026 (6 days remaining). Progress: 60%. Status: Active.\n• **Payment Gateway Integration** (Medium Priority) — Target Deadline: 05 August 2026. Progress: 40%.\n\nAutomatic daily AI WhatsApp reminders are actively tracking progress for assigned team members.',
+          intent: 'QUESTION',
+          confidenceScore: 0.95,
+          extractedParameters: {},
+        } as unknown as T;
+      }
+
+      // 7. Team / Employee / Workloads
+      if (
+        lower.includes('employee') ||
+        lower.includes('team') ||
+        lower.includes('workload') ||
+        lower.includes('rahul') ||
+        lower.includes('assignee')
+      ) {
+        return {
+          reply:
+            'Here is your current team workload overview:\n\n• **Rahul Sharma** (EMP-005 | +918105670193): 2 active projects (Mobile Banking Dashboard, Payment Gateway). Status: Active\n• **Sarah Jenkins** (EMP-002 | +19998887777): 1 active project. Status: On Track\n• **David Miller** (Manager Lead): Workspace Manager\n\nWould you like me to assign a project or trigger a WhatsApp reminder for an employee?',
+          intent: 'QUESTION',
+          confidenceScore: 0.95,
+          extractedParameters: {},
+        } as unknown as T;
+      }
+
+      // 8. Reminders / WhatsApp
+      if (
+        lower.includes('reminder') ||
+        lower.includes('whatsapp') ||
+        lower.includes('trigger') ||
+        lower.includes('schedule')
+      ) {
+        return {
+          reply:
+            'Automatic AI WhatsApp Reminders are enabled! Daily reminders are dispatched automatically at your configured time (default 09:00 AM) based on your selected AI Tone (Professional, Friendly, or Strict). You can also create a new reminder schedule or click **Trigger Now** on the **Automatic Reminders** dashboard page.',
+          intent: 'QUESTION',
+          confidenceScore: 0.95,
+          extractedParameters: {},
+        } as unknown as T;
+      }
+
+      // 9. Assign / Create / Add
+      if (lower.includes('assign') || lower.includes('create') || lower.includes('add')) {
+        return {
+          reply:
+            'To assign a project or schedule reminders:\n1. Click **+ Create Schedule** on the Automatic Reminders page or **New Project Goal** on your Projects dashboard.\n2. Enter the Employee Name, Phone Number (+918105670193), Project Name, and Target Deadline.\n3. Axiom Assistant will immediately notify the employee on WhatsApp and track daily progress until completion!',
+          intent: 'QUESTION',
+          confidenceScore: 0.95,
+          extractedParameters: {},
+        } as unknown as T;
+      }
+
+      // Default dynamic context-aware response for open-ended queries
       const cleanMessage = userMessage.replace(/^Message:\s*"/, '').replace(/"$/, '');
       return {
-        reply: `Received query: "${cleanMessage}". Axiom Assistant telemetry is active and tracking your project workspace.`,
+        reply: `I have received your query: "${cleanMessage}".\n\nAxiom Assistant is actively tracking your workspace projects, employee workloads, and automatic WhatsApp reminders. How can I help you manage your team today?`,
         intent: 'QUESTION',
         confidenceScore: 0.9,
         extractedParameters: {},
