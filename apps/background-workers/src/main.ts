@@ -4,6 +4,29 @@ import * as path from 'path';
 dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 dotenv.config();
 
+// Interpolate environment variables containing ${VAR} syntax
+function interpolateEnv(val: string): string {
+  const seen = new Set<string>();
+  const resolve = (str: string): string => {
+    return str.replace(/\${([^}]+)}/g, (_, name) => {
+      if (seen.has(name)) return '';
+      seen.add(name);
+      const ref = process.env[name] || '';
+      const resolved = resolve(ref);
+      seen.delete(name);
+      return resolved;
+    });
+  };
+  return resolve(val);
+}
+
+for (const key in process.env) {
+  const val = process.env[key];
+  if (typeof val === 'string' && val.includes('${')) {
+    process.env[key] = interpolateEnv(val);
+  }
+}
+
 import { Worker, Queue } from 'bullmq';
 import IORedis from 'ioredis';
 import { plannerWorkerProcessor } from './workers/ai-planner.worker';

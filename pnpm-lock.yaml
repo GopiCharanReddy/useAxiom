@@ -51,6 +51,9 @@ importers:
       '@nestjs/platform-express':
         specifier: ^11.0.1
         version: 11.1.28(@nestjs/common@11.1.28(class-transformer@0.5.1)(class-validator@0.15.1)(reflect-metadata@0.2.2)(rxjs@7.8.2))(@nestjs/core@11.1.28)
+      '@types/passport-local':
+        specifier: ^1.0.38
+        version: 1.0.38
       '@useaxiom/ai-core':
         specifier: workspace:*
         version: link:../../packages/ai-core
@@ -124,14 +127,11 @@ importers:
       '@types/passport-jwt':
         specifier: ^4.0.1
         version: 4.0.1
-      '@types/passport-local':
-        specifier: ^1.0.38
-        version: 1.0.38
       '@types/supertest':
         specifier: ^7.0.0
         version: 7.2.0
       '@useaxiom/config':
-        specifier: workspace:*
+        specifier: workspace:^
         version: link:../../packages/config
       eslint:
         specifier: ^9.18.0
