@@ -32,7 +32,10 @@ async function bootstrap() {
       }),
     );
 
-    const port = process.env.PORT || 3001;
+    app.useGlobalFilters(new GlobalExceptionFilter());
+    app.useGlobalInterceptors(new LoggingInterceptor());
+
+    const port = process.env.BACKEND_PORT || 3001;
     await app.listen(port);
   } catch (err: any) {
     console.error('BOOTSTRAP FAILED EXCEPTION:', err);
