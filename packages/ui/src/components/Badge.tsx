@@ -7,16 +7,16 @@ export interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
 export const Badge = forwardRef<HTMLSpanElement, BadgeProps>(
   ({ className = '', variant = 'default', children, ...props }, ref) => {
     const baseStyles =
-      'inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold tracking-wide transition-colors duration-200 border';
+      'inline-flex items-center px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest transition-colors duration-200 border';
 
     const variants = {
-      default: 'bg-slate-100 text-slate-700 border-slate-200/80',
-      proposed: 'bg-blue-50 text-blue-700 border-blue-200/80',
-      pending: 'bg-amber-50 text-amber-700 border-amber-200/80',
-      progress: 'bg-sky-50 text-sky-700 border-sky-200/80',
-      blocked: 'bg-rose-50 text-rose-700 border-rose-200/80',
-      completed: 'bg-emerald-50 text-emerald-700 border-emerald-200/80',
-      error: 'bg-rose-50 text-rose-700 border-rose-200/80',
+      default: 'bg-[#f2efe9] text-[#66635d] border-[#e6e3da]',
+      proposed: 'bg-[#FAF4E8] text-[#8c7853] border-[#eedebf]',
+      pending: 'bg-[#FCF5EB] text-[#bda272] border-[#ebd4b1]',
+      progress: 'bg-[#eef2f6] text-[#4d6a8c] border-[#d8e3ed]',
+      blocked: 'bg-[#fdf2f2] text-[#9f3a38] border-[#fcdada]',
+      completed: 'bg-[#f0f5f0] text-[#3e593e] border-[#d5ebd5]',
+      error: 'bg-[#fdf2f2] text-[#9f3a38] border-[#fcdada]',
     };
 
     return (

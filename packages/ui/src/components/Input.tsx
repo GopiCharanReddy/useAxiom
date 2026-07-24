@@ -10,20 +10,22 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className="flex flex-col gap-1 w-full">
         {label && (
-          <label className="text-xs font-semibold text-slate-700 tracking-wide mb-1">{label}</label>
+          <label className="text-[10px] font-black text-[#66635d] tracking-widest uppercase mb-1">
+            {label}
+          </label>
         )}
         <input
           ref={ref}
           type={type}
-          className={`px-3.5 py-2.5 bg-white border ${
+          className={`px-4 py-3 bg-white border ${
             error
-              ? 'border-rose-500 focus:ring-rose-500/20'
-              : 'border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10'
-          } rounded-lg text-slate-900 placeholder-slate-400 text-sm focus:outline-none transition-all duration-200 shadow-xs ${className}`}
+              ? 'border-[#9f3a38] focus:ring-[#9f3a38]/20'
+              : 'border-[#e6e3da] focus:border-[#8c7853] focus:ring-4 focus:ring-[#8c7853]/10'
+          } rounded-lg text-[#1c1b18] placeholder-[#a09c94] text-sm focus:outline-none transition-all duration-300 shadow-sm ${className}`}
           {...props}
         />
         {error && (
-          <span className="text-xs text-rose-600 font-medium mt-1 tracking-wide">{error}</span>
+          <span className="text-xs text-[#9f3a38] font-bold mt-1 tracking-wide">{error}</span>
         )}
       </div>
     );
@@ -41,19 +43,21 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
     return (
       <div className="flex flex-col gap-1 w-full">
         {label && (
-          <label className="text-xs font-semibold text-slate-700 tracking-wide mb-1">{label}</label>
+          <label className="text-[10px] font-black text-[#66635d] tracking-widest uppercase mb-1">
+            {label}
+          </label>
         )}
         <textarea
           ref={ref}
-          className={`px-3.5 py-2.5 bg-white border ${
+          className={`px-4 py-3 bg-white border ${
             error
-              ? 'border-rose-500 focus:ring-rose-500/20'
-              : 'border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10'
-          } rounded-lg text-slate-900 placeholder-slate-400 text-sm focus:outline-none transition-all duration-200 resize-none min-h-[100px] shadow-xs ${className}`}
+              ? 'border-[#9f3a38] focus:ring-[#9f3a38]/20'
+              : 'border-[#e6e3da] focus:border-[#8c7853] focus:ring-4 focus:ring-[#8c7853]/10'
+          } rounded-lg text-[#1c1b18] placeholder-[#a09c94] text-sm focus:outline-none transition-all duration-300 resize-none min-h-[100px] shadow-sm ${className}`}
           {...props}
         />
         {error && (
-          <span className="text-xs text-rose-600 font-medium mt-1 tracking-wide">{error}</span>
+          <span className="text-xs text-[#9f3a38] font-bold mt-1 tracking-wide">{error}</span>
         )}
       </div>
     );
