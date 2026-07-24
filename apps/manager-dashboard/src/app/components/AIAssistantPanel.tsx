@@ -85,7 +85,13 @@ export default function AIAssistantPanel({ isOpen, onClose }: AIAssistantPanelPr
 
       let aiResponseText = '';
       if (data.success) {
-        aiResponseText = data.data;
+        if (typeof data.data === 'string') {
+          aiResponseText = data.data;
+        } else if (data.data && typeof data.data === 'object') {
+          aiResponseText = data.data.reply || JSON.stringify(data.data);
+        } else {
+          aiResponseText = 'No response content returned from AI assistant.';
+        }
       } else {
         aiResponseText = `Error: ${data.error || 'Failed to process chat query'}`;
       }
