@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { QueueModule } from '../modules/queue/queue.module';
 import { CommunicationController } from './controllers/communication.controller';
 import { ReminderRulesController } from './controllers/reminder-rules.controller';
 import { MetaWebhookController } from './controllers/meta-webhook.controller';
@@ -10,6 +11,7 @@ import { MetaWhatsappService } from './services/meta-whatsapp.service';
 import { CommunicationMonitoringService } from './services/communication-monitoring.service';
 
 @Module({
+  imports: [QueueModule],
   controllers: [
     CommunicationController,
     ReminderRulesController,
