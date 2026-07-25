@@ -5,6 +5,8 @@ import { CreateProjectDto } from './dto/project.dto';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { NotificationsService } from '../notifications/notifications.service';
+import { EventPublisherService } from '../communication/services/event-publisher.service';
+import { NotificationEventType } from '../communication/events/notification-event.types';
 
 @Injectable()
 export class ProjectsService {
@@ -13,10 +15,11 @@ export class ProjectsService {
     @InjectQueue('planner_jobs') private readonly plannerQueue: Queue,
     @InjectQueue('assignment_jobs') private readonly assignmentQueue: Queue,
     private readonly notificationsService: NotificationsService,
+    private readonly eventPublisher: EventPublisherService,
   ) {}
 
   async create(organizationId: string, managerId: string, dto: CreateProjectDto): Promise<Project> {
-    return this.prisma.project.create({
+    const project = await this.prisma.project.create({
       data: {
         name: dto.name,
         objective: dto.objective,
@@ -41,6 +44,23 @@ export class ProjectsService {
         },
       },
     });
+
+    // Publish PROJECT_CREATED event after successful DB write
+    await this.eventPublisher.publish({
+      organizationId,
+      actorId: managerId,
+      entityType: 'project',
+      entityId: project.id,
+      eventType: NotificationEventType.PROJECT_CREATED,
+      variables: {
+        projectName: project.name,
+        projectDescription: project.objective,
+        deadline: project.targetDeadline?.toDateString() ?? 'No deadline',
+        portalLink: `${process.env.PORTAL_URL ?? 'https://app.useaxiom.com'}/projects/${project.id}`,
+      },
+    });
+
+    return project;
   }
 
   async findAll(organizationId: string) {
@@ -91,10 +111,30 @@ export class ProjectsService {
     if (!project) {
       throw new NotFoundException(`Project with ID ${id} not found under your organization`);
     }
-    return this.prisma.project.update({
+    const updated = await this.prisma.project.update({
       where: { id },
       data: { status },
     });
+
+    const eventType =
+      status === ProjectStatus.COMPLETED
+        ? NotificationEventType.PROJECT_COMPLETED
+        : NotificationEventType.PROJECT_UPDATED;
+
+    await this.eventPublisher.publish({
+      organizationId,
+      actorId: project.managerId ?? organizationId,
+      entityType: 'project',
+      entityId: id,
+      eventType,
+      variables: {
+        projectName: project.name,
+        status,
+        portalLink: `${process.env.PORTAL_URL ?? 'https://app.useaxiom.com'}/projects/${id}`,
+      },
+    });
+
+    return updated;
   }
 
   async softDeleteProject(organizationId: string, id: string) {
@@ -135,6 +175,20 @@ export class ProjectsService {
     await this.assignmentQueue.add('assign-tasks', {
       projectId: id,
       tenantId: organizationId,
+    });
+
+    // Publish PROJECT_UPDATED event (status → ACTIVE)
+    await this.eventPublisher.publish({
+      organizationId,
+      actorId: project.managerId ?? organizationId,
+      entityType: 'project',
+      entityId: id,
+      eventType: NotificationEventType.PROJECT_UPDATED,
+      variables: {
+        projectName: project.name,
+        status: 'ACTIVE',
+        portalLink: `${process.env.PORTAL_URL ?? 'https://app.useaxiom.com'}/projects/${id}`,
+      },
     });
 
     return updatedProject;
@@ -217,17 +271,20 @@ export class ProjectsService {
       },
     });
 
-    const deadlineString = project.targetDeadline
-      ? project.targetDeadline.toDateString()
-      : 'No deadline set';
-    await this.notificationsService.sendProjectAssignedAlert(
-      projectId,
-      user.phoneNumber,
-      project.name,
-      deadlineString,
-      project.domain || 'Not specified',
-      project.techStack,
-    );
+    // Publish EMPLOYEE_ADDED event (replaces direct notificationsService call with proper event)
+    await this.eventPublisher.publish({
+      organizationId,
+      actorId: project.managerId ?? organizationId,
+      entityType: 'project',
+      entityId: projectId,
+      eventType: NotificationEventType.EMPLOYEE_ADDED,
+      variables: {
+        employeeName: user.name,
+        projectName: project.name,
+        deadline: project.targetDeadline?.toDateString() ?? 'No deadline',
+        portalLink: `${process.env.PORTAL_URL ?? 'https://app.useaxiom.com'}/projects/${projectId}`,
+      },
+    });
 
     return member;
   }
@@ -263,7 +320,11 @@ export class ProjectsService {
       throw new NotFoundException(`Project with ID ${projectId} not found under your organization`);
     }
 
-    return this.prisma.projectMember.delete({
+    const user = await this.prisma.user.findFirst({
+      where: { id: userId, organizationId, deletedAt: null },
+    });
+
+    const result = await this.prisma.projectMember.delete({
       where: {
         projectId_userId: {
           projectId,
@@ -271,5 +332,23 @@ export class ProjectsService {
         },
       },
     });
+
+    // Publish EMPLOYEE_REMOVED event
+    if (user) {
+      await this.eventPublisher.publish({
+        organizationId,
+        actorId: project.managerId ?? organizationId,
+        entityType: 'project',
+        entityId: projectId,
+        eventType: NotificationEventType.EMPLOYEE_REMOVED,
+        variables: {
+          employeeName: user.name,
+          projectName: project.name,
+          portalLink: `${process.env.PORTAL_URL ?? 'https://app.useaxiom.com'}/projects/${projectId}`,
+        },
+      });
+    }
+
+    return result;
   }
 }

@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import * as dotenv from 'dotenv';
 import { expand as dotenvExpand } from 'dotenv-expand';
 import * as path from 'path';
+import * as express from 'express';
 
 const env = dotenv.config({ path: path.resolve(__dirname, '../../../.env') });
 dotenvExpand(env);
@@ -26,11 +27,14 @@ async function bootstrap() {
       credentials: true,
     });
 
+    // Enable urlencoded body parsing for Twilio webhook (form-encoded payloads)
+    app.use(express.urlencoded({ extended: true }));
+
     app.useGlobalPipes(
       new ValidationPipe({
         whitelist: true,
         transform: true,
-        forbidNonWhitelisted: true,
+        forbidNonWhitelisted: false, // Twilio sends extra form fields; must not reject them
       }),
     );
 

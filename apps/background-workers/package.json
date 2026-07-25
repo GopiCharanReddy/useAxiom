@@ -10,25 +10,24 @@
     "lint": "eslint src/**/*.ts"
   },
   "dependencies": {
+    "@useaxiom/ai-core": "workspace:*",
+    "@useaxiom/ai-memory": "workspace:*",
+    "@useaxiom/ai-providers": "workspace:*",
+    "@useaxiom/database": "workspace:*",
+    "@useaxiom/types": "workspace:*",
     "bullmq": "^5.8.0",
     "dotenv": "^16.4.5",
     "ioredis": "^5.4.1",
-    "@useaxiom/database": "workspace:*",
-    "@useaxiom/types": "workspace:*",
-    "@useaxiom/ai-core": "workspace:*",
-    "@useaxiom/ai-memory": "workspace:*",
-    "@useaxiom/ai-providers": "workspace:*"
+    "twilio": "^6.0.2"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
+    "@useaxiom/config": "workspace:*",
     "eslint": "^9.18.0",
     "eslint-config-prettier": "^10.0.1",
     "eslint-plugin-prettier": "^5.2.2",
-    "typescript-eslint": "^8.20.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.0.0",
-    "eslint": "^9.18.0",
-    "typescript-eslint": "^8.20.0",
-    "@useaxiom/config": "workspace:*"
+    "typescript-eslint": "^8.20.0"
   }
 }

@@ -15,6 +15,7 @@ import { TasksModule } from './tasks/tasks.module';
 import { AssignmentsModule } from './assignments/assignments.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { AnalyticsModule } from './analytics/analytics.module';
+import { CommunicationModule } from './communication/communication.module';
 import { TenantMiddleware } from './middleware/tenant.middleware';
 import { APP_FILTER, APP_INTERCEPTOR } from '@nestjs/core';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
@@ -36,6 +37,7 @@ import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
     AssignmentsModule,
     AnalyticsModule,
     AiModule,
+    CommunicationModule,
   ],
   controllers: [AppController],
   providers: [

@@ -1,4 +1,5 @@
 import { Worker, Job } from 'bullmq';
+import twilio from 'twilio';
 
 export function createOutgoingMessagesWorker(redisConnection: any) {
   console.info('[OutgoingWorker] Starting outgoing messages worker...');
@@ -7,30 +8,78 @@ export function createOutgoingMessagesWorker(redisConnection: any) {
     'outgoing_messages',
     async (job: Job) => {
       console.info(`[OutgoingWorker] Processing job ${job.id} of type ${job.name}`);
-      console.info('[OutgoingWorker] Outbound Message Details:', JSON.stringify(job.data, null, 2));
 
-      const { to, content } = job.data;
+      const { to, content } = job.data as { to: string; content: string };
+
+      // ----------------------------------------------------------------
+      // Twilio WhatsApp Sandbox (primary for testing)
+      // ----------------------------------------------------------------
+      const twilioSid = process.env.TWILIO_ACCOUNT_SID;
+      const twilioToken = process.env.TWILIO_AUTH_TOKEN;
+      const twilioFrom = process.env.TWILIO_WHATSAPP_FROM || 'whatsapp:+14155238886';
+
+      const hasTwilio =
+        twilioSid &&
+        twilioToken &&
+        !twilioSid.startsWith('your_') &&
+        !twilioToken.startsWith('your_');
+
+      // ----------------------------------------------------------------
+      // Meta WhatsApp Business API (future production path)
+      // ----------------------------------------------------------------
       const accessToken = process.env.WHATSAPP_ACCESS_TOKEN;
       const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID;
-      const isPlaceholder = (val?: string) =>
+      const isPlaceholderMeta = (val?: string) =>
         !val || val.startsWith('your_') || val.startsWith('your-') || val.includes('placeholder');
-      const simulate =
-        process.env.WHATSAPP_SIMULATE === 'true' ||
-        (process.env.NODE_ENV !== 'production' &&
-          (!accessToken ||
-            !phoneNumberId ||
-            isPlaceholder(accessToken) ||
-            isPlaceholder(phoneNumberId)));
 
-      if (!simulate) {
-        if (!accessToken || !phoneNumberId) {
-          throw new Error(
-            'Meta WhatsApp Business API credentials (WHATSAPP_ACCESS_TOKEN, WHATSAPP_PHONE_NUMBER_ID) are missing',
+      const hasMeta =
+        accessToken &&
+        phoneNumberId &&
+        !isPlaceholderMeta(accessToken) &&
+        !isPlaceholderMeta(phoneNumberId);
+
+      const simulate = process.env.WHATSAPP_SIMULATE === 'true';
+
+      // ----------------------------------------------------------------
+      // Routing logic
+      // ----------------------------------------------------------------
+      if (simulate) {
+        console.info(`[OutgoingWorker] (SIMULATED) Message to: ${to}`);
+        console.info(`[OutgoingWorker] (SIMULATED) Body: "${content}"`);
+        return { success: true, sentAt: new Date().toISOString(), simulated: true };
+      }
+
+      if (hasTwilio) {
+        // Ensure 'to' has the whatsapp: prefix
+        const twilioTo = to.startsWith('whatsapp:') ? to : `whatsapp:${to}`;
+        console.info(`[OutgoingWorker] Dispatching message via Twilio to: ${twilioTo}`);
+
+        try {
+          const client = twilio(twilioSid!, twilioToken!);
+          const message = await client.messages.create({
+            from: twilioFrom,
+            to: twilioTo,
+            body: content,
+          });
+
+          console.info(
+            `[OutgoingWorker] Message sent via Twilio. SID: ${message.sid} | Status: ${message.status}`,
           );
+          return {
+            success: true,
+            sentAt: new Date().toISOString(),
+            provider: 'twilio',
+            messageSid: message.sid,
+          };
+        } catch (error) {
+          console.error('[OutgoingWorker] Twilio dispatch error:', error);
+          throw error;
         }
+      }
 
+      if (hasMeta) {
         console.info(
-          `[OutgoingWorker] Dispatching real message via Meta WhatsApp Graph API to: ${to}`,
+          `[OutgoingWorker] Dispatching message via Meta WhatsApp Graph API to: ${to}`,
         );
         try {
           const response = await fetch(
@@ -44,45 +93,42 @@ export function createOutgoingMessagesWorker(redisConnection: any) {
               body: JSON.stringify({
                 messaging_product: 'whatsapp',
                 recipient_type: 'individual',
-                to: to,
+                to,
                 type: 'text',
-                text: {
-                  preview_url: false,
-                  body: content,
-                },
+                text: { preview_url: false, body: content },
               }),
             },
           );
 
           const responseData = await response.json();
-
           if (!response.ok) {
-            console.error(
-              `[OutgoingWorker] Meta API error: Status ${response.status}`,
-              JSON.stringify(responseData),
-            );
             throw new Error(
               `Meta API error: ${responseData?.error?.message || response.statusText}`,
             );
           }
 
           console.info(
-            `[OutgoingWorker] Message successfully sent via Meta. Meta message ID: ${responseData?.messages?.[0]?.id}`,
+            `[OutgoingWorker] Message sent via Meta. ID: ${responseData?.messages?.[0]?.id}`,
           );
           return {
             success: true,
             sentAt: new Date().toISOString(),
+            provider: 'meta',
             metaMessageId: responseData?.messages?.[0]?.id,
           };
         } catch (error) {
-          console.error('[OutgoingWorker] Exception during Meta dispatch:', error);
+          console.error('[OutgoingWorker] Meta dispatch error:', error);
           throw error;
         }
-      } else {
-        console.info(`[OutgoingWorker] (SIMULATED) Outbound message successfully "sent" to: ${to}`);
-        console.info(`[OutgoingWorker] (SIMULATED) Body: "${content}"`);
-        return { success: true, sentAt: new Date().toISOString(), simulated: true };
       }
+
+      // No real credentials configured — log a clear warning
+      console.warn(
+        '[OutgoingWorker] No WhatsApp credentials found. Set TWILIO_ACCOUNT_SID/TWILIO_AUTH_TOKEN ' +
+          'or WHATSAPP_SIMULATE=true in .env',
+      );
+      console.info(`[OutgoingWorker] (FALLBACK LOG) To: ${to} | Body: "${content}"`);
+      return { success: false, reason: 'no_credentials' };
     },
     {
       connection: redisConnection,
@@ -94,7 +140,7 @@ export function createOutgoingMessagesWorker(redisConnection: any) {
   });
 
   worker.on('failed', (job, err) => {
-    console.error(`[OutgoingWorker] Job ${job?.id} failed with error:`, err);
+    console.error(`[OutgoingWorker] Job ${job?.id} failed:`, err.message || err);
   });
 
   return worker;

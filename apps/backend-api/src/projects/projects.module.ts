@@ -5,12 +5,14 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { BullModule } from '@nestjs/bullmq';
 import { QueueModule } from '../modules/queue/queue.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { CommunicationModule } from '../communication/communication.module';
 
 @Module({
   imports: [
     PrismaModule,
     QueueModule,
     NotificationsModule,
+    CommunicationModule,
     BullModule.registerQueue({
       name: 'planner_jobs',
     }),
@@ -23,3 +25,4 @@ import { NotificationsModule } from '../notifications/notifications.module';
   exports: [ProjectsService],
 })
 export class ProjectsModule {}
+

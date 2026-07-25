@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Clock,
@@ -57,7 +57,7 @@ export default function AutomaticRemindersPage() {
 
   const router = useRouter();
 
-  const fetchSchedules = async () => {
+  const fetchSchedules = useCallback(async () => {
     try {
       const token = localStorage.getItem('axiom_token');
       if (!token) {
@@ -76,11 +76,11 @@ export default function AutomaticRemindersPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [router]);
 
   useEffect(() => {
     fetchSchedules();
-  }, []);
+  }, [fetchSchedules]);
 
   const validatePhone = (num: string): boolean => {
     const cleanNum = num.trim();

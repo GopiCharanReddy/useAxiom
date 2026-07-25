@@ -2,10 +2,15 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { PrismaService } from '../prisma/prisma.service';
 import { Task, TaskStatus } from '@useaxiom/database';
 import { CreateTaskDto } from './dto/task.dto';
+import { EventPublisherService } from '../communication/services/event-publisher.service';
+import { NotificationEventType } from '../communication/events/notification-event.types';
 
 @Injectable()
 export class TasksService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly eventPublisher: EventPublisherService,
+  ) {}
 
   private async checkProjectOwner(organizationId: string, projectId: string): Promise<void> {
     const project = await this.prisma.project.findFirst({
@@ -37,7 +42,7 @@ export class TasksService {
       }
     }
 
-    return this.prisma.task.create({
+    const task = await this.prisma.task.create({
       data: {
         title: dto.title,
         description: dto.description,
@@ -56,7 +61,26 @@ export class TasksService {
             }
           : {}),
       },
+      include: {
+        project: true,
+      },
     });
+
+    await this.eventPublisher.publish({
+      organizationId,
+      actorId: organizationId,
+      entityType: 'task',
+      entityId: task.id,
+      eventType: NotificationEventType.TASK_CREATED,
+      variables: {
+        taskName: task.title,
+        taskDescription: task.description,
+        projectName: task.project.name,
+        portalLink: `${process.env.PORTAL_URL ?? 'https://app.useaxiom.com'}/projects/${projectId}`,
+      },
+    });
+
+    return task;
   }
 
   async findAll(organizationId: string, projectId: string): Promise<Task[]> {
@@ -97,6 +121,7 @@ export class TasksService {
       },
       include: {
         milestone: true,
+        project: true,
         assignments: {
           include: {
             user: {
@@ -121,7 +146,7 @@ export class TasksService {
       PENDING: ['IN_PROGRESS'],
       IN_PROGRESS: ['BLOCKED', 'COMPLETED'],
       BLOCKED: ['IN_PROGRESS'],
-      COMPLETED: [],
+      COMPLETED: ['IN_PROGRESS', 'PENDING'], // Reopen allowed
     };
 
     const allowed = allowedTransitions[currentStatus] || [];
@@ -157,13 +182,37 @@ export class TasksService {
       }
     }
 
-    return this.prisma.task.update({
+    const updatedTask = await this.prisma.task.update({
       where: { id },
       data: { status },
       include: {
         milestone: true,
+        project: true,
       },
     });
+
+    let eventType: NotificationEventType = NotificationEventType.TASK_UPDATED;
+    if (status === 'COMPLETED') {
+      eventType = NotificationEventType.TASK_COMPLETED;
+    } else if (task.status === 'COMPLETED' && (status === 'IN_PROGRESS' || status === 'PENDING')) {
+      eventType = NotificationEventType.TASK_REOPENED;
+    }
+
+    await this.eventPublisher.publish({
+      organizationId,
+      actorId: organizationId,
+      entityType: 'task',
+      entityId: id,
+      eventType,
+      variables: {
+        taskName: updatedTask.title,
+        projectName: updatedTask.project.name,
+        status,
+        portalLink: `${process.env.PORTAL_URL ?? 'https://app.useaxiom.com'}/projects/${updatedTask.projectId}`,
+      },
+    });
+
+    return updatedTask;
   }
 
   async softDeleteTask(organizationId: string, id: string) {
@@ -197,31 +246,7 @@ export class TasksService {
     }
 
     if (overrideData?.assigneeIdOverride) {
-      const user = await this.prisma.user.findFirst({
-        where: {
-          id: overrideData.assigneeIdOverride,
-          organizationId: organizationId,
-        },
-      });
-      if (!user) {
-        throw new NotFoundException(
-          `User with ID ${overrideData.assigneeIdOverride} not found in this organization`,
-        );
-      }
-
-      await this.prisma.assignment.upsert({
-        where: {
-          taskId_userId: {
-            taskId: id,
-            userId: overrideData.assigneeIdOverride,
-          },
-        },
-        update: {},
-        create: {
-          taskId: id,
-          userId: overrideData.assigneeIdOverride,
-        },
-      });
+      await this.assignTask(organizationId, id, overrideData.assigneeIdOverride);
     }
 
     return this.prisma.task.update({
@@ -247,7 +272,7 @@ export class TasksService {
       throw new NotFoundException(`User with ID ${userId} not found in this organization`);
     }
 
-    return this.prisma.assignment.upsert({
+    const assignment = await this.prisma.assignment.upsert({
       where: {
         taskId_userId: {
           taskId: taskId,
@@ -260,6 +285,22 @@ export class TasksService {
         userId: userId,
       },
     });
+
+    await this.eventPublisher.publish({
+      organizationId,
+      actorId: organizationId,
+      entityType: 'task',
+      entityId: taskId,
+      eventType: NotificationEventType.TASK_ASSIGNED,
+      variables: {
+        taskName: task.title,
+        employeeName: user.name,
+        projectName: (task as any).project?.name ?? 'Project',
+        portalLink: `${process.env.PORTAL_URL ?? 'https://app.useaxiom.com'}/projects/${task.projectId}`,
+      },
+    });
+
+    return assignment;
   }
 
   async hasPath(startTaskId: string, targetTaskId: string): Promise<boolean> {
@@ -303,7 +344,6 @@ export class TasksService {
       throw new NotFoundException('One or both tasks not found under your organization');
     }
 
-    // Check if dependency already exists
     const existing = await this.prisma.taskDependency.findUnique({
       where: {
         taskId_dependsOnTaskId: { taskId, dependsOnTaskId },
@@ -313,7 +353,6 @@ export class TasksService {
       return existing;
     }
 
-    // Check for circular dependency: does a path exist from taskId to dependsOnTaskId?
     const createsCycle = await this.hasPath(taskId, dependsOnTaskId);
     if (createsCycle) {
       throw new BadRequestException(

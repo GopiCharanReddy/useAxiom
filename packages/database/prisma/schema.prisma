@@ -43,19 +43,24 @@ enum MessageStatus {
 }
 
 model Organization {
-  id                 String               @id @default(uuid()) @db.Uuid
+  id                 String                @id @default(uuid()) @db.Uuid
   name               String
-  whatsappBusinessId String?              @map("whatsapp_business_id")
-  createdAt          DateTime             @default(now()) @map("created_at")
-  deletedAt          DateTime?            @map("deleted_at")
+  whatsappBusinessId String?               @map("whatsapp_business_id")
+  createdAt          DateTime              @default(now()) @map("created_at")
+  deletedAt          DateTime?             @map("deleted_at")
   users              User[]
   departments        Department[]
   projects           Project[]
   whatsappMessages   WhatsAppMessage[]
   auditLogs          AuditLog[]
+  notificationTemplates NotificationTemplate[]
+  notificationEvents    NotificationEvent[]
+  notificationHistory   NotificationHistory[]
+  reminderRules         ReminderRule[]
 
   @@map("organizations")
 }
+
 
 model User {
   id             String            @id @default(uuid()) @db.Uuid
@@ -249,3 +254,148 @@ model ProjectMember {
   @@unique([projectId, userId])
   @@map("project_members")
 }
+
+// ============================================================
+// Communication Module
+// ============================================================
+
+enum NotificationEventType {
+  PROJECT_CREATED
+  PROJECT_UPDATED
+  PROJECT_ASSIGNED
+  PROJECT_DEADLINE_CHANGED
+  PROJECT_COMPLETED
+
+  GOAL_CREATED
+  GOAL_UPDATED
+  GOAL_COMPLETED
+  GOAL_DEADLINE_CHANGED
+
+  TASK_CREATED
+  TASK_ASSIGNED
+  TASK_REASSIGNED
+  TASK_UPDATED
+  TASK_PRIORITY_CHANGED
+  TASK_COMPLETED
+  TASK_REOPENED
+  TASK_OVERDUE
+
+  EMPLOYEE_ADDED
+  EMPLOYEE_REMOVED
+
+  MANUAL_NOTIFICATION
+  DAILY_SUMMARY
+  WEEKLY_SUMMARY
+}
+
+enum NotificationChannel {
+  WHATSAPP
+  EMAIL
+  SMS
+  IN_APP
+}
+
+enum NotificationDeliveryStatus {
+  QUEUED
+  PROCESSING
+  PENDING
+  SENT
+  DELIVERED
+  READ
+  FAILED
+  RETRYING
+  CANCELLED
+  SKIPPED
+}
+
+/// Reusable message templates with {{placeholder}} support
+model NotificationTemplate {
+  id             String                @id @default(uuid()) @db.Uuid
+  organizationId String                @map("organization_id") @db.Uuid
+  name           String
+  description    String?
+  eventType      NotificationEventType @map("event_type")
+  channel        NotificationChannel   @default(WHATSAPP)
+  subject        String?               /// Used for email channel
+  body           String                /// Supports {{employeeName}}, {{projectName}}, etc.
+  isActive       Boolean               @default(true) @map("is_active")
+  isDefault      Boolean               @default(false) @map("is_default")
+  category       String?
+  version        Int                   @default(1)
+  createdAt      DateTime              @default(now()) @map("created_at")
+  updatedAt      DateTime              @updatedAt @map("updated_at")
+  deletedAt      DateTime?             @map("deleted_at")
+  organization   Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  history        NotificationHistory[]
+  reminderRules  ReminderRule[]
+
+  @@map("notification_templates")
+}
+
+/// Immutable audit log of every business event that triggered notifications
+model NotificationEvent {
+  id             String                @id @default(uuid()) @db.Uuid
+  organizationId String                @map("organization_id") @db.Uuid
+  eventType      NotificationEventType @map("event_type")
+  entityType     String                @map("entity_type") /// "project" | "task" | "milestone"
+  entityId       String                @map("entity_id") @db.Uuid
+  actorId        String                @map("actor_id") @db.Uuid /// user who triggered the event
+  payload        Json                  /// raw variables for template rendering
+  createdAt      DateTime              @default(now()) @map("created_at")
+  organization   Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  history        NotificationHistory[]
+
+  @@map("notification_events")
+}
+
+/// Delivery record for each notification sent
+model NotificationHistory {
+  id              String                     @id @default(uuid()) @db.Uuid
+  organizationId  String                     @map("organization_id") @db.Uuid
+  eventId         String                     @map("event_id") @db.Uuid
+  templateId      String?                    @map("template_id") @db.Uuid
+  recipientUserId String?                    @map("recipient_user_id") @db.Uuid
+  recipientPhone  String?                    @map("recipient_phone")
+  recipientEmail  String?                    @map("recipient_email")
+  recipientName   String?                    @map("recipient_name")
+  channel         NotificationChannel
+  renderedSubject String?                    @map("rendered_subject")
+  renderedBody    String                     @map("rendered_body")
+  deliveryStatus  NotificationDeliveryStatus @default(PENDING) @map("delivery_status")
+  errorMessage    String?                    @map("error_message")
+  metaMessageId   String?                    @map("meta_message_id")
+  retryCount      Int                        @default(0) @map("retry_count")
+  requestTime     DateTime?                  @map("request_time")
+  responseTime    DateTime?                  @map("response_time")
+  apiResponse     Json?                      @map("api_response")
+  sentAt          DateTime?                  @map("sent_at")
+  deliveredAt     DateTime?                  @map("delivered_at")
+  createdAt       DateTime                   @default(now()) @map("created_at")
+  organization    Organization               @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  event           NotificationEvent          @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  template        NotificationTemplate?      @relation(fields: [templateId], references: [id], onDelete: SetNull)
+
+  @@map("notification_history")
+}
+
+/// Rules that control when/how notifications are sent for specific event types
+model ReminderRule {
+  id             String                @id @default(uuid()) @db.Uuid
+  organizationId String                @map("organization_id") @db.Uuid
+  name           String
+  description    String?
+  eventType      NotificationEventType @map("event_type")
+  channel        NotificationChannel   @default(WHATSAPP)
+  templateId     String?               @map("template_id") @db.Uuid
+  isActive       Boolean               @default(true) @map("is_active")
+  delayMinutes   Int                   @default(0) @map("delay_minutes")
+  conditions     Json?                 /// optional filter conditions (e.g., { "priority": "HIGH" })
+  createdAt      DateTime              @default(now()) @map("created_at")
+  updatedAt      DateTime              @updatedAt @map("updated_at")
+  deletedAt      DateTime?             @map("deleted_at")
+  organization   Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  template       NotificationTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+
+  @@map("reminder_rules")
+}
+

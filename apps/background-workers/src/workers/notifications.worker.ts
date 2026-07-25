@@ -1,4 +1,5 @@
 import { Worker, Job, Queue } from 'bullmq';
+import { prisma } from '@useaxiom/database';
 
 const TEMPLATES: Record<string, Record<string, { subject?: string; body: string }>> = {
   DAILY_SUMMARY: {
@@ -108,6 +109,49 @@ export function createNotificationsWorker(redisConnection: any, outgoingQueue: Q
     async (job: Job) => {
       console.info(`[NotificationsWorker] Processing job ${job.id} of type ${job.name}`);
 
+      // Handle new enterprise Communication Module events
+      if (job.name === 'send-communication-event') {
+        const { historyId, channel, recipient, renderedBody, renderedSubject } = job.data;
+        console.info(`[NotificationsWorker] Processing communication event (historyId: ${historyId}) via ${channel}`);
+
+        try {
+          if (channel === 'WHATSAPP') {
+            if (recipient?.phone || recipient?.phoneNumber) {
+              const targetPhone = recipient.phone || recipient.phoneNumber;
+              await outgoingQueue.add('send_message', {
+                to: targetPhone,
+                content: renderedBody,
+                timestamp: new Date().toISOString(),
+              });
+            }
+          }
+
+          if (historyId) {
+            await prisma.notificationHistory.update({
+              where: { id: historyId },
+              data: {
+                deliveryStatus: 'SENT',
+                sentAt: new Date(),
+              },
+            }).catch((err) => console.warn(`[NotificationsWorker] DB update failed for history ${historyId}:`, err.message));
+          }
+
+          return { success: true, historyId, channel, processedAt: new Date().toISOString() };
+        } catch (err: any) {
+          if (historyId) {
+            await prisma.notificationHistory.update({
+              where: { id: historyId },
+              data: {
+                deliveryStatus: 'FAILED',
+                errorMessage: err.message,
+              },
+            }).catch(() => {});
+          }
+          throw err;
+        }
+      }
+
+      // Handle legacy notification jobs
       const { recipient, channels, template, variables } = job.data;
       if (!channels || !Array.isArray(channels)) {
         console.warn(`[NotificationsWorker] Invalid channels in job ${job.id}:`, channels);
@@ -141,7 +185,6 @@ export function createNotificationsWorker(redisConnection: any, outgoingQueue: Q
               results.WHATSAPP = { success: false, reason: 'Missing phone number' };
               break;
             }
-            // Enqueue to outgoing_messages queue for Meta Business API processing
             const whatsappJob = await outgoingQueue.add(
               'send_message',
               {
@@ -166,10 +209,7 @@ export function createNotificationsWorker(redisConnection: any, outgoingQueue: Q
               results.EMAIL = { success: false, reason: 'Missing email' };
               break;
             }
-            // Simulated email dispatch
             console.info(`[NotificationsWorker] (SIMULATED EMAIL) To: ${recipient.email}`);
-            console.info(`[NotificationsWorker] (SIMULATED EMAIL) Subject: ${renderedSubject}`);
-            console.info(`[NotificationsWorker] (SIMULATED EMAIL) Body:\n${renderedBody}`);
             results.EMAIL = { success: true, simulated: true };
             break;
 
@@ -179,18 +219,14 @@ export function createNotificationsWorker(redisConnection: any, outgoingQueue: Q
               results.SMS = { success: false, reason: 'Missing phone number' };
               break;
             }
-            // Simulated SMS dispatch
             console.info(`[NotificationsWorker] (SIMULATED SMS) To: ${recipient.phone}`);
-            console.info(`[NotificationsWorker] (SIMULATED SMS) Body: ${renderedBody}`);
             results.SMS = { success: true, simulated: true };
             break;
 
           case 'IN_APP':
-            // Simulated database insert for in-app notifications
             console.info(
               `[NotificationsWorker] (SIMULATED IN-APP) User: ${recipient?.name || 'Unknown'}`,
             );
-            console.info(`[NotificationsWorker] (SIMULATED IN-APP) Content: ${renderedBody}`);
             results.IN_APP = { success: true, simulated: true };
             break;
 

@@ -47,7 +47,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
     if (cachedUser) {
       try {
         setUser(JSON.parse(cachedUser));
-      } catch (e) {
+      } catch (_e) {
         // Fallthrough to fetch
       }
     }
@@ -80,6 +80,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
   const navigation = [
     { name: 'Dashboard', href: '/', icon: LayoutDashboard },
     { name: 'Projects', href: '/projects', icon: FolderKanban },
+    { name: 'Communication', href: '/communication', icon: Bell },
     { name: 'Team Workload', href: '/team', icon: Users },
     { name: 'Automatic Reminders', href: '/reminders', icon: Clock },
     ...(user?.role === 'ADMIN'
