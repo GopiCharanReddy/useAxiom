@@ -89,6 +89,12 @@ export default function AIAssistantPanel({ isOpen, onClose }: AIAssistantPanelPr
       const data = await res.json();
       idCounterRef.current += 1;
 
+      if (data.projectCreated || data.success) {
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('axiom_project_created', { detail: data.project }));
+        }
+      }
+
       let aiResponseText = '';
       if (data.success) {
         if (typeof data.data === 'string') {

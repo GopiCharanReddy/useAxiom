@@ -10,7 +10,7 @@ export class AnalyticsService {
       this.prisma.project.count({
         where: {
           organizationId,
-          status: 'ACTIVE',
+          status: { in: ['ACTIVE', 'PLANNING', 'COMPLETED'] },
           deletedAt: null,
         },
       }),

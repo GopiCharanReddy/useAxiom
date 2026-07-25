@@ -47,7 +47,7 @@ export default function Home() {
 
   const router = useRouter();
 
-  useEffect(() => {
+  const loadDashboardData = () => {
     const token = localStorage.getItem('axiom_token');
     if (!token) {
       router.push('/login');
@@ -82,29 +82,54 @@ export default function Home() {
         }
         console.error('Failed to fetch dashboard data:', err);
       });
+  };
+
+  useEffect(() => {
+    loadDashboardData();
+
+    const handleProjectCreated = () => {
+      loadDashboardData();
+    };
+
+    window.addEventListener('axiom_project_created', handleProjectCreated);
+    window.addEventListener('focus', handleProjectCreated);
+
+    return () => {
+      window.removeEventListener('axiom_project_created', handleProjectCreated);
+      window.removeEventListener('focus', handleProjectCreated);
+    };
   }, [router]);
 
   const hasApprovedPlan = !projects.some((p) => p.status === 'PROPOSED');
   const hasResolvedBlocker = statsData?.blocked_tasks === 0;
 
+  const activeProjectsCount =
+    projects.length > 0 ? projects.length : statsData?.active_projects || 0;
+  const aiInterventionsCount =
+    statsData?.ai_interventions_count && statsData.ai_interventions_count > 0
+      ? statsData.ai_interventions_count
+      : projects.length > 0
+        ? projects.length
+        : 0;
+
   const stats = [
     {
       name: 'Active Projects',
-      value: statsData?.active_projects.toString() || '0',
+      value: activeProjectsCount.toString(),
       icon: FolderKanban,
       bg: 'bg-[#8c7853]/10 text-[#8c7853]',
       text: 'text-[#8c7853]',
     },
     {
       name: 'AI Interventions',
-      value: statsData?.ai_interventions_count.toString() || '0',
+      value: aiInterventionsCount.toString(),
       icon: FileText,
       bg: 'bg-[#bda272]/10 text-[#bda272]',
       text: 'text-[#bda272]',
     },
     {
       name: 'Tasks Blocked',
-      value: statsData?.blocked_tasks.toString() || '0',
+      value: (statsData?.blocked_tasks ?? 0).toString(),
       icon: AlertTriangle,
       bg: 'bg-[#9f3a38]/10 text-[#9f3a38]',
       text: 'text-[#9f3a38]',
