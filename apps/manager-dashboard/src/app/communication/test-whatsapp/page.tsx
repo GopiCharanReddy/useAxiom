@@ -5,6 +5,7 @@ import DashboardShell from '../../components/DashboardShell';
 import Link from 'next/link';
 import { ArrowLeft, Send, CheckCircle2, AlertTriangle, Eye } from 'lucide-react';
 import { Button } from '@useaxiom/ui';
+import { authFetch } from '../../../lib/auth-fetch';
 
 interface Template {
   id: string;
@@ -32,10 +33,7 @@ export default function TestWhatsappPage() {
   const [result, setResult] = useState<DispatchResult | null>(null);
 
   useEffect(() => {
-    const token = localStorage.getItem('axiom_token');
-    fetch('/api/v1/communication/templates', {
-      headers: token ? { Authorization: `Bearer ${token}` } : {},
-    })
+    authFetch('/api/v1/communication/templates')
       .then((r) => (r.ok ? r.json() : []))
       .then((data) => setTemplates(data))
       .catch(() => {});
@@ -60,14 +58,10 @@ export default function TestWhatsappPage() {
     setLoading(true);
     setResult(null);
 
-    const token = localStorage.getItem('axiom_token');
     try {
-      const res = await fetch('/api/v1/communication/test-whatsapp', {
+      const res = await authFetch('/api/v1/communication/test-whatsapp', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ recipientPhone: phone, message }),
       });
 

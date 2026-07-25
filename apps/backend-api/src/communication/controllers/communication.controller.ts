@@ -2,7 +2,6 @@ import {
   Controller,
   Get,
   Post,
-  Patch,
   Delete,
   Body,
   Param,
@@ -15,191 +14,182 @@ import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
-import { Role } from '@useaxiom/database';
 import { TemplateService } from '../services/template.service';
 import { NotificationHistoryService } from '../services/notification-history.service';
-import { CommunicationService } from '../services/communication.service';
+import { ReminderRulesService } from '../services/reminder-rules.service';
 import { MetaWhatsappService } from '../services/meta-whatsapp.service';
+import { CommunicationMonitoringService } from '../services/communication-monitoring.service';
 import { CreateTemplateDto } from '../dto/create-template.dto';
 import { SendTestWhatsappDto } from '../dto/send-test-whatsapp.dto';
 
-interface ActiveUser {
-  id: string;
-  organizationId: string;
-  role: Role;
-}
-
 @Controller('communication')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(Role.ADMIN, Role.MANAGER)
 export class CommunicationController {
   constructor(
     private readonly templateService: TemplateService,
     private readonly historyService: NotificationHistoryService,
-    private readonly communicationService: CommunicationService,
+    private readonly reminderRulesService: ReminderRulesService,
     private readonly metaWhatsappService: MetaWhatsappService,
+    private readonly monitoringService: CommunicationMonitoringService,
   ) {}
 
-  // ─── Templates ────────────────────────────────────────────────────────────
+  // ---------------------------------------------------------------------------
+  // Phase 2.5 Monitoring & DLQ Endpoints
+  // ---------------------------------------------------------------------------
 
-  @Get('templates')
-  async listTemplates(
-    @CurrentUser() user: ActiveUser,
-    @Query('eventType') eventType?: string,
-    @Query('channel') channel?: string,
-    @Query('isActive') isActive?: string,
-    @Query('category') category?: string,
-    @Query('search') search?: string,
-  ) {
-    return this.templateService.findAll(user.organizationId, {
-      eventType,
-      channel,
-      isActive: isActive !== undefined ? isActive === 'true' : undefined,
-      category,
-      search,
-    });
+  @Get('queue')
+  @Roles('ADMIN', 'MANAGER')
+  getQueueStats() {
+    return this.monitoringService.getQueueStats();
   }
 
-  @Post('templates')
-  @HttpCode(HttpStatus.CREATED)
-  async createTemplate(@CurrentUser() user: ActiveUser, @Body() dto: CreateTemplateDto) {
-    return this.templateService.create(user.organizationId, dto);
+  @Get('health')
+  @Roles('ADMIN', 'MANAGER')
+  getHealthStatus() {
+    return this.monitoringService.getHealthStatus();
   }
 
-  @Get('templates/categories')
-  async getCategories(@CurrentUser() user: ActiveUser) {
-    return this.templateService.getCategories(user.organizationId);
+  @Get('diagnostics/:id')
+  @Roles('ADMIN', 'MANAGER')
+  getDiagnostics(@Param('id') id: string) {
+    return this.monitoringService.getDiagnostics(id);
   }
 
-  @Get('templates/:id')
-  async getTemplate(@CurrentUser() user: ActiveUser, @Param('id') id: string) {
-    return this.templateService.findOne(user.organizationId, id);
+  @Get('dead-letter')
+  @Roles('ADMIN', 'MANAGER')
+  getDeadLetterQueue() {
+    return this.monitoringService.getDeadLetterQueue();
   }
 
-  @Patch('templates/:id')
-  async updateTemplate(
-    @CurrentUser() user: ActiveUser,
-    @Param('id') id: string,
-    @Body() dto: Partial<CreateTemplateDto>,
-  ) {
-    return this.templateService.update(user.organizationId, id, dto);
+  @Post('retry/:id')
+  @Roles('ADMIN', 'MANAGER')
+  @HttpCode(HttpStatus.OK)
+  retryMessage(@Param('id') id: string) {
+    return this.monitoringService.retryMessage(id);
   }
 
-  @Delete('templates/:id')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  async deleteTemplate(@CurrentUser() user: ActiveUser, @Param('id') id: string) {
-    await this.templateService.softDelete(user.organizationId, id);
+  @Post('replay/:id')
+  @Roles('ADMIN', 'MANAGER')
+  @HttpCode(HttpStatus.OK)
+  replayMessage(@Param('id') id: string) {
+    return this.monitoringService.replayMessage(id);
   }
 
-  @Post('templates/:id/duplicate')
-  async duplicateTemplate(@CurrentUser() user: ActiveUser, @Param('id') id: string) {
-    return this.templateService.duplicate(user.organizationId, id);
+  @Post('cancel/:id')
+  @Roles('ADMIN', 'MANAGER')
+  @HttpCode(HttpStatus.OK)
+  cancelMessage(@Param('id') id: string) {
+    return this.monitoringService.cancelMessage(id);
   }
 
-  @Post('templates/:id/enable')
-  async enableTemplate(@CurrentUser() user: ActiveUser, @Param('id') id: string) {
-    return this.templateService.setActive(user.organizationId, id, true);
+  @Post('test-simulation')
+  @Roles('ADMIN', 'MANAGER')
+  @HttpCode(HttpStatus.OK)
+  runSimulation(@Body() body: { type: 'SUCCESS' | 'FAILURE' | 'TIMEOUT' | 'WEBHOOK'; recipientPhone?: string }) {
+    return this.monitoringService.runTestSimulation(body.type, body.recipientPhone);
   }
 
-  @Post('templates/:id/disable')
-  async disableTemplate(@CurrentUser() user: ActiveUser, @Param('id') id: string) {
-    return this.templateService.setActive(user.organizationId, id, false);
-  }
-
-  @Post('templates/:id/preview')
-  async previewTemplate(
-    @CurrentUser() user: ActiveUser,
-    @Param('id') id: string,
-    @Body() variables?: Record<string, string>,
-  ) {
-    return this.templateService.preview(user.organizationId, id, variables);
-  }
-
-  // ─── History & Events ──────────────────────────────────────────────────────
-
-  @Get('history')
-  async getHistory(
-    @CurrentUser() user: ActiveUser,
-    @Query('channel') channel?: string,
-    @Query('deliveryStatus') deliveryStatus?: string,
-    @Query('eventType') eventType?: string,
-    @Query('limit') limit?: string,
-    @Query('offset') offset?: string,
-  ) {
-    return this.historyService.findAll(user.organizationId, {
-      channel,
-      deliveryStatus,
-      eventType,
-      limit: limit ? parseInt(limit, 10) : undefined,
-      offset: offset ? parseInt(offset, 10) : undefined,
-    });
-  }
-
-  @Get('history/stats')
-  async getHistoryStats(@CurrentUser() user: ActiveUser) {
-    return this.historyService.getStats(user.organizationId);
-  }
-
-  @Get('events')
-  async getEventLog(
-    @CurrentUser() user: ActiveUser,
-    @Query('limit') limit?: string,
-  ) {
-    return this.historyService.getEventLog(
-      user.organizationId,
-      limit ? parseInt(limit, 10) : 50,
-    );
-  }
-
-  // ─── Meta WhatsApp Cloud API Integration ────────────────────────────────────
+  // ---------------------------------------------------------------------------
+  // Meta Config & WhatsApp Test Endpoints
+  // ---------------------------------------------------------------------------
 
   @Get('meta-config')
+  @Roles('ADMIN', 'MANAGER')
   getMetaConfig() {
     return this.metaWhatsappService.getConfigStatus();
   }
 
   @Post('test-whatsapp')
-  async sendTestWhatsapp(
-    @CurrentUser() user: ActiveUser,
-    @Body() dto: SendTestWhatsappDto,
-  ) {
-    const result = await this.metaWhatsappService.sendTextMessage(
-      dto.recipientPhone,
-      dto.message,
-    );
-
-    return {
-      success: result.success,
-      metaMessageId: result.metaMessageId,
-      statusCode: result.statusCode,
-      errorMessage: result.errorMessage,
-      apiResponse: result.apiResponse,
-      requestTime: result.requestTime,
-      responseTime: result.responseTime,
-    };
+  @Roles('ADMIN', 'MANAGER')
+  @HttpCode(HttpStatus.OK)
+  sendTestWhatsapp(@Body() dto: SendTestWhatsappDto) {
+    return this.metaWhatsappService.sendTextMessage(dto.recipientPhone, dto.message);
   }
 
-  // ─── Manual Notification ──────────────────────────────────────────────────
+  // ---------------------------------------------------------------------------
+  // Template Endpoints
+  // ---------------------------------------------------------------------------
 
-  @Post('send')
-  async sendManual(
-    @CurrentUser() user: ActiveUser,
-    @Body() body: { recipientUserId: string; message: string; channel?: string },
-  ) {
-    return this.communicationService.publishManualNotification(
-      user.organizationId,
-      user.id,
-      body.recipientUserId,
-      body.message,
-      body.channel as any,
-    );
+  @Get('templates')
+  @Roles('ADMIN', 'MANAGER')
+  findAllTemplates(@CurrentUser() user: any) {
+    return this.templateService.findAll(user.organizationId);
   }
 
-  // ─── Template Seeding ─────────────────────────────────────────────────────
+  @Post('templates')
+  @Roles('ADMIN', 'MANAGER')
+  createTemplate(@CurrentUser() user: any, @Body() dto: CreateTemplateDto) {
+    return this.templateService.create(user.organizationId, dto);
+  }
+
+  @Get('templates/:id')
+  @Roles('ADMIN', 'MANAGER')
+  findOneTemplate(@CurrentUser() user: any, @Param('id') id: string) {
+    return this.templateService.findOne(user.organizationId, id);
+  }
+
+  @Post('templates/:id/enable')
+  @Roles('ADMIN', 'MANAGER')
+  enableTemplate(@CurrentUser() user: any, @Param('id') id: string) {
+    return this.templateService.enable(user.organizationId, id);
+  }
+
+  @Post('templates/:id/disable')
+  @Roles('ADMIN', 'MANAGER')
+  disableTemplate(@CurrentUser() user: any, @Param('id') id: string) {
+    return this.templateService.disable(user.organizationId, id);
+  }
+
+  @Post('templates/:id/duplicate')
+  @Roles('ADMIN', 'MANAGER')
+  duplicateTemplate(@CurrentUser() user: any, @Param('id') id: string) {
+    return this.templateService.duplicate(user.organizationId, id);
+  }
+
+  @Delete('templates/:id')
+  @Roles('ADMIN', 'MANAGER')
+  deleteTemplate(@CurrentUser() user: any, @Param('id') id: string) {
+    return this.templateService.softDelete(user.organizationId, id);
+  }
+
+  @Post('templates/:id/preview')
+  @Roles('ADMIN', 'MANAGER')
+  previewTemplate(
+    @CurrentUser() user: any,
+    @Param('id') id: string,
+    @Body() sampleVariables?: Record<string, string>,
+  ) {
+    return this.templateService.preview(user.organizationId, id, sampleVariables);
+  }
+
+  // ---------------------------------------------------------------------------
+  // History & Audit Log Endpoints
+  // ---------------------------------------------------------------------------
+
+  @Get('history')
+  @Roles('ADMIN', 'MANAGER')
+  findHistory(
+    @CurrentUser() user: any,
+    @Query('channel') channel?: string,
+    @Query('status') status?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.historyService.findAll(user.organizationId, {
+      channel,
+      deliveryStatus: status,
+      limit: limit ? parseInt(limit, 10) : 50,
+    });
+  }
+
+  @Get('history/stats')
+  @Roles('ADMIN', 'MANAGER')
+  getStats(@CurrentUser() user: any) {
+    return this.historyService.getStats(user.organizationId);
+  }
 
   @Post('seed-defaults')
-  @Roles(Role.ADMIN)
-  async seedDefaults(@CurrentUser() user: ActiveUser) {
-    return this.communicationService.seedDefaultTemplates(user.organizationId);
+  @Roles('ADMIN', 'MANAGER')
+  seedDefaults(@CurrentUser() user: any) {
+    return this.templateService.seedDefaults(user.organizationId);
   }
 }

@@ -135,6 +135,14 @@ export class TemplateService {
     });
   }
 
+  async enable(organizationId: string, id: string) {
+    return this.setActive(organizationId, id, true);
+  }
+
+  async disable(organizationId: string, id: string) {
+    return this.setActive(organizationId, id, false);
+  }
+
   /**
    * Preview a template with sample or provided variables.
    * Does NOT send any notification — pure rendering.
@@ -173,5 +181,49 @@ export class TemplateService {
       distinct: ['category'],
     });
     return results.map((r) => r.category!).filter(Boolean);
+  }
+
+  async seedDefaults(organizationId: string) {
+    const existing = await this.prisma.notificationTemplate.count({ where: { organizationId } });
+    if (existing > 0) return { seeded: 0, message: 'Templates already exist.' };
+
+    const defaults = [
+      {
+        name: 'Task Assigned WhatsApp Alert',
+        description: 'Sent when a new task is assigned to an employee',
+        eventType: 'TASK_ASSIGNED',
+        channel: 'WHATSAPP',
+        body: 'Hello {{employeeName}}, you have been assigned to task "{{taskName}}" in project "{{projectName}}". Due date: {{deadline}}. View: {{portalLink}}',
+        category: 'Tasks',
+        isDefault: true,
+      },
+      {
+        name: 'Project Created Notification',
+        description: 'Sent when a new project is initialized',
+        eventType: 'PROJECT_CREATED',
+        channel: 'WHATSAPP',
+        body: '🚀 Project "{{projectName}}" has been created! Manager: {{managerName}}. Target deadline: {{deadline}}.',
+        category: 'Projects',
+        isDefault: true,
+      },
+    ];
+
+    for (const d of defaults) {
+      await this.prisma.notificationTemplate.create({
+        data: {
+          organizationId,
+          name: d.name,
+          description: d.description,
+          eventType: d.eventType as any,
+          channel: d.channel as any,
+          body: d.body,
+          category: d.category,
+          isDefault: true,
+          isActive: true,
+        },
+      });
+    }
+
+    return { seeded: defaults.length, message: 'Default templates seeded successfully.' };
   }
 }

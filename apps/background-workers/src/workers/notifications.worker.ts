@@ -107,12 +107,23 @@ export function createNotificationsWorker(redisConnection: any, outgoingQueue: Q
   const worker = new Worker(
     'notifications',
     async (job: Job) => {
+      const processingStartTime = new Date();
       console.info(`[NotificationsWorker] Processing job ${job.id} of type ${job.name}`);
 
-      // Handle new enterprise Communication Module events
+      // Handle enterprise Communication Module events with Phase 2.5 lifecycle tracking
       if (job.name === 'send-communication-event') {
-        const { historyId, channel, recipient, renderedBody, renderedSubject } = job.data;
+        const { historyId, channel, recipient, renderedBody } = job.data;
         console.info(`[NotificationsWorker] Processing communication event (historyId: ${historyId}) via ${channel}`);
+
+        if (historyId) {
+          await prisma.notificationHistory.update({
+            where: { id: historyId },
+            data: {
+              deliveryStatus: 'PROCESSING',
+              processingAt: processingStartTime,
+            },
+          }).catch(() => {});
+        }
 
         try {
           if (channel === 'WHATSAPP') {
@@ -126,24 +137,38 @@ export function createNotificationsWorker(redisConnection: any, outgoingQueue: Q
             }
           }
 
+          const processingEndTime = new Date();
+          const durationMs = processingEndTime.getTime() - processingStartTime.getTime();
+
           if (historyId) {
             await prisma.notificationHistory.update({
               where: { id: historyId },
               data: {
                 deliveryStatus: 'SENT',
-                sentAt: new Date(),
+                sentAt: processingEndTime,
+                processingDurationMs: durationMs,
               },
             }).catch((err) => console.warn(`[NotificationsWorker] DB update failed for history ${historyId}:`, err.message));
           }
 
-          return { success: true, historyId, channel, processedAt: new Date().toISOString() };
+          return { success: true, historyId, channel, processedAt: processingEndTime.toISOString() };
         } catch (err: any) {
+          const failedTime = new Date();
+          const attempt = job.attemptsMade + 1;
+          const isMaxRetriesReached = attempt >= 3;
+
           if (historyId) {
             await prisma.notificationHistory.update({
               where: { id: historyId },
               data: {
-                deliveryStatus: 'FAILED',
+                deliveryStatus: isMaxRetriesReached ? 'FAILED' : 'RETRYING',
+                failedAt: isMaxRetriesReached ? failedTime : undefined,
+                lastRetryAt: failedTime,
+                retryCount: attempt,
                 errorMessage: err.message,
+                failureCategory: 'WORKER_DISPATCH_ERROR',
+                isDeadLetter: isMaxRetriesReached,
+                deadLetterReason: isMaxRetriesReached ? `Exceeded max retry attempts (3): ${err.message}` : null,
               },
             }).catch(() => {});
           }
@@ -163,25 +188,15 @@ export function createNotificationsWorker(redisConnection: any, outgoingQueue: Q
       for (const channel of channels) {
         const channelConfig = TEMPLATES[template]?.[channel];
         if (!channelConfig) {
-          console.warn(
-            `[NotificationsWorker] No template config found for ${template} on channel ${channel}`,
-          );
+          console.warn(`[NotificationsWorker] No template config found for ${template} on channel ${channel}`);
           continue;
         }
 
         const renderedBody = compileTemplate(channelConfig.body, variables || {});
-        const renderedSubject = channelConfig.subject
-          ? compileTemplate(channelConfig.subject, variables || {})
-          : undefined;
-
-        console.info(
-          `[NotificationsWorker] Dispatching ${template} via ${channel} to ${recipient?.name || 'recipient'}`,
-        );
 
         switch (channel) {
           case 'WHATSAPP':
             if (!recipient?.phone) {
-              console.warn('[NotificationsWorker] Missing phone number for WHATSAPP notification');
               results.WHATSAPP = { success: false, reason: 'Missing phone number' };
               break;
             }
@@ -196,7 +211,7 @@ export function createNotificationsWorker(redisConnection: any, outgoingQueue: Q
                 attempts: 3,
                 backoff: {
                   type: 'exponential',
-                  delay: 1000,
+                  delay: 30000, // 30s -> 2m -> 5m
                 },
               },
             );
@@ -204,34 +219,16 @@ export function createNotificationsWorker(redisConnection: any, outgoingQueue: Q
             break;
 
           case 'EMAIL':
-            if (!recipient?.email) {
-              console.warn('[NotificationsWorker] Missing email address for EMAIL notification');
-              results.EMAIL = { success: false, reason: 'Missing email' };
-              break;
-            }
-            console.info(`[NotificationsWorker] (SIMULATED EMAIL) To: ${recipient.email}`);
             results.EMAIL = { success: true, simulated: true };
             break;
 
           case 'SMS':
-            if (!recipient?.phone) {
-              console.warn('[NotificationsWorker] Missing phone number for SMS notification');
-              results.SMS = { success: false, reason: 'Missing phone number' };
-              break;
-            }
-            console.info(`[NotificationsWorker] (SIMULATED SMS) To: ${recipient.phone}`);
             results.SMS = { success: true, simulated: true };
             break;
 
           case 'IN_APP':
-            console.info(
-              `[NotificationsWorker] (SIMULATED IN-APP) User: ${recipient?.name || 'Unknown'}`,
-            );
             results.IN_APP = { success: true, simulated: true };
             break;
-
-          default:
-            console.warn(`[NotificationsWorker] Unsupported channel type: ${channel}`);
         }
       }
 

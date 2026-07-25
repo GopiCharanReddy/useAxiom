@@ -5,6 +5,7 @@ import DashboardShell from '../../components/DashboardShell';
 import Link from 'next/link';
 import { ArrowLeft, CheckCircle2, XCircle, ShieldCheck, RefreshCw, Send } from 'lucide-react';
 import { Button } from '@useaxiom/ui';
+import { authFetch } from '../../../lib/auth-fetch';
 
 interface MetaConfig {
   isConfigured: boolean;
@@ -21,11 +22,8 @@ export default function MetaConfigPage() {
 
   const fetchConfig = async () => {
     setLoading(true);
-    const token = localStorage.getItem('axiom_token');
     try {
-      const res = await fetch('/api/v1/communication/meta-config', {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
+      const res = await authFetch('/api/v1/communication/meta-config');
       if (res.ok) {
         const data = await res.json();
         setConfig(data);
@@ -180,7 +178,7 @@ export default function MetaConfigPage() {
         </div>
 
         {/* Webhook Endpoint Info */}
-        <div className="bg-white border border-[#e6e3da] rounded-2xl p-6 shadow-sm space-y-3 text-xs">
+        <div className="bg-[#faf8f5] border border-[#e6e3da] rounded-2xl p-6 shadow-sm space-y-3 text-xs">
           <div className="flex items-center gap-2">
             <ShieldCheck className="w-5 h-5 text-[#8c7853]" />
             <h2 className="font-serif font-black text-base text-[#1c1b18]">
@@ -192,7 +190,7 @@ export default function MetaConfigPage() {
             Configure these URLs in your Meta Developer App Dashboard under <strong>WhatsApp → Configuration → Webhook</strong>:
           </p>
 
-          <div className="p-4 bg-[#faf8f5] border border-[#e6e3da] rounded-xl font-mono text-[11px] text-[#1c1b18] space-y-2">
+          <div className="p-4 bg-white border border-[#e6e3da] rounded-xl font-mono text-[11px] text-[#1c1b18] space-y-2">
             <div>
               <span className="text-[#66635d] uppercase text-[10px] font-bold block">Callback URL:</span>
               <span>https://YOUR_PUBLIC_DOMAIN/api/v1/communication/webhook</span>

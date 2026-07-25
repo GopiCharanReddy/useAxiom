@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import DashboardShell from '../../components/DashboardShell';
 import Link from 'next/link';
 import { SlidersHorizontal, ArrowLeft, Trash2 } from 'lucide-react';
+import { authFetch } from '../../../lib/auth-fetch';
 
 interface Rule {
   id: string;
@@ -24,11 +25,8 @@ export default function ReminderRulesPage() {
 
   const fetchRules = async () => {
     setLoading(true);
-    const token = localStorage.getItem('axiom_token');
     try {
-      const res = await fetch('/api/v1/communication/reminder-rules', {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
+      const res = await authFetch('/api/v1/communication/reminder-rules');
       if (res.ok) {
         const data = await res.json();
         setRules(data);
@@ -45,21 +43,17 @@ export default function ReminderRulesPage() {
   }, []);
 
   const handleToggle = async (id: string, current: boolean) => {
-    const token = localStorage.getItem('axiom_token');
     const endpoint = current ? 'deactivate' : 'activate';
-    await fetch(`/api/v1/communication/reminder-rules/${id}/${endpoint}`, {
+    await authFetch(`/api/v1/communication/reminder-rules/${id}/${endpoint}`, {
       method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
     });
     fetchRules();
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this reminder rule?')) return;
-    const token = localStorage.getItem('axiom_token');
-    await fetch(`/api/v1/communication/reminder-rules/${id}`, {
+    await authFetch(`/api/v1/communication/reminder-rules/${id}`, {
       method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}` },
     });
     fetchRules();
   };
