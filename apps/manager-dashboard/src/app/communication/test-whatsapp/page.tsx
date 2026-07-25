@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import DashboardShell from '../../components/DashboardShell';
 import Link from 'next/link';
 import { ArrowLeft, Send, CheckCircle2, AlertTriangle, Eye } from 'lucide-react';
 import { Button } from '@useaxiom/ui';
@@ -85,9 +84,8 @@ export default function TestWhatsappPage() {
   };
 
   return (
-    <DashboardShell>
-      <div className="p-8 max-w-5xl mx-auto space-y-6">
-        {/* Header */}
+    <div className="space-y-6 animate-in fade-in duration-500 max-w-5xl">
+      {/* Header */}
         <div className="flex items-center gap-3 border-b border-[#e6e3da] pb-6">
           <Link href="/communication">
             <button className="p-2 bg-white border border-[#e6e3da] hover:bg-[#faf8f5] rounded-xl text-[#1c1b18] cursor-pointer">
@@ -230,7 +228,6 @@ export default function TestWhatsappPage() {
             </div>
           </div>
         </div>
-      </div>
-    </DashboardShell>
+    </div>
   );
 }

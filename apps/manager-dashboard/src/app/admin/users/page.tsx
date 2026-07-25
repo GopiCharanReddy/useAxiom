@@ -98,34 +98,34 @@ export default function UsersAdminPage() {
   };
 
   if (!userProfile) {
-    return <div className="text-zinc-500 py-8">Checking credentials...</div>;
+    return <div className="text-[#66635d] text-xs font-black uppercase tracking-widest py-8">Checking credentials...</div>;
   }
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500 max-w-4xl">
-      <div>
-        <h1 className="text-3xl font-extrabold tracking-tight text-white mb-2">Users & Invites</h1>
-        <p className="text-zinc-400 text-sm">
+      <div className="space-y-1">
+        <h1 className="text-3xl font-serif font-black tracking-tight text-[#1c1b18]">Users & Invites</h1>
+        <p className="text-[#66635d] text-xs font-semibold uppercase tracking-widest">
           Add and manage organization roles, workspace members, and permissions.
         </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Invitation Form Card */}
-        <Card className="p-6 border-zinc-800 bg-zinc-900/60 rounded-3xl space-y-6">
+        <Card className="p-6 border border-[#e6e3da]/80 bg-white rounded-2xl shadow-sm space-y-6">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-purple-600/10 flex items-center justify-center rounded-xl border border-purple-500/20">
-              <UserPlus className="w-5 h-5 text-purple-400" />
+            <div className="w-10 h-10 bg-[#8c7853]/10 flex items-center justify-center rounded-xl border border-[#8c7853]/20">
+              <UserPlus className="w-5 h-5 text-[#8c7853]" />
             </div>
             <div>
-              <h3 className="font-bold text-zinc-100 text-lg">Invite New Member</h3>
-              <p className="text-xs text-zinc-500">Workspace managers and employees</p>
+              <h3 className="font-serif font-black text-[#1c1b18] text-lg">Invite New Member</h3>
+              <p className="text-xs text-[#8c7853] font-semibold">Workspace managers and employees</p>
             </div>
           </div>
 
           <form onSubmit={handleInvite} className="space-y-4">
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black text-[#66635d] uppercase tracking-widest block">
                 Full Name
               </label>
               <input
@@ -133,77 +133,71 @@ export default function UsersAdminPage() {
                 required
                 value={inviteName}
                 onChange={(e) => setInviteName(e.target.value)}
-                className="w-full bg-zinc-950/50 border border-zinc-800 rounded-xl py-2.5 px-4 text-sm text-zinc-200 placeholder:text-zinc-700 focus:outline-none focus:border-purple-500 transition-all"
+                className="w-full bg-white border border-[#e6e3da] rounded-xl py-2.5 px-4 text-sm text-[#1c1b18] placeholder:text-[#a09c94] focus:outline-none focus:border-[#8c7853] focus:ring-4 focus:ring-[#8c7853]/10 transition-all duration-300 shadow-sm"
                 placeholder="Sarah Jenkins"
               />
             </div>
 
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black text-[#66635d] uppercase tracking-widest block">
                 Email Address
               </label>
               <div className="relative">
-                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#66635d]" />
                 <input
                   type="email"
                   required
                   value={inviteEmail}
                   onChange={(e) => setInviteEmail(e.target.value)}
-                  className="w-full bg-zinc-950/50 border border-zinc-800 rounded-xl py-2.5 pl-10 pr-4 text-sm text-zinc-200 placeholder:text-zinc-700 focus:outline-none focus:border-purple-500 transition-all"
+                  className="w-full bg-white border border-[#e6e3da] rounded-xl py-2.5 pl-11 pr-4 text-sm text-[#1c1b18] placeholder:text-[#a09c94] focus:outline-none focus:border-[#8c7853] focus:ring-4 focus:ring-[#8c7853]/10 transition-all duration-300 shadow-sm"
                   placeholder="sarah@useaxiom.com"
                 />
               </div>
             </div>
 
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black text-[#66635d] uppercase tracking-widest block">
                 WhatsApp Phone Number
               </label>
               <div className="relative">
-                <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+                <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#66635d]" />
                 <input
                   type="text"
                   required
                   value={invitePhone}
                   onChange={(e) => setInvitePhone(e.target.value)}
-                  className="w-full bg-zinc-950/50 border border-zinc-800 rounded-xl py-2.5 pl-10 pr-4 text-sm text-zinc-200 placeholder:text-zinc-700 focus:outline-none focus:border-purple-500 transition-all"
+                  className="w-full bg-white border border-[#e6e3da] rounded-xl py-2.5 pl-11 pr-4 text-sm text-[#1c1b18] placeholder:text-[#a09c94] focus:outline-none focus:border-[#8c7853] focus:ring-4 focus:ring-[#8c7853]/10 transition-all duration-300 shadow-sm"
                   placeholder="+19998887777"
                 />
               </div>
             </div>
 
-            <div className="space-y-1">
-              <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-wider">
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-black text-[#66635d] uppercase tracking-widest block">
                 Workspace Role
               </label>
               <div className="relative">
-                <Shield className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500" />
+                <Shield className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#66635d]" />
                 <select
                   value={inviteRole}
                   onChange={(e) => setInviteRole(e.target.value)}
-                  className="w-full bg-zinc-950/50 border border-zinc-800 rounded-xl py-2.5 pl-10 pr-4 text-sm text-zinc-200 focus:outline-none focus:border-purple-500 transition-all appearance-none"
+                  className="w-full bg-white border border-[#e6e3da] rounded-xl py-2.5 pl-11 pr-4 text-sm text-[#1c1b18] focus:outline-none focus:border-[#8c7853] focus:ring-4 focus:ring-[#8c7853]/10 transition-all duration-300 shadow-sm appearance-none"
                 >
-                  <option value="MANAGER" className="bg-zinc-950">
-                    MANAGER
-                  </option>
-                  <option value="EMPLOYEE" className="bg-zinc-950">
-                    EMPLOYEE
-                  </option>
-                  <option value="ADMIN" className="bg-zinc-950">
-                    ADMIN
-                  </option>
+                  <option value="MANAGER">MANAGER</option>
+                  <option value="EMPLOYEE">EMPLOYEE</option>
+                  <option value="ADMIN">ADMIN</option>
                 </select>
               </div>
             </div>
 
             {error && (
-              <div className="bg-rose-500/10 border border-rose-500/20 text-rose-400 text-xs px-4 py-2.5 rounded-xl">
+              <div className="bg-[#fdf2f2] border border-[#fcdada] text-[#9f3a38] text-xs font-bold px-4 py-2.5 rounded-xl">
                 {error}
               </div>
             )}
 
             {message && (
-              <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs px-4 py-2.5 rounded-xl flex items-center gap-2">
+              <div className="bg-[#f0f5f0] border border-[#d5ebd5] text-[#3e593e] text-xs font-bold px-4 py-2.5 rounded-xl flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 shrink-0" />
                 {message}
               </div>
@@ -212,7 +206,7 @@ export default function UsersAdminPage() {
             <Button
               type="submit"
               disabled={loading}
-              className="w-full bg-purple-600 text-white font-bold py-2.5 rounded-xl hover:bg-purple-500"
+              className="w-full bg-[#8c7853] text-white font-black uppercase text-xs tracking-widest py-3.5 rounded-xl hover:bg-[#736243] border border-[#7d6b4a] shadow-sm cursor-pointer"
             >
               {loading ? 'Sending invitation...' : 'Send Invitation'}
             </Button>
@@ -220,31 +214,31 @@ export default function UsersAdminPage() {
         </Card>
 
         {/* Informative Side Card */}
-        <div className="flex flex-col justify-center space-y-6 bg-zinc-900/30 p-8 rounded-3xl border border-zinc-850">
+        <div className="flex flex-col justify-center space-y-6 bg-white p-8 rounded-2xl border border-[#e6e3da]/80 shadow-sm">
           <div className="space-y-2">
             <Badge variant="progress">Access Control</Badge>
-            <h3 className="font-extrabold text-xl text-zinc-200">How Team Roles Work</h3>
-            <p className="text-zinc-400 text-sm leading-relaxed">
+            <h3 className="font-serif font-black text-xl text-[#1c1b18]">How Team Roles Work</h3>
+            <p className="text-[#66635d] text-xs font-semibold leading-relaxed">
               When you invite a new user, they are registered to your Organization ID.
             </p>
           </div>
 
-          <div className="space-y-4 text-sm">
+          <div className="space-y-4 text-xs font-bold">
             <div className="flex gap-3">
-              <span className="text-purple-400 font-bold shrink-0">ADMIN:</span>
-              <span className="text-zinc-400">
+              <span className="text-[#8c7853] font-black shrink-0">ADMIN:</span>
+              <span className="text-[#66635d]">
                 Full platform controls, billing, and invitation capabilities.
               </span>
             </div>
             <div className="flex gap-3">
-              <span className="text-purple-400 font-bold shrink-0">MANAGER:</span>
-              <span className="text-zinc-400">
+              <span className="text-[#8c7853] font-black shrink-0">MANAGER:</span>
+              <span className="text-[#66635d]">
                 Can create projects, milestones, tasks, and view execution metrics.
               </span>
             </div>
             <div className="flex gap-3">
-              <span className="text-purple-400 font-bold shrink-0">EMPLOYEE:</span>
-              <span className="text-zinc-400">
+              <span className="text-[#8c7853] font-black shrink-0">EMPLOYEE:</span>
+              <span className="text-[#66635d]">
                 Can be assigned tasks. Receives reminders and reports details strictly via WhatsApp.
               </span>
             </div>

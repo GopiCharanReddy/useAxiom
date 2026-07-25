@@ -1,14 +1,12 @@
 'use client';
 
-import DashboardShell from '../../components/DashboardShell';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 
 export default function CommunicationSettingsPage() {
   return (
-    <DashboardShell>
-      <div className="p-8 max-w-7xl mx-auto space-y-6">
-        {/* Header */}
+    <div className="space-y-6 animate-in fade-in duration-500 max-w-7xl">
+      {/* Header */}
         <div className="flex items-center gap-3 border-b border-[#e6e3da] pb-6">
           <Link href="/communication">
             <button className="p-2 bg-white border border-[#e6e3da] hover:bg-[#faf8f5] rounded-xl text-[#1c1b18] cursor-pointer">
@@ -97,7 +95,6 @@ export default function CommunicationSettingsPage() {
             </div>
           </div>
         </div>
-      </div>
-    </DashboardShell>
+    </div>
   );
 }

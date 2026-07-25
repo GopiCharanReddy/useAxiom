@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import DashboardShell from '../../components/DashboardShell';
 import Link from 'next/link';
 import { ArrowLeft, CheckCircle2, XCircle, ShieldCheck, RefreshCw, Send } from 'lucide-react';
 import { Button } from '@useaxiom/ui';
@@ -42,9 +41,8 @@ export default function MetaConfigPage() {
   }, []);
 
   return (
-    <DashboardShell>
-      <div className="p-8 max-w-5xl mx-auto space-y-6">
-        {/* Header */}
+    <div className="space-y-6 animate-in fade-in duration-500 max-w-5xl">
+      {/* Header */}
         <div className="flex items-center justify-between border-b border-[#e6e3da] pb-6">
           <div className="flex items-center gap-3">
             <Link href="/communication">
@@ -200,10 +198,9 @@ export default function MetaConfigPage() {
             <div>
               <span className="text-[#66635d] uppercase text-[10px] font-bold block">Verify Token:</span>
               <span>Matches WHATSAPP_VERIFY_TOKEN in your .env</span>
-            </div>
           </div>
         </div>
       </div>
-    </DashboardShell>
+    </div>
   );
 }

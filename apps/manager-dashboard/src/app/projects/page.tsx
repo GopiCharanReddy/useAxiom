@@ -266,7 +266,7 @@ function ProjectsPageContent() {
           variant="primary"
           size="sm"
           onClick={() => setShowModal(true)}
-          className="rounded-lg shadow-sm cursor-pointer border border-[#7d6b4a]"
+          className="rounded-lg shadow-sm cursor-pointer border border-[#7d6b4a] sm:hidden"
         >
           <Plus className="w-3.5 h-3.5" />
           <span>New Project Goal</span>
