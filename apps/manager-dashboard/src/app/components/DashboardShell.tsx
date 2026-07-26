@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard,
   FolderKanban,
@@ -18,6 +18,7 @@ import {
   CreditCard,
   Link2,
   Clock,
+  LogOut,
 } from 'lucide-react';
 import { Button } from '@useaxiom/ui';
 import AIAssistantPanel from './AIAssistantPanel';
@@ -39,6 +40,14 @@ export default function DashboardShell({ children }: { children: React.ReactNode
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isAIOpen, setIsAIOpen] = useState(false);
   const pathname = usePathname();
+  const router = useRouter();
+
+  const handleLogout = () => {
+    localStorage.removeItem('axiom_token');
+    sessionStorage.removeItem('axiom_user_profile');
+    document.cookie = 'axiom_token=; path=/; max-age=0; SameSite=Lax';
+    router.push('/login');
+  };
 
   useEffect(() => {
     const token = getStoredToken();
@@ -134,18 +143,27 @@ export default function DashboardShell({ children }: { children: React.ReactNode
         </nav>
 
         {/* User Card */}
-        <div className="p-4 border-t border-[#e6e3da]/80 bg-white flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-[#8c7853]/10 flex items-center justify-center text-[#8c7853] font-serif font-black text-sm">
-            {initials}
+        <div className="p-4 border-t border-[#e6e3da]/80 bg-white flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-10 h-10 rounded-lg bg-[#8c7853]/10 flex items-center justify-center text-[#8c7853] font-serif font-black text-sm shrink-0">
+              {initials}
+            </div>
+            <div className="min-w-0">
+              <span className="block text-xs font-black text-[#1c1b18] truncate">
+                {user?.name || 'David Miller'}
+              </span>
+              <span className="block text-[10px] font-bold text-[#66635d] truncate uppercase tracking-wider">
+                {user?.role || 'Manager'} @ {user?.organization?.name || 'Axiom'}
+              </span>
+            </div>
           </div>
-          <div className="flex-1 min-w-0">
-            <span className="block text-xs font-black text-[#1c1b18] truncate">
-              {user?.name || 'David Miller'}
-            </span>
-            <span className="block text-[10px] font-bold text-[#66635d] truncate uppercase tracking-wider">
-              {user?.role || 'Manager'} @ {user?.organization?.name || 'Axiom'}
-            </span>
-          </div>
+          <button
+            onClick={handleLogout}
+            title="Log Out"
+            className="p-2 text-[#66635d] hover:text-[#9f3a38] hover:bg-rose-50 rounded-lg transition-colors cursor-pointer shrink-0 animate-in fade-in duration-300"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
         </div>
       </aside>
 
@@ -193,18 +211,27 @@ export default function DashboardShell({ children }: { children: React.ReactNode
                 );
               })}
             </nav>
-            <div className="pt-4 border-t border-[#e6e3da] flex items-center gap-3">
-              <div className="w-10 h-10 bg-[#8c7853]/10 text-[#8c7853] rounded-lg flex items-center justify-center font-serif font-black">
-                {initials}
+            <div className="pt-4 border-t border-[#e6e3da] flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-10 h-10 bg-[#8c7853]/10 text-[#8c7853] rounded-lg flex items-center justify-center font-serif font-black shrink-0">
+                  {initials}
+                </div>
+                <div className="min-w-0">
+                  <span className="block text-xs font-black truncate">
+                    {user?.name || 'David Miller'}
+                  </span>
+                  <span className="block text-[10px] font-bold text-[#66635d] truncate uppercase tracking-wider">
+                    {user?.role || 'Manager'}
+                  </span>
+                </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <span className="block text-xs font-black truncate">
-                  {user?.name || 'David Miller'}
-                </span>
-                <span className="block text-[10px] font-bold text-[#66635d] truncate uppercase tracking-wider">
-                  {user?.role || 'Manager'}
-                </span>
-              </div>
+              <button
+                onClick={handleLogout}
+                title="Log Out"
+                className="p-2 text-[#66635d] hover:text-[#9f3a38] hover:bg-rose-50 rounded-lg transition-colors cursor-pointer shrink-0"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
             </div>
           </aside>
         </div>
@@ -248,7 +275,7 @@ export default function DashboardShell({ children }: { children: React.ReactNode
               <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-[#9f3a38] rounded-full" />
             </button>
 
-            <Link href="/projects" className="hidden sm:inline-block">
+            <Link href="/projects?create=true" className="hidden sm:inline-block">
               <Button
                 variant="primary"
                 size="sm"

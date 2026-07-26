@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import DashboardShell from '../../components/DashboardShell';
 import Link from 'next/link';
 import { SlidersHorizontal, ArrowLeft, Trash2 } from 'lucide-react';
 import { authFetch } from '../../../lib/auth-fetch';
@@ -59,9 +58,8 @@ export default function ReminderRulesPage() {
   };
 
   return (
-    <DashboardShell>
-      <div className="p-8 max-w-7xl mx-auto space-y-6">
-        {/* Header */}
+    <div className="space-y-6 animate-in fade-in duration-500">
+      {/* Header */}
         <div className="flex items-center justify-between border-b border-[#e6e3da] pb-6">
           <div className="flex items-center gap-3">
             <Link href="/communication">
@@ -141,7 +139,6 @@ export default function ReminderRulesPage() {
             ))}
           </div>
         )}
-      </div>
-    </DashboardShell>
+    </div>
   );
 }

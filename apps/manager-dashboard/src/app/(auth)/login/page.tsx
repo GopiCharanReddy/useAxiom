@@ -6,8 +6,8 @@ import { Sparkles, Lock, Mail, ArrowRight } from 'lucide-react';
 import Link from 'next/link';
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('mockmanager@useaxiom.com');
-  const [password, setPassword] = useState('password123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
@@ -30,6 +30,8 @@ export default function LoginPage() {
 
       const data = await res.json();
       localStorage.setItem('axiom_token', data.access_token);
+      // Set cookie for middleware access
+      document.cookie = `axiom_token=${data.access_token}; path=/; max-age=604800; SameSite=Lax`;
       router.push('/projects');
     } catch (err: unknown) {
       if (err instanceof Error) {
