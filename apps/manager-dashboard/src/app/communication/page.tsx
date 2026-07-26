@@ -15,8 +15,13 @@ import {
   SlidersHorizontal,
   Smartphone,
   ShieldCheck,
+  Activity,
+  Cpu,
+  ShieldAlert,
+  FlaskConical,
 } from 'lucide-react';
 import { Button } from '@useaxiom/ui';
+import { authFetch } from '../../lib/auth-fetch';
 
 interface Stats {
   total: number;
@@ -65,21 +70,18 @@ export default function CommunicationDashboard() {
 
   const fetchData = async () => {
     setLoading(true);
-    const token = localStorage.getItem('axiom_token');
-    const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
-
     try {
       const [statsRes, tplRes, historyRes] = await Promise.all([
-        fetch('/api/v1/communication/history/stats', { headers }).then((r) => r.ok ? r.json() : null),
-        fetch('/api/v1/communication/templates', { headers }).then((r) => r.ok ? r.json() : []),
-        fetch('/api/v1/communication/history?limit=5', { headers }).then((r) => r.ok ? r.json() : []),
+        authFetch('/api/v1/communication/history/stats').then((r) => r.ok ? r.json() : null),
+        authFetch('/api/v1/communication/templates').then((r) => r.ok ? r.json() : []),
+        authFetch('/api/v1/communication/history?limit=5').then((r) => r.ok ? r.json() : []),
       ]);
 
       if (statsRes) setStats(statsRes);
       if (tplRes) setTemplates(tplRes);
       if (historyRes) setHistory(historyRes);
     } catch {
-      // Ignored
+      // Handled by authFetch redirect or component state
     } finally {
       setLoading(false);
     }
@@ -92,11 +94,9 @@ export default function CommunicationDashboard() {
   const handleSeedDefaults = async () => {
     setSeeding(true);
     setSeedMessage(null);
-    const token = localStorage.getItem('axiom_token');
     try {
-      const res = await fetch('/api/v1/communication/seed-defaults', {
+      const res = await authFetch('/api/v1/communication/seed-defaults', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
       setSeedMessage(`Seeded ${data.seeded ?? 0} default template(s)!`);
@@ -126,6 +126,38 @@ export default function CommunicationDashboard() {
       color: 'bg-blue-50 text-blue-700',
     },
     {
+      title: 'Queue Dashboard & Telemetry',
+      description: 'Real-time BullMQ job states, active worker count, latency telemetry, and queue health.',
+      href: '/communication/queue',
+      icon: Cpu,
+      count: 'BullMQ Live',
+      color: 'bg-indigo-50 text-indigo-700',
+    },
+    {
+      title: 'Subsystem Health Matrix',
+      description: 'Live reachability matrix for Meta API, BullMQ, Redis, Webhooks, DB pool, and Worker health score.',
+      href: '/communication/health',
+      icon: Activity,
+      count: 'Health Score',
+      color: 'bg-emerald-50 text-emerald-700',
+    },
+    {
+      title: 'Dead Letter Queue Console',
+      description: 'Inspect failed messages that exhausted retries, replay jobs, or cancel quarantined dispatches.',
+      href: '/communication/dead-letter',
+      icon: ShieldAlert,
+      count: 'DLQ Manager',
+      color: 'bg-rose-50 text-rose-700',
+    },
+    {
+      title: 'Pipeline Simulation Utilities',
+      description: 'Inject synthetic messaging scenarios (Success, Failure, Timeout, Webhook receipts) for testing.',
+      href: '/communication/test-utilities',
+      icon: FlaskConical,
+      count: 'Test Suite',
+      color: 'bg-cyan-50 text-cyan-700',
+    },
+    {
       title: 'Test WhatsApp Cloud API',
       description: 'Send live test WhatsApp messages via official Meta Graph API and inspect response payloads.',
       href: '/communication/test-whatsapp',
@@ -143,7 +175,7 @@ export default function CommunicationDashboard() {
     },
     {
       title: 'Delivery Logs & History',
-      description: 'Audit log of all event-triggered notifications and delivery statuses.',
+      description: 'Audit log of all event-triggered notifications, step timelines, and delivery statuses.',
       href: '/communication/history',
       icon: History,
       count: `${stats.total} Logged`,
@@ -168,9 +200,9 @@ export default function CommunicationDashboard() {
             <div className="w-10 h-10 bg-[#8c7853] text-white flex items-center justify-center rounded-xl shadow-sm">
               <Bell className="w-5 h-5" />
             </div>
-            <h1 className="text-3xl font-serif font-black tracking-tight text-[#1c1b18]">
-              Communication Center
-            </h1>
+            <p className="text-xs font-medium text-[#66635d]">
+              Enterprise Notification Event Management System & Fault-Tolerant Messaging Platform
+            </p>
           </div>
           <p className="text-xs font-semibold text-[#66635d] uppercase tracking-widest">
             Enterprise Notification Event Management System & Meta Cloud API Gateway
@@ -315,6 +347,11 @@ export default function CommunicationDashboard() {
                     </span>
                   </div>
                   <div className="flex items-center gap-3">
+                    <Link href={`/communication/timeline/${item.id}`}>
+                      <span className="text-[10px] font-bold text-[#8c7853] hover:underline">
+                        Timeline →
+                      </span>
+                    </Link>
                     <span
                       className={`px-2 py-0.5 text-[10px] font-black uppercase tracking-wider rounded-md ${
                         item.deliveryStatus === 'SENT' || item.deliveryStatus === 'DELIVERED'

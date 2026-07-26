@@ -22,6 +22,8 @@ import {
 } from 'lucide-react';
 import { Button } from '@useaxiom/ui';
 import AIAssistantPanel from './AIAssistantPanel';
+import { authFetch } from '../../lib/auth-fetch';
+import { getStoredToken, USER_PROFILE_KEY } from '../../lib/auth-storage';
 
 interface UserProfile {
   id: string;
@@ -48,14 +50,11 @@ export default function DashboardShell({ children }: { children: React.ReactNode
   };
 
   useEffect(() => {
-    const token = localStorage.getItem('axiom_token');
-    if (!token) {
-      router.push('/login');
-      return;
-    }
+    const token = getStoredToken();
+    if (!token) return;
 
     // Fast path: load cached user profile from sessionStorage
-    const cachedUser = sessionStorage.getItem('axiom_user_profile');
+    const cachedUser = sessionStorage.getItem(USER_PROFILE_KEY);
     if (cachedUser) {
       try {
         setUser(JSON.parse(cachedUser));
@@ -64,20 +63,12 @@ export default function DashboardShell({ children }: { children: React.ReactNode
       }
     }
 
-    fetch('/api/v1/auth/me', {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((r) => {
-        if (r.status === 401) {
-          handleLogout();
-          throw new Error('Unauthorized');
-        }
-        return r.json();
-      })
+    authFetch('/api/v1/auth/me')
+      .then((r) => r.json())
       .then((data) => {
         if (data) {
           setUser(data);
-          sessionStorage.setItem('axiom_user_profile', JSON.stringify(data));
+          sessionStorage.setItem(USER_PROFILE_KEY, JSON.stringify(data));
         }
       })
       .catch((err) => console.error('Error fetching user profile:', err));

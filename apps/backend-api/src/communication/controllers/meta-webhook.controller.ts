@@ -1,29 +1,12 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Query,
-  Body,
-  HttpCode,
-  HttpStatus,
-  ForbiddenException,
-  Logger,
-} from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { PrismaService } from '../../prisma/prisma.service';
+import { Controller, Get, Post, Query, Body, HttpCode, HttpStatus, Logger, BadRequestException } from '@nestjs/common';
+import { prisma } from '@useaxiom/database';
 
 @Controller('communication/webhook')
 export class MetaWebhookController {
   private readonly logger = new Logger(MetaWebhookController.name);
 
-  constructor(
-    private readonly configService: ConfigService,
-    private readonly prisma: PrismaService,
-  ) {}
-
   /**
-   * GET /api/v1/communication/webhook
-   * Meta Webhook Verification Handshake Endpoint.
+   * Meta Webhook Verification Handshake (GET /api/v1/communication/webhook)
    */
   @Get()
   verifyWebhook(
@@ -31,74 +14,127 @@ export class MetaWebhookController {
     @Query('hub.verify_token') token: string,
     @Query('hub.challenge') challenge: string,
   ) {
-    const expectedToken = this.configService.get<string>('WHATSAPP_VERIFY_TOKEN');
+    const expectedToken = process.env.WHATSAPP_VERIFY_TOKEN || 'useaxiom_webhook_token';
 
     if (mode === 'subscribe' && token === expectedToken) {
-      this.logger.log('[MetaWebhook] Webhook verification successful');
+      this.logger.log('[MetaWebhookController] Webhook verification succeeded!');
       return challenge;
     }
 
-    this.logger.warn(`[MetaWebhook] Verification failed. Received token: ${token}`);
-    throw new ForbiddenException('Webhook verification failed: Invalid verify token');
+    this.logger.warn(`[MetaWebhookController] Webhook verification failed. Invalid verify token: ${token}`);
+    throw new BadRequestException('Webhook verification failed: Invalid verify token');
   }
 
   /**
-   * POST /api/v1/communication/webhook
-   * Meta Status Callback Endpoint — receives message status updates (sent, delivered, read, failed).
+   * Meta Status Callbacks Receiver (POST /api/v1/communication/webhook)
+   * Receives status receipts (sent, delivered, read, failed)
    */
   @Post()
   @HttpCode(HttpStatus.OK)
-  async handleStatusCallback(@Body() body: any) {
+  async handleWebhookPayload(@Body() body: Record<string, any>) {
+    this.logger.log(`[MetaWebhookController] Webhook payload received: ${JSON.stringify(body)}`);
+
     try {
       const entry = body?.entry?.[0];
       const changes = entry?.changes?.[0];
       const value = changes?.value;
-      const statuses = value?.statuses;
+      const statusObj = value?.statuses?.[0];
 
-      if (!statuses || !Array.isArray(statuses) || statuses.length === 0) {
-        return { status: 'ignored' };
+      if (!statusObj) {
+        return { status: 'IGNORED', reason: 'No status object in webhook entry' };
       }
 
-      for (const statusObj of statuses) {
-        const metaMessageId = statusObj.id;
-        const statusStr = (statusObj.status as string)?.toUpperCase();
-        const timestamp = statusObj.timestamp ? new Date(parseInt(statusObj.timestamp, 10) * 1000) : new Date();
+      const metaMessageId = statusObj.id; // Meta wamid
+      const metaStatus = statusObj.status; // "sent" | "delivered" | "read" | "failed"
+      const timestampSeconds = parseInt(statusObj.timestamp, 10) || Math.floor(Date.now() / 1000);
+      const eventTime = new Date(timestampSeconds * 1000);
 
-        if (!metaMessageId) continue;
+      this.logger.log(`[MetaWebhookController] Processing status update for wamid ${metaMessageId}: ${metaStatus}`);
 
-        let dbStatus: 'SENT' | 'DELIVERED' | 'READ' | 'FAILED' | null = null;
-        const updateData: any = {};
+      // Transaction-safe lookup and state transition check
+      await prisma.$transaction(async (tx) => {
+        const history = await tx.notificationHistory.findFirst({
+          where: { metaMessageId },
+        });
 
-        if (statusStr === 'SENT') {
-          dbStatus = 'SENT';
-          updateData.sentAt = timestamp;
-        } else if (statusStr === 'DELIVERED') {
-          dbStatus = 'DELIVERED';
-          updateData.deliveredAt = timestamp;
-        } else if (statusStr === 'READ') {
-          dbStatus = 'READ';
-        } else if (statusStr === 'FAILED') {
-          dbStatus = 'FAILED';
-          const errorMsg = statusObj.errors?.[0]?.title || 'Meta delivery failed';
-          updateData.errorMessage = errorMsg;
+        if (!history) {
+          this.logger.warn(`[MetaWebhookController] No NotificationHistory record found for wamid ${metaMessageId}`);
+          return;
         }
 
-        if (dbStatus) {
-          updateData.deliveryStatus = dbStatus;
-          updateData.apiResponse = statusObj;
+        // Deduplication & State Ordering Hierarchy: QUEUED (0) < PROCESSING (1) < SENT (2) < DELIVERED (3) < READ (4)
+        const statusHierarchy: Record<string, number> = {
+          QUEUED: 0,
+          PROCESSING: 1,
+          PENDING: 1,
+          SENT: 2,
+          DELIVERED: 3,
+          READ: 4,
+          FAILED: 5,
+        };
 
-          await this.prisma.notificationHistory.updateMany({
-            where: { metaMessageId },
-            data: updateData,
-          });
+        const currentRank = statusHierarchy[history.deliveryStatus] ?? 0;
 
-          this.logger.log(`[MetaWebhook] Updated status to ${dbStatus} for wamid: ${metaMessageId}`);
+        let targetStatus: 'SENT' | 'DELIVERED' | 'READ' | 'FAILED' = 'SENT';
+        const updateData: Record<string, any> = {};
+
+        if (metaStatus === 'sent') {
+          targetStatus = 'SENT';
+          updateData.sentAt = history.sentAt || eventTime;
+        } else if (metaStatus === 'delivered') {
+          targetStatus = 'DELIVERED';
+          updateData.deliveredAt = history.deliveredAt || eventTime;
+          if (history.queuedAt || history.sentAt) {
+            const startTime = history.queuedAt || history.sentAt;
+            updateData.deliveryLatencyMs = Math.max(0, eventTime.getTime() - new Date(startTime!).getTime());
+          }
+        } else if (metaStatus === 'read') {
+          targetStatus = 'READ';
+          updateData.readAt = history.readAt || eventTime;
+          if (!history.deliveredAt) updateData.deliveredAt = eventTime;
+        } else if (metaStatus === 'failed') {
+          targetStatus = 'FAILED';
+          updateData.failedAt = eventTime;
+          const errorErr = statusObj.errors?.[0];
+          updateData.errorMessage = errorErr?.title ? `${errorErr.title}: ${errorErr.message}` : 'Meta delivery failed';
+          updateData.failureCategory = 'WEBHOOK_DELIVERY_FAILURE';
         }
-      }
+
+        const newRank = statusHierarchy[targetStatus] ?? 0;
+
+        // Skip if this update is out-of-order (e.g. DELIVERED arrives after READ)
+        if (currentRank >= newRank && history.deliveryStatus !== 'FAILED' && targetStatus !== 'FAILED') {
+          this.logger.log(`[MetaWebhookController] Skipping out-of-order or duplicate webhook event ${metaStatus} for ${metaMessageId}`);
+          return;
+        }
+
+        updateData.deliveryStatus = targetStatus;
+        updateData.completedAt = (targetStatus === 'DELIVERED' || targetStatus === 'READ' || targetStatus === 'FAILED') ? eventTime : history.completedAt;
+
+        // Structured JSON audit log append
+        const existingLogs = Array.isArray(history.webhookLogs) ? history.webhookLogs : [];
+        const newLogEntry = {
+          eventId: statusObj.id,
+          metaStatus,
+          timestamp: eventTime.toISOString(),
+          errors: statusObj.errors || null,
+          recipientId: statusObj.recipient_id || null,
+        };
+
+        updateData.webhookLogs = [...existingLogs, newLogEntry];
+
+        await tx.notificationHistory.update({
+          where: { id: history.id },
+          data: updateData,
+        });
+
+        this.logger.log(`[MetaWebhookController] NotificationHistory ${history.id} updated to status ${targetStatus}`);
+      });
+
+      return { status: 'SUCCESS', metaMessageId, metaStatus };
     } catch (err: any) {
-      this.logger.error(`[MetaWebhook] Error processing callback: ${err.message}`);
+      this.logger.error(`[MetaWebhookController] Failed to process webhook: ${err.message}`, err.stack);
+      return { status: 'ERROR', message: err.message };
     }
-
-    return { status: 'success' };
   }
 }
