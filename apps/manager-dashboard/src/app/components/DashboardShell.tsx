@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
@@ -22,8 +22,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@useaxiom/ui';
 import AIAssistantPanel from './AIAssistantPanel';
-import { authFetch } from '../../lib/auth-fetch';
-import { getStoredToken, USER_PROFILE_KEY } from '../../lib/auth-storage';
+import { useQuery } from '@tanstack/react-query';
 
 interface UserProfile {
   id: string;
@@ -36,7 +35,6 @@ interface UserProfile {
 }
 
 export default function DashboardShell({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<UserProfile | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isAIOpen, setIsAIOpen] = useState(false);
   const pathname = usePathname();
@@ -49,30 +47,26 @@ export default function DashboardShell({ children }: { children: React.ReactNode
     router.push('/login');
   };
 
-  useEffect(() => {
-    const token = getStoredToken();
-    if (!token) return;
-
-    // Fast path: load cached user profile from sessionStorage
-    const cachedUser = sessionStorage.getItem(USER_PROFILE_KEY);
-    if (cachedUser) {
-      try {
-        setUser(JSON.parse(cachedUser));
-      } catch (_e) {
-        // Fallthrough to fetch
+  const { data: user } = useQuery<UserProfile | null>({
+    queryKey: ['auth-me'],
+    queryFn: async () => {
+      const token = localStorage.getItem('axiom_token');
+      if (!token) {
+        handleLogout();
+        return null;
       }
-    }
-
-    authFetch('/api/v1/auth/me')
-      .then((r) => r.json())
-      .then((data) => {
-        if (data) {
-          setUser(data);
-          sessionStorage.setItem(USER_PROFILE_KEY, JSON.stringify(data));
-        }
-      })
-      .catch((err) => console.error('Error fetching user profile:', err));
-  }, []);
+      const res = await fetch('/api/v1/auth/me', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.status === 401) {
+        handleLogout();
+        return null;
+      }
+      if (!res.ok) throw new Error('Failed to fetch profile');
+      return res.json();
+    },
+    staleTime: 10 * 60 * 1000,
+  });
 
   const initials = user?.name
     ? user.name

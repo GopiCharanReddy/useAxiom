@@ -2,15 +2,26 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Activity, Lock, Mail, ArrowRight, Building2, User, Phone, Shield } from 'lucide-react';
+import { Activity, Lock, Mail, ArrowRight, Building2, User, Shield } from 'lucide-react';
 import Link from 'next/link';
+import { z } from 'zod';
+import PhoneInputWithCountry from '../../components/PhoneInputWithCountry';
+
+const registerSchema = z.object({
+  organizationName: z.string().min(2, 'Organization name must be at least 2 characters'),
+  name: z.string().min(2, 'Admin full name must be at least 2 characters'),
+  email: z.string().email('Please enter a valid email address'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+  phoneNumber: z.string().min(8, 'Please enter a valid phone number with country code'),
+  role: z.string(),
+});
 
 export default function RegisterPage() {
   const [organizationName, setOrganizationName] = useState('');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('+91');
   const [role, setRole] = useState('MANAGER');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -19,6 +30,23 @@ export default function RegisterPage() {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    // Zod client-side schema validation
+    const validationResult = registerSchema.safeParse({
+      organizationName,
+      name,
+      email,
+      password,
+      phoneNumber,
+      role,
+    });
+
+    if (!validationResult.success) {
+      const firstError = validationResult.error.issues[0]?.message || 'Validation error';
+      setError(firstError);
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -44,7 +72,9 @@ export default function RegisterPage() {
       localStorage.setItem('axiom_token', data.access_token);
       // Set cookie for middleware access
       document.cookie = `axiom_token=${data.access_token}; path=/; max-age=604800; SameSite=Lax`;
-      router.push('/projects');
+      
+      // Redirect manager directly to Dashboard home
+      router.push('/');
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
@@ -147,19 +177,13 @@ export default function RegisterPage() {
 
             <div className="space-y-1.5">
               <label className="text-[10px] font-black text-[#66635d] uppercase tracking-widest block">
-                Phone Number (with WhatsApp Country Code)
+                WhatsApp Phone Number (Country Code + Local Number)
               </label>
-              <div className="relative">
-                <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#66635d]" />
-                <input
-                  type="text"
-                  required
-                  value={phoneNumber}
-                  onChange={(e) => setPhoneNumber(e.target.value)}
-                  className="w-full bg-white border border-[#e6e3da] rounded-xl py-2.5 pl-11 pr-4 text-[#1c1b18] placeholder:text-[#a09c94] text-sm focus:outline-none focus:border-[#8c7853] focus:ring-4 focus:ring-[#8c7853]/10 transition-all duration-300 shadow-sm"
-                  placeholder="+19998887777"
-                />
-              </div>
+              <PhoneInputWithCountry
+                value={phoneNumber}
+                onChange={(fullNum) => setPhoneNumber(fullNum)}
+                required
+              />
             </div>
 
             <div className="space-y-1.5">
@@ -171,7 +195,7 @@ export default function RegisterPage() {
                 <select
                   value={role}
                   onChange={(e) => setRole(e.target.value)}
-                  className="w-full bg-white border border-[#e6e3da] rounded-xl py-2.5 pl-11 pr-4 text-[#1c1b18] text-sm focus:outline-none focus:border-[#8c7853] focus:ring-4 focus:ring-[#8c7853]/10 transition-all duration-300 shadow-sm appearance-none"
+                  className="w-full bg-white border border-[#e6e3da] rounded-xl py-2.5 pl-11 pr-4 text-[#1c1b18] text-sm focus:outline-none focus:border-[#8c7853] focus:ring-4 focus:ring-[#8c7853]/10 transition-all duration-300 shadow-sm appearance-none cursor-pointer"
                 >
                   <option value="MANAGER">MANAGER</option>
                   <option value="ADMIN">ADMIN</option>
@@ -191,7 +215,7 @@ export default function RegisterPage() {
               disabled={loading}
               className="w-full relative rounded-xl bg-[#8c7853] text-white font-black uppercase text-xs tracking-widest py-3.5 px-4 transition-all duration-300 hover:bg-[#736243] hover:scale-[1.015] hover:shadow-md active:scale-[0.99] border border-[#7d6b4a] disabled:opacity-70 disabled:hover:scale-100 disabled:hover:shadow-sm flex items-center justify-center gap-2 cursor-pointer shadow-sm mt-4"
             >
-              <span>{loading ? 'Creating Organization...' : 'Sign Up'}</span>
+              <span>{loading ? 'Creating Organization...' : 'Sign Up & Continue'}</span>
               {!loading && (
                 <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" />
               )}

@@ -2,15 +2,18 @@
 
 import { usePathname } from 'next/navigation';
 import DashboardShell from './DashboardShell';
+import ReactQueryProvider from './ReactQueryProvider';
 import { ReactNode } from 'react';
 
 export default function ClientLayoutWrapper({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  // If we are on login or register, don't show the dashboard shell
-  if (pathname === '/login' || pathname === '/register') {
-    return <>{children}</>;
-  }
+  const isStandalonePage = pathname === '/login' || pathname === '/register';
 
-  return <DashboardShell>{children}</DashboardShell>;
+  return (
+    <ReactQueryProvider>
+      {isStandalonePage ? <>{children}</> : <DashboardShell>{children}</DashboardShell>}
+    </ReactQueryProvider>
+  );
 }
+
 

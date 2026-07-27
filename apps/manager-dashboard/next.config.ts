@@ -2,6 +2,9 @@ import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   transpilePackages: ['@useaxiom/ui'],
+  experimental: {
+    optimizePackageImports: ['lucide-react'],
+  },
   async rewrites() {
     return [
       {

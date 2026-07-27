@@ -20,7 +20,7 @@ import { createReportingWorker } from './workers/ai-reporting.worker';
 const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
 const redisConnection = new IORedis(redisUrl, { maxRetriesPerRequest: null });
 
-console.log(`Starting Background Workers with Redis URL: ${redisUrl}...`);
+console.log(`[Background Workers] System online with Redis: ${redisUrl}`);
 
 // 1. AI Leads Workers
 // @ts-ignore
@@ -45,22 +45,21 @@ const assignmentWorker = createAssignmentWorker(redisConnection as any, outgoing
 const notificationsQueue = new Queue('notifications', { connection: redisConnection as any });
 const reportingWorker = createReportingWorker(redisConnection as any, notificationsQueue);
 
-// 3. Repeatable Cron Job Setup
+// 3. Repeatable Cron Job Setup (Checks for deadlines & project health)
 const reminderSchedulerQueue = new Queue('reminder_scheduler', {
   connection: redisConnection as any,
 });
 const reportingSchedulerQueue = new Queue('reporting_jobs', { connection: redisConnection as any });
 
 async function setupRepeatableJobs() {
-  console.info('[Background Workers] Setting up repeatable cron jobs...');
   try {
     const repeatableJobs = await reminderSchedulerQueue.getRepeatableJobs();
     for (const job of repeatableJobs) {
-      console.info(`[Background Workers] Clearing old repeatable job: ${job.key}`);
       await reminderSchedulerQueue.removeRepeatableByKey(job.key);
     }
 
-    const checkDeadlinesPattern = process.env.CRON_CHECK_DEADLINES || '*/1 * * * *';
+    // Default to hourly checks in development unless specified in .env
+    const checkDeadlinesPattern = process.env.CRON_CHECK_DEADLINES || '0 * * * *';
     await reminderSchedulerQueue.add(
       'check_deadlines',
       {},
@@ -70,15 +69,12 @@ async function setupRepeatableJobs() {
         },
       },
     );
-    console.info(
-      `[Background Workers] Repeatable job check_deadlines scheduled successfully with pattern: ${checkDeadlinesPattern}`,
-    );
 
     const reportingJobs = await reportingSchedulerQueue.getRepeatableJobs();
     for (const job of reportingJobs) {
       await reportingSchedulerQueue.removeRepeatableByKey(job.key);
     }
-    const checkHealthPattern = process.env.CRON_CHECK_HEALTH || '*/1 * * * *';
+    const checkHealthPattern = process.env.CRON_CHECK_HEALTH || '0 * * * *';
     await reportingSchedulerQueue.add(
       'check_health',
       {},
@@ -87,9 +83,6 @@ async function setupRepeatableJobs() {
           pattern: checkHealthPattern,
         },
       },
-    );
-    console.info(
-      `[Background Workers] Repeatable job check_health scheduled successfully with pattern: ${checkHealthPattern}`,
     );
   } catch (error) {
     console.error('[Background Workers] Failed to setup repeatable jobs:', error);
@@ -127,19 +120,22 @@ const monitoringQueues = [
   new Queue('whatsapp_jobs', { connection: redisConnection as any }),
 ];
 
+// Quiet stats monitor: Only output if QUEUE_VERBOSE_LOGS=true or when active/failed jobs exist
 const statsInterval = setInterval(async () => {
-  console.info('[QueueMonitor] Periodic health check stats:');
+  if (process.env.QUEUE_VERBOSE_LOGS !== 'true') return;
   for (const queue of monitoringQueues) {
     try {
       const counts = await queue.getJobCounts();
-      console.info(
-        `  Queue [${queue.name}]: active=${counts.active}, waiting=${counts.waiting}, failed=${counts.failed}, delayed=${counts.delayed}, completed=${counts.completed}`,
-      );
-    } catch (err) {
-      console.error(`  Queue [${queue.name}] stats check failed:`, err);
+      if (counts.active > 0 || counts.failed > 0) {
+        console.info(
+          `  Queue [${queue.name}]: active=${counts.active}, waiting=${counts.waiting}, failed=${counts.failed}`,
+        );
+      }
+    } catch (_err) {
+      // Ignore
     }
   }
-}, 60000);
+}, 300000);
 statsInterval.unref();
 
 // SIGTERM hook to shut down cleanly

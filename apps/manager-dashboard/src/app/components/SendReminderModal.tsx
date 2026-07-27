@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, Send, Phone, MessageSquare, AlertCircle, CheckCircle2, User } from 'lucide-react';
+import { X, Send, MessageSquare, AlertCircle, CheckCircle2, User } from 'lucide-react';
 import { Button } from '@useaxiom/ui';
+import PhoneInputWithCountry from './PhoneInputWithCountry';
 
 interface SendReminderModalProps {
   isOpen: boolean;
@@ -32,7 +33,7 @@ export function SendReminderModal({
 
   useEffect(() => {
     if (isOpen) {
-      setPhoneNumber(defaultPhoneNumber || '');
+      setPhoneNumber(defaultPhoneNumber || '+91');
       setMessageText(
         defaultMessage ||
           `Hi ${defaultRecipientName || 'team member'}, please provide a status update on your assigned project tasks for useAxiom.`,
@@ -47,32 +48,13 @@ export function SendReminderModal({
 
   const validatePhone = (num: string): boolean => {
     const cleanNum = num.trim();
-    if (!cleanNum) {
-      setPhoneError('Phone number is required.');
-      return false;
-    }
-
-    // Phone format regex: optional leading +, then 7 to 15 digits (E.164 recommendation)
-    const phoneRegex = /^\+?[1-9]\d{6,14}$/;
-    const sanitized = cleanNum.replace(/[\s\-\(\)]/g, '');
-
-    if (!phoneRegex.test(sanitized)) {
-      setPhoneError(
-        'Please enter a valid phone number with country code (e.g. +1234567890 or +919876543210).',
-      );
+    if (!cleanNum || cleanNum.length < 8) {
+      setPhoneError('Please enter a valid phone number with country code.');
       return false;
     }
 
     setPhoneError('');
     return true;
-  };
-
-  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const val = e.target.value;
-    setPhoneNumber(val);
-    if (phoneError) {
-      validatePhone(val);
-    }
   };
 
   const handleSend = async (e: React.FormEvent) => {
@@ -86,7 +68,7 @@ export function SendReminderModal({
 
     setIsSending(true);
     const token = localStorage.getItem('axiom_token');
-    const targetPhone = phoneNumber.trim().replace(/[\s\-\(\)]/g, '');
+    const targetPhone = phoneNumber.trim();
 
     try {
       const res = await fetch('/api/v1/notifications/send-reminder', {
@@ -146,7 +128,7 @@ export function SendReminderModal({
           <button
             onClick={onClose}
             type="button"
-            className="p-1.5 rounded-lg text-[#66635d] hover:text-[#1c1b18] hover:bg-[#faf8f5] transition-colors border border-[#e6e3da]/80"
+            className="p-1.5 rounded-lg text-[#66635d] hover:text-[#1c1b18] hover:bg-[#faf8f5] transition-colors border border-[#e6e3da]/80 cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
@@ -168,29 +150,20 @@ export function SendReminderModal({
             <label className="text-[10px] font-black text-[#66635d] uppercase tracking-widest block">
               WhatsApp Phone Number <span className="text-[#9f3a38]">*</span>
             </label>
-            <div className="relative">
-              <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8c7853]" />
-              <input
-                type="text"
-                value={phoneNumber}
-                onChange={handlePhoneChange}
-                placeholder="e.g. +1234567890 or +919876543210"
-                className={`w-full bg-white border ${
-                  phoneError
-                    ? 'border-[#9f3a38] focus:border-[#9f3a38]'
-                    : 'border-[#e6e3da] focus:border-[#8c7853]'
-                } rounded-xl py-2.5 pl-10 pr-4 text-xs font-semibold text-[#1c1b18] placeholder:text-[#a09c94] focus:outline-none focus:ring-2 focus:ring-[#8c7853]/20 transition-all shadow-sm`}
-              />
-            </div>
+            <PhoneInputWithCountry
+              value={phoneNumber}
+              onChange={(fullNum) => {
+                setPhoneNumber(fullNum);
+                setPhoneError('');
+              }}
+              required
+            />
             {phoneError && (
               <p className="text-[11px] text-[#9f3a38] font-bold flex items-center gap-1 mt-1">
                 <AlertCircle className="w-3 h-3 shrink-0" />
                 {phoneError}
               </p>
             )}
-            <p className="text-[9px] text-[#66635d] font-medium">
-              Enter or edit the exact WhatsApp phone number (with country code).
-            </p>
           </div>
 
           {/* Reminder Message Input */}
@@ -239,7 +212,7 @@ export function SendReminderModal({
               variant="primary"
               size="sm"
               disabled={isSending}
-              className="px-4 py-2 text-[9px] font-black tracking-widest uppercase border border-[#7d6b4a] gap-1.5"
+              className="px-4 py-2 text-[9px] font-black tracking-widest uppercase border border-[#7d6b4a] gap-1.5 cursor-pointer"
             >
               <Send className="w-3.5 h-3.5" />
               <span>{isSending ? 'Sending...' : 'Send WhatsApp Reminder'}</span>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Clock,
@@ -17,6 +17,8 @@ import {
   Calendar,
 } from 'lucide-react';
 import { Button, Card, Badge } from '@useaxiom/ui';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import PhoneInputWithCountry from '../components/PhoneInputWithCountry';
 
 interface ReminderSchedule {
   id: string;
@@ -41,68 +43,40 @@ interface ReminderSchedule {
 }
 
 export default function AutomaticRemindersPage() {
-  const [schedules, setSchedules] = useState<ReminderSchedule[]>([]);
-  const [loading, setLoading] = useState(true);
+  const router = useRouter();
+  const queryClient = useQueryClient();
+
   const [actionMessage, setActionMessage] = useState('');
   const [triggeringId, setTriggeringId] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newEmployeeName, setNewEmployeeName] = useState('');
   const [newEmployeeId, setNewEmployeeId] = useState('');
-  const [newEmployeePhone, setNewEmployeePhone] = useState('');
+  const [newEmployeePhone, setNewEmployeePhone] = useState('+91');
   const [newProjectName, setNewProjectName] = useState('');
   const [newProjectDesc, setNewProjectDesc] = useState('');
   const [newDeadline, setNewDeadline] = useState('2026-07-30');
   const [phoneError, setPhoneError] = useState('');
-  const [isCreating, setIsCreating] = useState(false);
 
-  const router = useRouter();
-
-  const fetchSchedules = useCallback(async () => {
-    try {
+  // 1. TanStack Query for Reminder Schedules
+  const { data: schedules = [], isLoading: loading, refetch } = useQuery<ReminderSchedule[]>({
+    queryKey: ['reminder-schedules'],
+    queryFn: async () => {
       const token = localStorage.getItem('axiom_token');
       if (!token) {
         router.push('/login');
-        return;
+        return [];
       }
       const res = await fetch('/api/v1/notifications/reminders/schedules', {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (res.ok) {
-        const data = await res.json();
-        setSchedules(data);
-      }
-    } catch (err) {
-      console.error('Error loading reminder schedules:', err);
-    } finally {
-      setLoading(false);
-    }
-  }, [router]);
+      if (!res.ok) throw new Error('Failed to fetch reminder schedules');
+      return res.json();
+    },
+  });
 
-  useEffect(() => {
-    fetchSchedules();
-  }, [fetchSchedules]);
-
-  const validatePhone = (num: string): boolean => {
-    const cleanNum = num.trim();
-    if (!cleanNum) {
-      setPhoneError('Phone number is required.');
-      return false;
-    }
-    const phoneRegex = /^\+?[1-9]\d{6,14}$/;
-    if (!phoneRegex.test(cleanNum.replace(/[\s\-\(\)]/g, ''))) {
-      setPhoneError('Please enter a valid phone number with country code (e.g. +918105670193).');
-      return false;
-    }
-    setPhoneError('');
-    return true;
-  };
-
-  const handleCreateSchedule = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validatePhone(newEmployeePhone)) return;
-
-    setIsCreating(true);
-    try {
+  // 2. Create Schedule Mutation
+  const createScheduleMutation = useMutation({
+    mutationFn: async (payload: unknown) => {
       const token = localStorage.getItem('axiom_token');
       const res = await fetch('/api/v1/notifications/reminders/schedules', {
         method: 'POST',
@@ -110,39 +84,29 @@ export default function AutomaticRemindersPage() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          employeeName: newEmployeeName,
-          employeeId: newEmployeeId,
-          employeePhone: newEmployeePhone,
-          projectName: newProjectName,
-          projectDescription: newProjectDesc,
-          deadline: newDeadline,
-        }),
+        body: JSON.stringify(payload),
       });
+      if (!res.ok) throw new Error('Failed to create reminder schedule');
+      return res.json();
+    },
+    onSuccess: () => {
+      setActionMessage(
+        `Automatic reminder schedule created & initial WhatsApp message sent to ${newEmployeePhone}!`,
+      );
+      setShowCreateModal(false);
+      setNewEmployeeName('');
+      setNewEmployeeId('');
+      setNewEmployeePhone('+91');
+      setNewProjectName('');
+      setNewProjectDesc('');
+      queryClient.invalidateQueries({ queryKey: ['reminder-schedules'] });
+      setTimeout(() => setActionMessage(''), 4000);
+    },
+  });
 
-      if (res.ok) {
-        setActionMessage(
-          `Automatic reminder schedule created & initial WhatsApp message sent to ${newEmployeePhone}!`,
-        );
-        setShowCreateModal(false);
-        setNewEmployeeName('');
-        setNewEmployeeId('');
-        setNewEmployeePhone('');
-        setNewProjectName('');
-        setNewProjectDesc('');
-        fetchSchedules();
-        setTimeout(() => setActionMessage(''), 4000);
-      }
-    } catch (err) {
-      console.error('Error creating schedule:', err);
-    } finally {
-      setIsCreating(false);
-    }
-  };
-
-  const handleToggleStatus = async (id: string, currentStatus: string) => {
-    const newStatus = currentStatus === 'ACTIVE' ? 'PAUSED' : 'ACTIVE';
-    try {
+  // 3. Toggle Status Mutation
+  const toggleStatusMutation = useMutation({
+    mutationFn: async ({ id, newStatus }: { id: string; newStatus: string }) => {
       const token = localStorage.getItem('axiom_token');
       const res = await fetch(`/api/v1/notifications/reminders/${id}/status`, {
         method: 'PATCH',
@@ -152,21 +116,20 @@ export default function AutomaticRemindersPage() {
         },
         body: JSON.stringify({ status: newStatus }),
       });
-      if (res.ok) {
-        setSchedules((prev) =>
-          prev.map((s) => (s.id === id ? { ...s, status: newStatus as ReminderSchedule['status'] } : s)),
-        );
-        setActionMessage(`Schedule ${id} updated to ${newStatus}`);
-        setTimeout(() => setActionMessage(''), 3000);
-      }
-    } catch (err) {
-      console.error('Error toggling schedule status:', err);
-    }
-  };
+      if (!res.ok) throw new Error('Failed to update status');
+      return { id, newStatus };
+    },
+    onSuccess: (data) => {
+      setActionMessage(`Schedule ${data.id} updated to ${data.newStatus}`);
+      queryClient.invalidateQueries({ queryKey: ['reminder-schedules'] });
+      setTimeout(() => setActionMessage(''), 3000);
+    },
+  });
 
-  const handleManualTrigger = async (schedule: ReminderSchedule) => {
-    setTriggeringId(schedule.id);
-    try {
+  // 4. Trigger Manual Reminder Mutation
+  const manualTriggerMutation = useMutation({
+    mutationFn: async (schedule: ReminderSchedule) => {
+      setTriggeringId(schedule.id);
       const token = localStorage.getItem('axiom_token');
       const aiTone = localStorage.getItem('axiom_ai_tone') || 'Professional';
       const res = await fetch('/api/v1/notifications/reminders/trigger', {
@@ -181,19 +144,52 @@ export default function AutomaticRemindersPage() {
           aiTone,
         }),
       });
-
-      if (res.ok) {
-        setActionMessage(
-          `AI WhatsApp reminder triggered successfully to ${schedule.employeePhone}!`,
-        );
-        fetchSchedules();
-        setTimeout(() => setActionMessage(''), 3500);
-      }
-    } catch (err) {
-      console.error('Error triggering AI reminder:', err);
-    } finally {
+      if (!res.ok) throw new Error('Failed to trigger reminder');
+      return schedule;
+    },
+    onSuccess: (schedule) => {
+      setActionMessage(
+        `AI WhatsApp reminder triggered successfully to ${schedule.employeePhone}!`,
+      );
+      queryClient.invalidateQueries({ queryKey: ['reminder-schedules'] });
+      setTimeout(() => setActionMessage(''), 3500);
+    },
+    onSettled: () => {
       setTriggeringId(null);
+    },
+  });
+
+  const validatePhone = (num: string): boolean => {
+    const cleanNum = num.trim();
+    if (!cleanNum || cleanNum.length < 8) {
+      setPhoneError('Please enter a valid phone number with country code.');
+      return false;
     }
+    setPhoneError('');
+    return true;
+  };
+
+  const handleCreateSchedule = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!validatePhone(newEmployeePhone)) return;
+
+    createScheduleMutation.mutate({
+      employeeName: newEmployeeName,
+      employeeId: newEmployeeId,
+      employeePhone: newEmployeePhone,
+      projectName: newProjectName,
+      projectDescription: newProjectDesc,
+      deadline: newDeadline,
+    });
+  };
+
+  const handleToggleStatus = (id: string, currentStatus: string) => {
+    const newStatus = currentStatus === 'ACTIVE' ? 'PAUSED' : 'ACTIVE';
+    toggleStatusMutation.mutate({ id, newStatus });
+  };
+
+  const handleManualTrigger = (schedule: ReminderSchedule) => {
+    manualTriggerMutation.mutate(schedule);
   };
 
   return (
@@ -224,7 +220,7 @@ export default function AutomaticRemindersPage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={fetchSchedules}
+            onClick={() => refetch()}
             className="rounded-lg border-[#e6e3da] text-[#66635d] hover:bg-[#faf8f5]"
           >
             <RefreshCw className="w-3.5 h-3.5" />
@@ -332,7 +328,7 @@ export default function AutomaticRemindersPage() {
                         variant="outline"
                         size="sm"
                         onClick={() => handleToggleStatus(schedule.id, schedule.status)}
-                        className="text-[9px] font-black uppercase tracking-widest border-[#e6e3da] text-[#66635d]"
+                        className="text-[9px] font-black uppercase tracking-widest border-[#e6e3da] text-[#66635d] cursor-pointer"
                       >
                         {schedule.status === 'ACTIVE' ? (
                           <>
@@ -352,7 +348,7 @@ export default function AutomaticRemindersPage() {
                         size="sm"
                         disabled={triggeringId === schedule.id}
                         onClick={() => handleManualTrigger(schedule)}
-                        className="text-[9px] font-black uppercase tracking-widest border border-[#7d6b4a]"
+                        className="text-[9px] font-black uppercase tracking-widest border border-[#7d6b4a] cursor-pointer"
                       >
                         <Send className="w-3.5 h-3.5" />
                         <span>{triggeringId === schedule.id ? 'Sending...' : 'Trigger Now'}</span>
@@ -455,7 +451,7 @@ export default function AutomaticRemindersPage() {
               <button
                 onClick={() => setShowCreateModal(false)}
                 type="button"
-                className="p-1.5 rounded-lg text-[#66635d] hover:text-[#1c1b18] hover:bg-[#faf8f5] border border-[#e6e3da]/80"
+                className="p-1.5 rounded-lg text-[#66635d] hover:text-[#1c1b18] hover:bg-[#faf8f5] border border-[#e6e3da]/80 cursor-pointer"
               >
                 <XCircle className="w-4 h-4" />
               </button>
@@ -495,22 +491,14 @@ export default function AutomaticRemindersPage() {
                 <label className="text-[10px] font-black text-[#66635d] uppercase tracking-widest block">
                   WhatsApp Recipient Phone *
                 </label>
-                <div className="relative">
-                  <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#8c7853]" />
-                  <input
-                    type="text"
-                    required
-                    value={newEmployeePhone}
-                    onChange={(e) => {
-                      setNewEmployeePhone(e.target.value);
-                      if (phoneError) validatePhone(e.target.value);
-                    }}
-                    placeholder="e.g. +918105670193"
-                    className={`w-full bg-white border ${
-                      phoneError ? 'border-[#9f3a38]' : 'border-[#e6e3da] focus:border-[#8c7853]'
-                    } rounded-xl py-2.5 pl-10 pr-4 text-xs font-semibold text-[#1c1b18] focus:outline-none shadow-sm`}
-                  />
-                </div>
+                <PhoneInputWithCountry
+                  value={newEmployeePhone}
+                  onChange={(fullPhone) => {
+                    setNewEmployeePhone(fullPhone);
+                    if (phoneError) validatePhone(fullPhone);
+                  }}
+                  required
+                />
                 {phoneError && (
                   <p className="text-[11px] text-[#9f3a38] font-bold flex items-center gap-1 mt-1">
                     <AlertCircle className="w-3 h-3 shrink-0" />
@@ -575,11 +563,11 @@ export default function AutomaticRemindersPage() {
                   type="submit"
                   variant="primary"
                   size="sm"
-                  disabled={isCreating}
-                  className="px-4 py-2 text-[9px] font-black tracking-widest uppercase border border-[#7d6b4a] gap-1.5"
+                  disabled={createScheduleMutation.isPending}
+                  className="px-4 py-2 text-[9px] font-black tracking-widest uppercase border border-[#7d6b4a] gap-1.5 cursor-pointer"
                 >
                   <Sparkles className="w-3.5 h-3.5" />
-                  <span>{isCreating ? 'Creating...' : 'Create & Start Reminders'}</span>
+                  <span>{createScheduleMutation.isPending ? 'Creating...' : 'Create & Start Reminders'}</span>
                 </Button>
               </div>
             </form>
