@@ -24,6 +24,12 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
       {
         name: 'planner_jobs',
       },
+      {
+        name: 'assignment_jobs',
+      },
+      {
+        name: 'notifications',
+      },
     ),
   ],
   exports: [BullModule],

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, CheckCircle2, XCircle, ShieldCheck, RefreshCw, Send } from 'lucide-react';
 import { Button } from '@useaxiom/ui';
+import { authFetch } from '../../../lib/auth-fetch';
 
 interface MetaConfig {
   isConfigured: boolean;
@@ -20,11 +21,8 @@ export default function MetaConfigPage() {
 
   const fetchConfig = async () => {
     setLoading(true);
-    const token = localStorage.getItem('axiom_token');
     try {
-      const res = await fetch('/api/v1/communication/meta-config', {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
+      const res = await authFetch('/api/v1/communication/meta-config');
       if (res.ok) {
         const data = await res.json();
         setConfig(data);

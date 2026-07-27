@@ -12,6 +12,7 @@ import {
   ArrowLeft,
 } from 'lucide-react';
 import { Button } from '@useaxiom/ui';
+import { authFetch } from '../../../lib/auth-fetch';
 
 interface Template {
   id: string;
@@ -51,11 +52,8 @@ export default function TemplatesPage() {
 
   const fetchTemplates = async () => {
     setLoading(true);
-    const token = localStorage.getItem('axiom_token');
     try {
-      const res = await fetch('/api/v1/communication/templates', {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
+      const res = await authFetch('/api/v1/communication/templates');
       if (res.ok) {
         const data = await res.json();
         setTemplates(data);
@@ -72,42 +70,34 @@ export default function TemplatesPage() {
   }, []);
 
   const handleToggleActive = async (id: string, current: boolean) => {
-    const token = localStorage.getItem('axiom_token');
     const endpoint = current ? 'disable' : 'enable';
-    await fetch(`/api/v1/communication/templates/${id}/${endpoint}`, {
+    await authFetch(`/api/v1/communication/templates/${id}/${endpoint}`, {
       method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
     });
     fetchTemplates();
   };
 
   const handleDuplicate = async (id: string) => {
-    const token = localStorage.getItem('axiom_token');
-    await fetch(`/api/v1/communication/templates/${id}/duplicate`, {
+    await authFetch(`/api/v1/communication/templates/${id}/duplicate`, {
       method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
     });
     fetchTemplates();
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete this template?')) return;
-    const token = localStorage.getItem('axiom_token');
-    await fetch(`/api/v1/communication/templates/${id}`, {
+    await authFetch(`/api/v1/communication/templates/${id}`, {
       method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}` },
     });
     fetchTemplates();
   };
 
   const handlePreview = async (template: Template) => {
     setPreviewTemplate(template);
-    const token = localStorage.getItem('axiom_token');
-    const res = await fetch(`/api/v1/communication/templates/${template.id}/preview`, {
+    const res = await authFetch(`/api/v1/communication/templates/${template.id}/preview`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
       },
     });
     if (res.ok) {
@@ -118,12 +108,10 @@ export default function TemplatesPage() {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    const token = localStorage.getItem('axiom_token');
-    const res = await fetch('/api/v1/communication/templates', {
+    const res = await authFetch('/api/v1/communication/templates', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify(newForm),
     });

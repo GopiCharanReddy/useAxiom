@@ -22,7 +22,6 @@ import {
 } from 'lucide-react';
 import { Button } from '@useaxiom/ui';
 import AIAssistantPanel from './AIAssistantPanel';
-
 import { useQuery } from '@tanstack/react-query';
 
 interface UserProfile {

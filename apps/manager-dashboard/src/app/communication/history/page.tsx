@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Search, RefreshCw } from 'lucide-react';
+import { authFetch } from '../../../lib/auth-fetch';
 
 interface HistoryItem {
   id: string;
@@ -31,11 +32,8 @@ export default function HistoryPage() {
 
   const fetchHistory = async () => {
     setLoading(true);
-    const token = localStorage.getItem('axiom_token');
     try {
-      const res = await fetch('/api/v1/communication/history?limit=100', {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
+      const res = await authFetch('/api/v1/communication/history?limit=100');
       if (res.ok) {
         const data = await res.json();
         setHistory(data);

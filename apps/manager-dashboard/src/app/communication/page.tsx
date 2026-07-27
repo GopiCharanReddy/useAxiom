@@ -13,6 +13,7 @@ import {
   SlidersHorizontal,
 } from 'lucide-react';
 import { Button } from '@useaxiom/ui';
+import { authFetch } from '../../lib/auth-fetch';
 
 interface Stats {
   total: number;
@@ -59,27 +60,18 @@ export default function CommunicationDashboard() {
 
   const fetchData = useCallback(async () => {
     setLoading(true);
-    const token = localStorage.getItem('axiom_token');
-    const headers: Record<string, string> = token ? { Authorization: `Bearer ${token}` } : {};
-
     try {
       const [statsRes, tplRes, historyRes] = await Promise.all([
-        fetch('/api/v1/communication/history/stats', { headers }).then((r) =>
-          r.ok ? r.json() : null,
-        ),
-        fetch('/api/v1/communication/templates', { headers }).then((r) =>
-          r.ok ? r.json() : [],
-        ),
-        fetch('/api/v1/communication/history?limit=5', { headers }).then((r) =>
-          r.ok ? r.json() : [],
-        ),
+        authFetch('/api/v1/communication/history/stats').then((r) => (r.ok ? r.json() : null)),
+        authFetch('/api/v1/communication/templates').then((r) => (r.ok ? r.json() : [])),
+        authFetch('/api/v1/communication/history?limit=5').then((r) => (r.ok ? r.json() : [])),
       ]);
 
       if (statsRes) setStats(statsRes);
       if (tplRes) setTemplates(tplRes);
       if (historyRes) setHistory(historyRes);
     } catch {
-      // Ignored
+      // Handled by authFetch redirect or component state
     } finally {
       setLoading(false);
     }
