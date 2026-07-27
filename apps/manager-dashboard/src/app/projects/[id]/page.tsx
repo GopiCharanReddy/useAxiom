@@ -34,27 +34,6 @@ export default function ProjectDetailPage({ params }: PageProps) {
     }>
   >([]);
   const [loading, setLoading] = useState(true);
-  const [assignedMembers, setAssignedMembers] = useState<
-    Array<{
-      id: string;
-      user: {
-        id: string;
-        name: string;
-        email: string;
-        employeeId: string;
-        role: string;
-      };
-    }>
-  >([]);
-  const [allUsers, setAllUsers] = useState<
-    Array<{
-      id: string;
-      name: string;
-      employeeId: string;
-      role: string;
-    }>
-  >([]);
-  const [selectedUserId, setSelectedUserId] = useState('');
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [taskTitle, setTaskTitle] = useState('');
   const [taskDescription, setTaskDescription] = useState('');
@@ -64,20 +43,6 @@ export default function ProjectDetailPage({ params }: PageProps) {
   const [selectedTaskId, setSelectedTaskId] = useState('');
 
   const router = useRouter();
-
-  const fetchMembers = async () => {
-    try {
-      const token = localStorage.getItem('axiom_token');
-      if (!token) return;
-      const headers = { Authorization: `Bearer ${token}` };
-      const mRes = await fetch(`/api/v1/projects/${id}/members`, { headers });
-      if (mRes.ok) {
-        setAssignedMembers(await mRes.json());
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -90,14 +55,12 @@ export default function ProjectDetailPage({ params }: PageProps) {
 
         const headers = { Authorization: `Bearer ${token}` };
 
-        const [pRes, tRes, uRes, mRes] = await Promise.all([
+        const [pRes, tRes] = await Promise.all([
           fetch(`/api/v1/projects/${id}`, { headers }),
           fetch(`/api/v1/projects/${id}/tasks`, { headers }),
-          fetch(`/api/v1/users`, { headers }),
-          fetch(`/api/v1/projects/${id}/members`, { headers }),
         ]);
 
-        if (pRes.status === 401 || tRes.status === 401 || uRes.status === 401) {
+        if (pRes.status === 401 || tRes.status === 401) {
           localStorage.removeItem('axiom_token');
           router.push('/login');
           return;
@@ -105,12 +68,6 @@ export default function ProjectDetailPage({ params }: PageProps) {
 
         setProject(await pRes.json());
         setTasks(await tRes.json());
-        if (uRes.ok) {
-          setAllUsers(await uRes.json());
-        }
-        if (mRes.ok) {
-          setAssignedMembers(await mRes.json());
-        }
       } catch (e: unknown) {
         console.error(e);
       } finally {
@@ -119,28 +76,6 @@ export default function ProjectDetailPage({ params }: PageProps) {
     };
     fetchData();
   }, [id, router]);
-
-  const handleAssignMember = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedUserId) return;
-    try {
-      const token = localStorage.getItem('axiom_token');
-      const res = await fetch(`/api/v1/projects/${id}/assign`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ userId: selectedUserId }),
-      });
-      if (res.ok) {
-        setSelectedUserId('');
-        fetchMembers();
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  };
 
   const handleCreateTask = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -429,66 +364,7 @@ export default function ProjectDetailPage({ params }: PageProps) {
         )}
       </div>
 
-      {/* Team Assignment Section */}
-      <div className="space-y-6 pt-4">
-        <div className="flex items-center gap-2">
-          <h3 className="font-serif font-black text-lg text-[#1c1b18]">Project Team Members</h3>
-        </div>
-        <Card className="p-6 space-y-4 rounded-xl border border-[#e6e3da]/80 shadow-sm bg-white">
-          <form
-            onSubmit={handleAssignMember}
-            className="flex flex-col sm:flex-row gap-4 items-end bg-[#faf8f5] p-5 rounded-xl border border-[#e6e3da] shadow-inner w-full"
-          >
-            <div className="flex-1 space-y-1 w-full">
-              <label className="text-[9px] font-black text-[#66635d] uppercase tracking-widest block mb-1">
-                Assign Team Member
-              </label>
-              <select
-                value={selectedUserId}
-                onChange={(e) => setSelectedUserId(e.target.value)}
-                className="w-full bg-white border border-[#e6e3da] rounded-xl p-2.5 text-xs text-[#1c1b18] focus:outline-none focus:border-[#8c7853] focus:ring-4 focus:ring-[#8c7853]/10 shadow-sm cursor-pointer"
-              >
-                <option value="">Select an employee...</option>
-                {allUsers
-                  .filter((u) => !assignedMembers.some((am) => am.user.id === u.id))
-                  .map((u) => (
-                    <option key={u.id} value={u.id}>
-                      {u.name} ({u.employeeId || 'No ID'})
-                    </option>
-                  ))}
-              </select>
-            </div>
-            <Button
-              variant="primary"
-              type="submit"
-              disabled={!selectedUserId}
-              className="h-10 text-[9px] font-black tracking-widest uppercase border border-[#7d6b4a] w-full sm:w-auto shadow-sm"
-            >
-              Assign to Project
-            </Button>
-          </form>
 
-          {assignedMembers.length > 0 ? (
-            <div className="divide-y divide-[#faf8f5]">
-              {assignedMembers.map((member) => (
-                <div key={member.id} className="py-3 flex justify-between items-center">
-                  <div className="space-y-0.5">
-                    <h4 className="font-black text-xs text-[#1c1b18]">{member.user.name}</h4>
-                    <span className="text-[10px] text-[#66635d] font-semibold uppercase tracking-wider block">
-                      Role: {member.user.role}
-                    </span>
-                  </div>
-                  <Badge variant="completed">ID: {member.user.employeeId || 'None'}</Badge>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-xs text-[#66635d] font-black uppercase tracking-widest">
-              No team members assigned to this project yet.
-            </p>
-          )}
-        </Card>
-      </div>
 
       {/* New Task Modal */}
       {showTaskModal && (

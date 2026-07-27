@@ -62,21 +62,27 @@ const TEMPLATES: Record<string, Record<string, { subject?: string; body: string 
       subject: '🚀 New Project Assigned: {{projectName}}',
       body: `<h3>🚀 New Project Assigned</h3>
 <p>You have been assigned to the project "<strong>{{projectName}}</strong>" (ID: {{projectId}}).</p>
+<p><strong>Role:</strong> {{role}}</p>
+<p><strong>Start Date:</strong> {{startDate}}</p>
 <p><strong>Target Deadline:</strong> {{dueDate}}</p>
+<p><strong>Project Goal / Description:</strong> {{objective}}</p>
 <p>Please log in to review the project details and tasks.</p>`,
     },
     WHATSAPP: {
       body: `🚀 New Project Assigned: You have been assigned to "{{projectName}}" (ID: {{projectId}})
+Role: {{role}}
+Start Date: {{startDate}}
+Target Deadline: {{dueDate}}
+Project Goal / Description: {{objective}}
 Domain: {{domain}}
 Required Tech Stack: {{techStack}}
-Target Deadline: {{dueDate}}
 Please reply if you have questions or updates!`,
     },
     SMS: {
-      body: `🚀 New Project Assigned: "{{projectName}}" target deadline is {{dueDate}}.`,
+      body: `🚀 New Project Assigned: "{{projectName}}" (ID: {{projectId}}) target deadline is {{dueDate}}.`,
     },
     IN_APP: {
-      body: `🚀 New Project Assigned: You have been assigned to "{{projectName}}", target deadline is {{dueDate}}.`,
+      body: `🚀 New Project Assigned: You have been assigned to "{{projectName}}" (ID: {{projectId}}), target deadline is {{dueDate}}.`,
     },
   },
   PROJECT_RISK_ALERT: {

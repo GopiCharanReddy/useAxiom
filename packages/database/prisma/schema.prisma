@@ -244,12 +244,13 @@ model ShortTermMemory {
 }
 
 model ProjectMember {
-  id         String   @id @default(uuid()) @db.Uuid
-  projectId  String   @map("project_id") @db.Uuid
-  userId     String   @map("user_id") @db.Uuid
-  assignedAt DateTime @default(now()) @map("assigned_at")
-  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                 String   @id @default(uuid()) @db.Uuid
+  projectId          String   @map("project_id") @db.Uuid
+  userId             String   @map("user_id") @db.Uuid
+  assignedAt         DateTime @default(now()) @map("assigned_at")
+  notificationStatus String?  @map("notification_status")
+  project            Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([projectId, userId])
   @@map("project_members")

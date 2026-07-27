@@ -1,11 +1,10 @@
 'use client';
 
-import { useState } from 'react';
-import { MessageSquare, Trash2, UserPlus } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { UserCheck, MessageSquare, Trash2, UserPlus, X } from 'lucide-react';
 import { Button, Card, Badge } from '@useaxiom/ui';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { SendReminderModal } from '../components/SendReminderModal';
-import { AddEmployeeModal } from '../components/AddEmployeeModal';
 
 interface DBUser {
   id: string;
@@ -31,49 +30,166 @@ interface DBUser {
   }>;
 }
 
-export default function TeamPage() {
-  const queryClient = useQueryClient();
+interface DBProject {
+  id: string;
+  name: string;
+  status: string;
+  members?: unknown[];
+}
 
+export default function TeamPage() {
+  const [employees, setEmployees] = useState<DBUser[]>([]);
+  const [projects, setProjects] = useState<DBProject[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [assigningMap, setAssigningMap] = useState<Record<string, string>>({});
   const [reminderModalOpen, setReminderModalOpen] = useState(false);
-  const [addEmployeeModalOpen, setAddEmployeeModalOpen] = useState(false);
   const [selectedMemberId, setSelectedMemberId] = useState('');
   const [selectedMemberName, setSelectedMemberName] = useState('');
   const [selectedMemberPhone, setSelectedMemberPhone] = useState('');
+  
+  // Add Employee Modal States
+  const [addEmployeeOpen, setAddEmployeeOpen] = useState(false);
+  const [empName, setEmpName] = useState('');
+  const [empEmail, setEmpEmail] = useState('');
+  const [empPhone, setEmpPhone] = useState('');
+  const [empSpecialty, setEmpSpecialty] = useState('');
+  const [empLoading, setEmpLoading] = useState(false);
+  const [empMessage, setEmpMessage] = useState('');
+  const [empError, setEmpError] = useState('');
+  const [orgId, setOrgId] = useState('');
 
-  // 1. Fetch Users using TanStack Query
-  const { data: employees = [], isLoading: loading } = useQuery<DBUser[]>({
-    queryKey: ['team-employees'],
-    queryFn: async () => {
+  const router = useRouter();
+
+  const fetchWorkloads = async () => {
+    try {
       const token = localStorage.getItem('axiom_token');
-      if (!token) return [];
-      const res = await fetch('/api/v1/users', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) throw new Error('Failed to fetch team members');
-      const usersData: DBUser[] = await res.json();
-      return usersData.filter((u) => u.role === 'EMPLOYEE');
-    },
-  });
+      if (!token) return;
+      const headers = { Authorization: `Bearer ${token}` };
+      const [uRes, pRes, meRes] = await Promise.all([
+        fetch('/api/v1/users', { headers }),
+        fetch('/api/v1/projects', { headers }),
+        fetch('/api/v1/auth/me', { headers }),
+      ]);
+      if (uRes.ok) {
+        const usersData = await uRes.json();
+        setEmployees(usersData.filter((u: DBUser) => u.role === 'EMPLOYEE'));
+      }
+      if (pRes.ok) {
+        setProjects(await pRes.json());
+      }
+      if (meRes.ok) {
+        const meData = await meRes.json();
+        if (meData?.organizationId) {
+          setOrgId(meData.organizationId);
+        }
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
-  // 2. Unassign Project Mutation
-  const unassignProjectMutation = useMutation({
-    mutationFn: async ({ userId, projectId }: { userId: string; projectId: string }) => {
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      await fetchWorkloads();
+      setLoading(false);
+    };
+    fetchData();
+  }, [router]);
+
+  const handleAddEmployee = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!orgId) {
+      setEmpError('Organization data not loaded. Please log in again.');
+      return;
+    }
+    setEmpLoading(true);
+    setEmpError('');
+    setEmpMessage('');
+
+    try {
+      const token = localStorage.getItem('axiom_token');
+      const res = await fetch(`/api/v1/organizations/${orgId}/invite-user`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          name: empName,
+          email: empEmail,
+          phoneNumber: empPhone,
+          specialty: empSpecialty,
+          role: 'EMPLOYEE',
+        }),
+      });
+
+      if (res.ok) {
+        setEmpMessage('Employee added successfully!');
+        setEmpName('');
+        setEmpEmail('');
+        setEmpPhone('');
+        setEmpSpecialty('');
+        setTimeout(() => {
+          setAddEmployeeOpen(false);
+          setEmpMessage('');
+        }, 1500);
+        fetchWorkloads();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setEmpError(data.message || 'Failed to add employee');
+      }
+    } catch (err) {
+      console.error(err);
+      setEmpError('Network error occurred.');
+    } finally {
+      setEmpLoading(false);
+    }
+  };
+
+  const handleAssignProject = async (userId: string) => {
+    const projectId = assigningMap[userId];
+    if (!projectId) return;
+
+    try {
+      const token = localStorage.getItem('axiom_token');
+      const res = await fetch(`/api/v1/projects/${projectId}/assign`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ userId }),
+      });
+
+      if (res.ok) {
+        alert('Project assigned and WhatsApp alert sent successfully!');
+        setAssigningMap((prev) => ({ ...prev, [userId]: '' }));
+        fetchWorkloads();
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleUnassignProject = async (userId: string, projectId: string) => {
+    if (!confirm('Are you sure you want to unassign this project?')) return;
+
+    try {
       const token = localStorage.getItem('axiom_token');
       const res = await fetch(`/api/v1/projects/${projectId}/assign/${userId}`, {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
-      if (!res.ok) throw new Error('Failed to unassign project');
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['team-employees'] });
-    },
-  });
 
-  const handleUnassignProject = (userId: string, projectId: string) => {
-    if (!confirm('Are you sure you want to unassign this project?')) return;
-    unassignProjectMutation.mutate({ userId, projectId });
+      if (res.ok) {
+        fetchWorkloads();
+      }
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const getInitials = (name: string) => {
@@ -88,11 +204,13 @@ export default function TeamPage() {
     const pms = member.projectMembers || [];
     const pCount = pms.length;
 
+    // Load allocation mapping
     let load = 0;
     if (pCount === 1) load = 60;
     else if (pCount === 2) load = 80;
     else if (pCount >= 3) load = 95;
 
+    // Sum task counts across assigned projects
     let active = 0;
     let queued = 0;
     let blocked = 0;
@@ -115,31 +233,13 @@ export default function TeamPage() {
     return 'bg-[#3e593e]';
   };
 
-  return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      {/* Header with Add Employee Action */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+  if (loading) {
+    return (
+      <div className="space-y-8 animate-in fade-in duration-500">
         <div className="space-y-1">
-          <h1 className="text-3xl font-serif font-black tracking-tight text-[#1c1b18]">
-            Team Workloads & Employees
-          </h1>
-          <p className="text-[#66635d] text-xs font-semibold uppercase tracking-widest">
-            Review resource allocation, active tasks, and employee WhatsApp contact details.
-          </p>
+          <div className="h-8 bg-[#e6e3da] rounded w-48" />
+          <div className="h-4 bg-[#e6e3da] rounded w-96" />
         </div>
-
-        <Button
-          variant="primary"
-          size="sm"
-          onClick={() => setAddEmployeeModalOpen(true)}
-          className="h-10 px-4 font-black tracking-widest text-[10px] uppercase shadow-sm border border-[#7d6b4a] gap-2 cursor-pointer"
-        >
-          <UserPlus className="w-4 h-4" />
-          <span>Add Employee</span>
-        </Button>
-      </div>
-
-      {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-pulse">
           {[1, 2, 3, 4, 5, 6].map((idx) => (
             <div
@@ -157,8 +257,42 @@ export default function TeamPage() {
                 <div className="h-3 bg-[#e6e3da] rounded w-full" />
                 <div className="h-3 bg-[#e6e3da] rounded w-3/4" />
               </div>
+              <div className="space-y-2 pt-4 border-t border-[#e6e3da]">
+                <div className="h-4 bg-[#e6e3da] rounded w-full" />
+              </div>
             </div>
           ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-8 animate-in fade-in duration-500">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#e6e3da]">
+        <div className="space-y-1">
+          <h1 className="text-3xl font-serif font-black tracking-tight text-[#1c1b18]">
+            Team Workloads
+          </h1>
+          <p className="text-[#66635d] text-xs font-semibold uppercase tracking-widest">
+            Review resource allocation, active tasks, and employee status details.
+          </p>
+        </div>
+        <Button
+          variant="primary"
+          size="sm"
+          onClick={() => setAddEmployeeOpen(true)}
+          className="h-10 px-4 font-black tracking-widest text-[10px] uppercase shadow-sm border border-[#7d6b4a] flex items-center gap-1.5 cursor-pointer"
+        >
+          <UserPlus className="w-3.5 h-3.5" />
+          <span>Add Employee</span>
+        </Button>
+      </div>
+
+      {loading ? (
+        <div className="text-[#66635d] text-xs font-black uppercase tracking-widest py-8">
+          Loading team workloads...
         </div>
       ) : employees.length > 0 ? (
         /* Team grid */
@@ -186,14 +320,48 @@ export default function TeamPage() {
                         <span className="block text-xs text-[#8c7853] font-semibold">
                           Specialty: {member.specialty || 'General'}
                         </span>
-                        <span className="block text-[9px] text-[#66635d] font-black uppercase tracking-widest mt-0.5 font-mono">
-                          ID: {member.employeeId || 'EMP'} • WhatsApp: {member.phoneNumber}
+                        <span className="block text-[9px] text-[#66635d] font-black uppercase tracking-widest mt-0.5">
+                          ID: {member.employeeId || 'None'} • Phone: {member.phoneNumber}
                         </span>
                       </div>
                     </div>
                     <Badge variant={assignedProjects.length > 0 ? 'completed' : 'proposed'}>
                       {assignedProjects.length > 0 ? 'Active' : 'Waiting'}
                     </Badge>
+                  </div>
+
+                  {/* Project Assignment Control */}
+                  <div className="space-y-2.5 p-3.5 bg-[#faf8f5] border border-[#e6e3da]/80 rounded-xl shadow-inner">
+                    <label className="block text-[9px] font-black text-[#66635d] uppercase tracking-widest">
+                      Assign to Project
+                    </label>
+                    <div className="flex gap-2 w-full">
+                      <select
+                        value={assigningMap[member.id] || ''}
+                        onChange={(e) =>
+                          setAssigningMap((prev) => ({ ...prev, [member.id]: e.target.value }))
+                        }
+                        className="flex-1 bg-white border border-[#e6e3da] rounded-lg px-2 py-1.5 text-xs text-[#1c1b18] outline-none focus:border-[#8c7853] shadow-sm cursor-pointer"
+                      >
+                        <option value="">Select project...</option>
+                        {projects
+                          .filter((p) => !p.members || p.members.length === 0)
+                          .map((p) => (
+                            <option key={p.id} value={p.id}>
+                              {p.name}
+                            </option>
+                          ))}
+                      </select>
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={() => handleAssignProject(member.id)}
+                        disabled={!assigningMap[member.id]}
+                        className="h-8 px-3 text-[9px] font-black tracking-widest uppercase cursor-pointer rounded-lg border border-[#7d6b4a]"
+                      >
+                        Assign
+                      </Button>
+                    </div>
                   </div>
 
                   {/* Workload Stats */}
@@ -283,6 +451,11 @@ export default function TeamPage() {
                               </span>
                             ))}
                           </div>
+                          {pm.project.targetDeadline && (
+                            <span className="block text-[8px] text-[#66635d] font-black uppercase tracking-widest mt-1">
+                              Deadline: {new Date(pm.project.targetDeadline).toLocaleDateString()}
+                            </span>
+                          )}
                         </div>
                       ))
                     ) : (
@@ -311,8 +484,16 @@ export default function TeamPage() {
                     }}
                     className="flex-1 rounded-lg text-[9px] tracking-widest uppercase gap-1.5 h-9 border-[#e6e3da] text-[#66635d] hover:bg-[#faf8f5] shadow-sm cursor-pointer"
                   >
-                    <MessageSquare className="w-3.5 h-3.5 text-[#8c7853]" />
+                    <MessageSquare className="w-3.5 h-3.5" />
                     <span>Send Reminder</span>
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    className="flex-1 rounded-lg text-[9px] tracking-widest uppercase gap-1.5 h-9 border border-[#e6e3da] hover:bg-[#e6e3da]/10 bg-white text-[#1c1b18] shadow-sm"
+                  >
+                    <UserCheck className="w-3.5 h-3.5 text-[#8c7853]" />
+                    <span>Reallocate task</span>
                   </Button>
                 </div>
               </Card>
@@ -320,29 +501,12 @@ export default function TeamPage() {
           })}
         </div>
       ) : (
-        <div className="bg-white border border-dashed border-[#e6e3da] p-8 rounded-2xl text-center max-w-md mx-auto space-y-3">
-          <div className="w-12 h-12 rounded-full bg-[#8c7853]/10 text-[#8c7853] flex items-center justify-center mx-auto">
-            <UserPlus className="w-6 h-6" />
-          </div>
-          <div>
-            <h3 className="font-serif font-black text-[#1c1b18] text-base">No Employees Found</h3>
-            <p className="text-[#66635d] text-xs font-semibold mt-1">
-              You haven&apos;t added any employees under your organization yet. Click &quot;+ Add Employee&quot; above to register team members.
-            </p>
-          </div>
+        <div className="text-[#66635d] text-xs font-black uppercase tracking-widest py-8">
+          No employees found.
         </div>
       )}
 
-      {/* Direct Add Employee Modal */}
-      <AddEmployeeModal
-        isOpen={addEmployeeModalOpen}
-        onClose={() => setAddEmployeeModalOpen(false)}
-        onSuccess={() => {
-          queryClient.invalidateQueries({ queryKey: ['team-employees'] });
-        }}
-      />
-
-      {/* WhatsApp Reminder Modal */}
+      {/* Manual Phone Number Entry WhatsApp Reminder Modal */}
       <SendReminderModal
         isOpen={reminderModalOpen}
         onClose={() => setReminderModalOpen(false)}
@@ -351,6 +515,14 @@ export default function TeamPage() {
         onSuccess={async (newPhoneNumber: string) => {
           if (!selectedMemberId) return;
 
+          // 1. Update local state so card immediately displays new phone number
+          setEmployees((prev) =>
+            prev.map((emp) =>
+              emp.id === selectedMemberId ? { ...emp, phoneNumber: newPhoneNumber } : emp,
+            ),
+          );
+
+          // 2. Persist updated phone number to database via API
           try {
             const token = localStorage.getItem('axiom_token');
             if (token) {
@@ -362,13 +534,121 @@ export default function TeamPage() {
                 },
                 body: JSON.stringify({ phoneNumber: newPhoneNumber }),
               });
-              queryClient.invalidateQueries({ queryKey: ['team-employees'] });
             }
           } catch (err) {
             console.error('Error persisting user phone update:', err);
           }
         }}
       />
+      {/* Add Employee Modal */}
+      {addEmployeeOpen && (
+        <div className="fixed inset-0 bg-[#1c1b18]/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white border border-[#e6e3da] max-w-md w-full p-8 space-y-6 rounded-3xl shadow-[0_20px_50px_rgba(28,27,24,0.1)] animate-in fade-in zoom-in-95 duration-300">
+            <div className="flex justify-between items-center pb-4 border-b border-[#e6e3da]">
+              <div className="flex items-center gap-2.5">
+                <UserPlus className="w-5 h-5 text-[#8c7853]" />
+                <h2 className="text-lg font-serif font-black text-[#1c1b18]">Add New Employee</h2>
+              </div>
+              <button
+                onClick={() => setAddEmployeeOpen(false)}
+                className="p-1.5 bg-[#faf8f5] hover:bg-[#e6e3da] text-[#66635d] rounded-lg transition-colors cursor-pointer border border-[#e6e3da]/80"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <form onSubmit={handleAddEmployee} className="space-y-4">
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-[#66635d] uppercase tracking-widest block mb-1">
+                  Full Name
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={empName}
+                  onChange={(e) => setEmpName(e.target.value)}
+                  placeholder="e.g. John Doe"
+                  className="w-full bg-white border border-[#e6e3da] rounded-xl py-2.5 px-3.5 text-xs text-[#1c1b18] placeholder:text-[#a09c94] focus:outline-none focus:border-[#8c7853] focus:ring-4 focus:ring-[#8c7853]/10 shadow-sm"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-[#66635d] uppercase tracking-widest block mb-1">
+                  Email Address
+                </label>
+                <input
+                  type="email"
+                  required
+                  value={empEmail}
+                  onChange={(e) => setEmpEmail(e.target.value)}
+                  placeholder="e.g. john@useaxiom.com"
+                  className="w-full bg-white border border-[#e6e3da] rounded-xl py-2.5 px-3.5 text-xs text-[#1c1b18] placeholder:text-[#a09c94] focus:outline-none focus:border-[#8c7853] focus:ring-4 focus:ring-[#8c7853]/10 shadow-sm"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-[#66635d] uppercase tracking-widest block mb-1">
+                  WhatsApp Phone Number
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={empPhone}
+                  onChange={(e) => setEmpPhone(e.target.value)}
+                  placeholder="e.g. +1234567890"
+                  className="w-full bg-white border border-[#e6e3da] rounded-xl py-2.5 px-3.5 text-xs text-[#1c1b18] placeholder:text-[#a09c94] focus:outline-none focus:border-[#8c7853] focus:ring-4 focus:ring-[#8c7853]/10 shadow-sm"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[10px] font-black text-[#66635d] uppercase tracking-widest block mb-1">
+                  Specialty / Domain
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={empSpecialty}
+                  onChange={(e) => setEmpSpecialty(e.target.value)}
+                  placeholder="e.g. Frontend, Backend, AI, QA"
+                  className="w-full bg-white border border-[#e6e3da] rounded-xl py-2.5 px-3.5 text-xs text-[#1c1b18] placeholder:text-[#a09c94] focus:outline-none focus:border-[#8c7853] focus:ring-4 focus:ring-[#8c7853]/10 shadow-sm"
+                />
+              </div>
+
+              {empError && (
+                <div className="bg-[#fdf2f2] border border-[#fcdada] text-[#9f3a38] text-xs font-bold px-4 py-2.5 rounded-xl">
+                  {empError}
+                </div>
+              )}
+
+              {empMessage && (
+                <div className="bg-[#f0f5f0] border border-[#d5ebd5] text-[#3e593e] text-xs font-bold px-4 py-2.5 rounded-xl">
+                  {empMessage}
+                </div>
+              )}
+
+              <div className="pt-4 border-t border-[#e6e3da] flex justify-end gap-3">
+                <Button
+                  variant="outline"
+                  type="button"
+                  size="sm"
+                  onClick={() => setAddEmployeeOpen(false)}
+                  className="tracking-widest uppercase font-black text-[10px] border-[#e6e3da] hover:bg-[#faf8f5] px-4 cursor-pointer"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="primary"
+                  type="submit"
+                  size="sm"
+                  disabled={empLoading}
+                  className="tracking-widest uppercase font-black text-[10px] border border-[#7d6b4a] px-4 cursor-pointer"
+                >
+                  {empLoading ? 'Adding...' : 'Add Employee'}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

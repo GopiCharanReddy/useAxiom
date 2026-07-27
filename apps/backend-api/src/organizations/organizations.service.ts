@@ -27,6 +27,7 @@ export class OrganizationsService {
     phoneNumber: string,
     role: Role,
     name: string,
+    specialty?: string,
   ): Promise<User> {
     // Check if organization exists
     const org = await this.findById(organizationId);
@@ -46,12 +47,30 @@ export class OrganizationsService {
       throw new ConflictException('User with this email or phone number already exists');
     }
 
+    let employeeId: string | undefined = undefined;
+    if (role === Role.EMPLOYEE) {
+      let attempts = 0;
+      while (attempts < 10) {
+        const candidate = `EMP${Math.floor(100 + Math.random() * 900)}`;
+        const dup = await this.prisma.user.findUnique({
+          where: { employeeId: candidate },
+        });
+        if (!dup) {
+          employeeId = candidate;
+          break;
+        }
+        attempts++;
+      }
+    }
+
     return this.prisma.user.create({
       data: {
         email,
         phoneNumber,
         role,
         name,
+        specialty,
+        employeeId,
         organization: {
           connect: { id: organizationId },
         },

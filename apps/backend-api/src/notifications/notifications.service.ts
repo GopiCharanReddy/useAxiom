@@ -170,6 +170,9 @@ export class NotificationsService {
     dueDate: string,
     domain: string,
     techStack: string[],
+    role: string = 'Employee',
+    startDate: string = new Date().toDateString(),
+    objective: string = 'Not specified',
   ): Promise<void> {
     console.info(
       `[NotificationsService] Triggering project assignment alert for project ${projectId} to employee ${employeePhone}`,
@@ -189,6 +192,9 @@ export class NotificationsService {
           dueDate,
           domain: domain || 'Not specified',
           techStack: techStack && techStack.length > 0 ? techStack.join(', ') : 'Not specified',
+          role,
+          startDate,
+          objective,
         },
       },
       {

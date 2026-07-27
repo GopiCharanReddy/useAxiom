@@ -23,6 +23,13 @@ export class CreateProjectDto {
 
   @IsArray()
   @IsOptional()
+  employeeIds?: string[];
+
+  @IsOptional()
+  notifyEmployees?: boolean;
+
+  @IsArray()
+  @IsOptional()
   tasks?: {
     title: string;
     description: string;

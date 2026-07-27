@@ -22,6 +22,9 @@ class InviteUserDto {
   @IsString()
   @IsNotEmpty()
   name!: string;
+
+  @IsString()
+  specialty?: string;
 }
 
 @Controller('organizations')
@@ -30,7 +33,7 @@ export class OrganizationsController {
   constructor(private readonly organizationsService: OrganizationsService) {}
 
   @Post(':id/invite-user')
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.MANAGER)
   @HttpCode(HttpStatus.CREATED)
   async inviteUser(@Param('id') organizationId: string, @Body() body: InviteUserDto) {
     return this.organizationsService.inviteUser(
@@ -39,6 +42,7 @@ export class OrganizationsController {
       body.phoneNumber,
       body.role,
       body.name,
+      body.specialty,
     );
   }
 }

@@ -18,7 +18,7 @@ export class ProjectsService {
     private readonly eventPublisher: EventPublisherService,
   ) {}
 
-  async create(organizationId: string, managerId: string, dto: CreateProjectDto): Promise<Project> {
+  async create(organizationId: string, managerId: string, dto: CreateProjectDto): Promise<any> {
     const project = await this.prisma.project.create({
       data: {
         name: dto.name,
@@ -45,6 +45,54 @@ export class ProjectsService {
       },
     });
 
+    let notificationsSent = false;
+
+    if (dto.employeeIds && dto.employeeIds.length > 0) {
+      const memberPromises = dto.employeeIds.map(async (userId) => {
+        let notificationStatus: string | null = null;
+        if (dto.notifyEmployees) {
+          try {
+            const user = await this.prisma.user.findFirst({
+              where: { id: userId, organizationId, deletedAt: null },
+            });
+            if (user && user.phoneNumber) {
+              await this.notificationsService.sendProjectAssignedAlert(
+                project.id,
+                user.phoneNumber,
+                project.name,
+                project.targetDeadline?.toDateString() ?? 'No deadline',
+                project.domain || 'Not specified',
+                project.techStack,
+                user.role || 'EMPLOYEE',
+                project.createdAt.toDateString(),
+                project.objective
+              );
+              notificationStatus = 'SENT';
+            } else {
+              notificationStatus = 'FAILED';
+            }
+          } catch (err) {
+            console.error(`Failed to send notification to employee ${userId}:`, err);
+            notificationStatus = 'FAILED';
+          }
+        }
+
+        return this.prisma.projectMember.create({
+          data: {
+            projectId: project.id,
+            userId,
+            notificationStatus,
+          },
+        });
+      });
+
+      const members = await Promise.all(memberPromises);
+      if (dto.notifyEmployees) {
+        const hasFailures = members.some((m) => m.notificationStatus === 'FAILED');
+        notificationsSent = !hasFailures;
+      }
+    }
+
     // Publish PROJECT_CREATED event after successful DB write
     await this.eventPublisher.publish({
       organizationId,
@@ -60,7 +108,10 @@ export class ProjectsService {
       },
     });
 
-    return project;
+    return {
+      ...project,
+      notificationsSent,
+    };
   }
 
   async findAll(organizationId: string) {

@@ -5,7 +5,6 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { FolderKanban, Search, Plus, X, Trash2 } from 'lucide-react';
 import { Button, Card, Badge } from '@useaxiom/ui';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 interface Project {
   id: string;
@@ -35,21 +34,45 @@ interface DBProject {
 function ProjectsPageContent() {
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState<'all' | 'progress' | 'proposed' | 'completed'>('all');
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [newName, setNewName] = useState('');
   const [newObjective, setNewObjective] = useState('');
   const [newDomain, setNewDomain] = useState('Frontend');
   const [newTechStack, setNewTechStack] = useState('');
-  const [modalTasks, setModalTasks] = useState<
-    Array<{ title: string; description: string; estimatedHours?: number }>
-  >([]);
-  const [modalTaskTitle, setModalTaskTitle] = useState('');
-  const [modalTaskDesc, setModalTaskDesc] = useState('');
-  const [modalTaskHours, setModalTaskHours] = useState('');
+  const [employees, setEmployees] = useState<Array<{ id: string; name: string; role: string; employeeId?: string }>>([]);
+  const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<string[]>([]);
+  const [notifyEmployees, setNotifyEmployees] = useState(false);
+  const [notificationsSuccess, setNotificationsSuccess] = useState<boolean | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
 
   const router = useRouter();
   const searchParams = useSearchParams();
-  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const fetchEmployees = async () => {
+      try {
+        const token = localStorage.getItem('axiom_token');
+        if (!token) return;
+        const res = await fetch('/api/v1/users', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data)) {
+            const filtered = data.filter((u: { role: string; name: string; id: string; employeeId?: string }) => u.role === 'EMPLOYEE');
+            setEmployees(filtered);
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching employees:', err);
+      }
+    };
+    fetchEmployees();
+  }, []);
 
   useEffect(() => {
     if (searchParams.get('create') === 'true') {
@@ -57,91 +80,119 @@ function ProjectsPageContent() {
     }
   }, [searchParams]);
 
-  // 1. TanStack Query for Projects
-  const { data: projects = [], isLoading: loading } = useQuery<Project[]>({
-    queryKey: ['projects-list'],
-    queryFn: async () => {
-      const token = localStorage.getItem('axiom_token');
-      if (!token) {
-        router.push('/login');
-        return [];
-      }
-
-      const res = await fetch('/api/v1/projects', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (res.status === 401) {
-        localStorage.removeItem('axiom_token');
-        router.push('/login');
-        return [];
-      }
-
-      const data = await res.json();
-      if (Array.isArray(data)) {
-        return data.map((p: DBProject) => {
-          let status: 'progress' | 'proposed' | 'completed' = 'proposed';
-          if (p.status === 'ACTIVE') status = 'progress';
-          else if (p.status === 'COMPLETED') status = 'completed';
-
-          let health: 'on_track' | 'at_risk' | 'review' = 'review';
-          if (p.healthStatus === 'LOW') health = 'on_track';
-          else if (p.healthStatus === 'HIGH') health = 'at_risk';
-
-          const tasksTotal = p.tasks?.length || 0;
-          const tasksDone = p.tasks?.filter((t) => t.status === 'COMPLETED').length || 0;
-          const progress =
-            tasksTotal > 0
-              ? Math.round((tasksDone / tasksTotal) * 100)
-              : p.status === 'ACTIVE'
-                ? 10
-                : 0;
-
-          return {
-            id: p.id,
-            name: p.name,
-            category: p.category || 'General',
-            description: p.objective,
-            status,
-            progress,
-            health,
-            tasksDone,
-            tasksTotal,
-            members: p.members || [],
-          };
-        });
-      }
-      return [];
-    },
-  });
-
-  // 2. Delete Project Mutation
-  const deleteProjectMutation = useMutation({
-    mutationFn: async (projectId: string) => {
+  const handleDeleteProject = async (projectId: string) => {
+    if (!confirm('Are you sure you want to delete this project?')) return;
+    try {
       const token = localStorage.getItem('axiom_token');
       const res = await fetch(`/api/v1/projects/${projectId}`, {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
-      if (!res.ok) {
+      if (res.ok) {
+        setProjects((prev) => prev.filter((p) => p.id !== projectId));
+      } else {
         const errorText = await res.text();
-        throw new Error(`Failed to delete project. Status: ${res.status}. Details: ${errorText}`);
+        alert(`Failed to delete project. Status: ${res.status}. Details: ${errorText}`);
       }
-      return projectId;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['projects-list'] });
-    },
-    onError: (err: unknown) => {
-      const msg = err instanceof Error ? err.message : String(err);
-      alert(`Error deleting project: ${msg}`);
-    },
-  });
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : String(err);
+      alert(`Network error during project deletion: ${errorMsg}`);
+      console.error(err);
+    }
+  };
 
-  // 3. Create Project Mutation
-  const createProjectMutation = useMutation({
-    mutationFn: async (payload: unknown) => {
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        const token = localStorage.getItem('axiom_token');
+        if (!token) {
+          router.push('/login');
+          return;
+        }
+
+        const res = await fetch('/api/v1/projects', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (res.status === 401) {
+          localStorage.removeItem('axiom_token');
+          router.push('/login');
+          return;
+        }
+
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          // Map the backend DB projects to frontend visual model
+          const mapped: Project[] = data.map((p: DBProject) => {
+            let status: 'progress' | 'proposed' | 'completed' = 'proposed';
+            if (p.status === 'ACTIVE') status = 'progress';
+            else if (p.status === 'COMPLETED') status = 'completed';
+
+            let health: 'on_track' | 'at_risk' | 'review' = 'review';
+            if (p.healthStatus === 'LOW') health = 'on_track';
+            else if (p.healthStatus === 'HIGH') health = 'at_risk';
+
+            const tasksTotal = p.tasks?.length || 0;
+            const tasksDone = p.tasks?.filter((t) => t.status === 'COMPLETED').length || 0;
+            const progress =
+              tasksTotal > 0
+                ? Math.round((tasksDone / tasksTotal) * 100)
+                : p.status === 'ACTIVE'
+                  ? 10
+                  : 0;
+
+            return {
+              id: p.id,
+              name: p.name,
+              category: p.category || 'General',
+              description: p.objective,
+              status,
+              progress,
+              health,
+              tasksDone,
+              tasksTotal,
+              members: p.members || [],
+            };
+          });
+          setProjects(mapped);
+        }
+      } catch (err) {
+        console.error('Error fetching projects:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProjects();
+  }, [router]);
+
+  const handleCreateProject = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (selectedEmployeeIds.length === 0) {
+      alert('Please assign at least one employee to this project.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    setNotificationsSuccess(null);
+
+    try {
       const token = localStorage.getItem('axiom_token');
+      const payload = {
+        name: newName,
+        objective: newObjective,
+        targetDeadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        domain: newDomain,
+        techStack: newTechStack
+          .split(',')
+          .map((t) => t.trim())
+          .filter(Boolean),
+        employeeIds: selectedEmployeeIds,
+        notifyEmployees: notifyEmployees,
+        tasks: [],
+      };
+
       const res = await fetch('/api/v1/projects', {
         method: 'POST',
         headers: {
@@ -150,55 +201,55 @@ function ProjectsPageContent() {
         },
         body: JSON.stringify(payload),
       });
-      if (!res.ok) throw new Error('Failed to create project');
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['projects-list'] });
-      setShowModal(false);
-      setNewName('');
-      setNewObjective('');
-      setNewDomain('Frontend');
-      setNewTechStack('');
-      setModalTasks([]);
-    },
-  });
 
-  const handleAddModalTask = (e: React.MouseEvent) => {
-    e.preventDefault();
-    if (!modalTaskTitle || !modalTaskDesc) return;
-    setModalTasks((prev) => [
-      ...prev,
-      {
-        title: modalTaskTitle,
-        description: modalTaskDesc,
-        estimatedHours: modalTaskHours ? Number(modalTaskHours) : undefined,
-      },
-    ]);
-    setModalTaskTitle('');
-    setModalTaskDesc('');
-    setModalTaskHours('');
-  };
+      if (res.ok) {
+        const createdData = await res.json();
+        
+        if (notifyEmployees) {
+          if (createdData.notificationsSent === true) {
+            setNotificationsSuccess(true);
+          } else {
+            setNotificationsSuccess(false);
+          }
+        }
 
-  const handleDeleteProject = (projectId: string) => {
-    if (!confirm('Are you sure you want to delete this project?')) return;
-    deleteProjectMutation.mutate(projectId);
-  };
+        const newProj: Project = {
+          id: createdData.id || `proj_${Date.now()}`,
+          name: newName,
+          category: newDomain || 'Frontend',
+          description: newObjective,
+          status: 'proposed',
+          progress: 0,
+          health: 'review',
+          tasksDone: 0,
+          tasksTotal: 0,
+          members: selectedEmployeeIds.map(id => ({ userId: id })),
+        };
 
-  const handleCreateProject = (e: React.FormEvent) => {
-    e.preventDefault();
-    const payload = {
-      name: newName,
-      objective: newObjective,
-      targetDeadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-      domain: newDomain,
-      techStack: newTechStack
-        .split(',')
-        .map((t) => t.trim())
-        .filter(Boolean),
-      tasks: modalTasks,
-    };
-    createProjectMutation.mutate(payload);
+        setProjects((prev) => [newProj, ...prev]);
+
+        setTimeout(() => {
+          setShowModal(false);
+          setNewName('');
+          setNewObjective('');
+          setNewDomain('Frontend');
+          setNewTechStack('');
+          setSelectedEmployeeIds([]);
+          setNotifyEmployees(false);
+          setNotificationsSuccess(null);
+          setIsSubmitting(false);
+        }, 1500);
+
+      } else {
+        const errorText = await res.text();
+        alert(`Failed to create project: ${errorText}`);
+        setIsSubmitting(false);
+      }
+    } catch (err) {
+      console.error('Error creating project:', err);
+      alert('A network error occurred while creating the project.');
+      setIsSubmitting(false);
+    }
   };
 
   const filteredProjects = projects.filter((project) => {
@@ -309,6 +360,13 @@ function ProjectsPageContent() {
                 <div className="h-6 bg-[#e6e3da] rounded w-3/4" />
                 <div className="h-3 bg-[#e6e3da] rounded w-full" />
                 <div className="h-3 bg-[#e6e3da] rounded w-2/3" />
+              </div>
+              <div className="space-y-2 pt-4 border-t border-[#e6e3da]">
+                <div className="flex justify-between items-center">
+                  <div className="h-3 bg-[#e6e3da] rounded w-24" />
+                  <div className="h-3 bg-[#e6e3da] rounded w-12" />
+                </div>
+                <div className="h-2 bg-[#e6e3da] rounded w-full" />
               </div>
             </div>
           ))}
@@ -472,89 +530,131 @@ function ProjectsPageContent() {
                       value={newTechStack}
                       onChange={(e) => setNewTechStack(e.target.value)}
                       placeholder="e.g. Next.js, TailwindCSS"
-                      className="w-full bg-[#faf8f5] border border-[#e6e3da] rounded-xl py-2.5 px-3.5 text-xs text-[#1c1b18] placeholder:text-[#a09c94] focus:outline-none focus:border-[#8c7853] focus:ring-4 focus:ring-[#8c7853]/10 transition-all duration-300 shadow-sm"
+                      className="w-full bg-white border border-[#e6e3da] rounded-xl py-2.5 px-3.5 text-xs text-[#1c1b18] placeholder:text-[#a09c94] focus:outline-none focus:border-[#8c7853] focus:ring-4 focus:ring-[#8c7853]/10 transition-all duration-300 shadow-sm"
                     />
                   </div>
                 </div>
 
-                {/* Column 2: Tasks Builder */}
-                <div className="space-y-4 border-t md:border-t-0 md:border-l md:pl-6 border-[#e6e3da]">
-                  <h3 className="text-[10px] font-black text-[#8c7853] uppercase tracking-widest pb-1 border-b border-[#faf8f5]">
-                    Project Tasks
-                  </h3>
-
-                  {modalTasks.length > 0 ? (
-                    <div className="space-y-2 max-h-32 overflow-y-auto bg-[#faf8f5] p-3 border border-[#e6e3da] rounded-xl shadow-inner">
-                      {modalTasks.map((t, idx) => (
-                        <div
-                          key={idx}
-                          className="flex justify-between items-start text-xs border-b border-[#e6e3da]/60 pb-1.5 last:border-0 last:pb-0"
-                        >
-                          <div className="truncate pr-2">
-                            <span className="font-bold text-[#1c1b18] block truncate">
-                              {t.title}
-                            </span>
-                            <span className="text-[9px] text-[#66635d] font-semibold block truncate">
-                              {t.description}
-                            </span>
-                          </div>
-                          <Badge variant="completed">{t.estimatedHours || 0}h</Badge>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-[9px] text-[#66635d] font-black uppercase tracking-widest bg-[#faf8f5] p-3 text-center border border-[#e6e3da]/80 rounded-xl">
-                      No tasks added yet. Add tasks below.
-                    </p>
-                  )}
-
-                  {/* Task Builder Inputs */}
-                  <div className="bg-[#faf8f5] p-4 border border-[#e6e3da] rounded-xl space-y-3 shadow-sm">
-                    <div className="space-y-1">
-                      <label className="text-[9px] font-black text-[#66635d] uppercase tracking-widest block mb-0.5">
-                        Task Title
+                {/* Column 2: Employee Assignment & Notifications */}
+                <div className="space-y-6 border-t md:border-t-0 md:border-l md:pl-6 border-[#e6e3da]">
+                  <div className="space-y-4">
+                    <h3 className="text-[10px] font-black text-[#8c7853] uppercase tracking-widest pb-1 border-b border-[#faf8f5]">
+                      Employee Assignment
+                    </h3>
+                    <div className="space-y-1 relative">
+                      <label className="text-[10px] font-black text-[#66635d] uppercase tracking-widest block mb-1">
+                        Assign Employees
                       </label>
-                      <input
-                        type="text"
-                        value={modalTaskTitle}
-                        onChange={(e) => setModalTaskTitle(e.target.value)}
-                        placeholder="Setup database schemas"
-                        className="w-full bg-white border border-[#e6e3da] rounded-lg p-2 text-xs text-[#1c1b18] outline-none focus:border-[#8c7853] focus:ring-4 focus:ring-[#8c7853]/10 transition-all duration-300"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-[9px] font-black text-[#66635d] uppercase tracking-widest block mb-0.5">
-                        Description
-                      </label>
-                      <textarea
-                        rows={2}
-                        value={modalTaskDesc}
-                        onChange={(e) => setModalTaskDesc(e.target.value)}
-                        placeholder="Task context details..."
-                        className="w-full bg-white border border-[#e6e3da] rounded-lg p-2 text-xs text-[#1c1b18] outline-none focus:border-[#8c7853] focus:ring-4 focus:ring-[#8c7853]/10 transition-all duration-300 resize-none"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-[9px] font-black text-[#66635d] uppercase tracking-widest block mb-0.5">
-                        Estimated Hours
-                      </label>
-                      <div className="flex gap-2">
-                        <input
-                          type="number"
-                          value={modalTaskHours}
-                          onChange={(e) => setModalTaskHours(e.target.value)}
-                          placeholder="e.g. 8"
-                          className="flex-1 bg-white border border-[#e6e3da] rounded-lg p-2 text-xs text-[#1c1b18] outline-none focus:border-[#8c7853] focus:ring-4 focus:ring-[#8c7853]/10 transition-all duration-300"
-                        />
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          onClick={handleAddModalTask}
-                          className="h-8 text-[9px] cursor-pointer rounded-lg border border-[#e6e3da] py-0 px-3 tracking-widest font-black uppercase"
-                        >
-                          + Add Task
-                        </Button>
+                      
+                      {/* Selection Box / Trigger */}
+                      <div
+                        onClick={() => setDropdownOpen(!dropdownOpen)}
+                        className="w-full bg-white border border-[#e6e3da] rounded-xl py-2.5 px-3.5 text-xs text-[#1c1b18] focus:outline-none focus:border-[#8c7853] transition-all duration-300 shadow-sm cursor-pointer flex justify-between items-center select-none"
+                      >
+                        <span className="font-bold text-[#1c1b18] truncate">
+                          {selectedEmployeeIds.length === 0
+                            ? 'Select employees...'
+                            : `${selectedEmployeeIds.length} employee(s) selected`}
+                        </span>
+                        <span className="text-[#a09c94] text-xs">{dropdownOpen ? '▲' : '▼'}</span>
                       </div>
+
+                      {/* Dropdown Panel */}
+                      {dropdownOpen && (
+                        <div className="absolute left-0 right-0 z-50 mt-1 bg-white border border-[#e6e3da] rounded-xl shadow-lg p-3 space-y-2 max-h-60 overflow-y-auto animate-in fade-in slide-in-from-top-1 duration-200">
+                          {/* Search Bar */}
+                          <input
+                            type="text"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            placeholder="Search by ID or name..."
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-full bg-[#faf8f5] border border-[#e6e3da] rounded-lg py-2 px-3 text-xs text-[#1c1b18] placeholder:text-[#a09c94] focus:outline-none focus:border-[#8c7853] shadow-inner mb-2"
+                          />
+                          
+                          {/* List Options */}
+                          <div className="space-y-1">
+                            {employees.filter(emp => 
+                              emp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                              (emp.employeeId || '').toLowerCase().includes(searchTerm.toLowerCase())
+                            ).length > 0 ? (
+                              employees
+                                .filter(emp => 
+                                  emp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                  (emp.employeeId || '').toLowerCase().includes(searchTerm.toLowerCase())
+                                )
+                                .map((emp) => {
+                                  const isSelected = selectedEmployeeIds.includes(emp.id);
+                                  const empIdStr = emp.employeeId ? emp.employeeId.trim().replace('-', '') : 'EMP000';
+                                  const labelText = `${empIdStr} – ${emp.name}`;
+                                  
+                                  return (
+                                    <label
+                                      key={emp.id}
+                                      onClick={(e) => e.stopPropagation()}
+                                      className="flex items-center gap-2.5 text-xs text-[#1c1b18] font-bold cursor-pointer hover:bg-[#faf8f5] p-1.5 rounded transition-colors"
+                                    >
+                                      <input
+                                        type="checkbox"
+                                        checked={isSelected}
+                                        onChange={() => {
+                                          if (isSelected) {
+                                            setSelectedEmployeeIds((prev) => prev.filter((id) => id !== emp.id));
+                                          } else {
+                                            setSelectedEmployeeIds((prev) => [...prev, emp.id]);
+                                          }
+                                        }}
+                                        className="rounded border-[#e6e3da] text-[#8c7853] focus:ring-[#8c7853]/20 cursor-pointer"
+                                      />
+                                      <span>{labelText}</span>
+                                    </label>
+                                  );
+                                })
+                            ) : (
+                              <p className="text-[10px] text-[#66635d] uppercase tracking-widest font-black text-center py-2">
+                                No employees match search
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Notification Action */}
+                    <div className="space-y-2 pt-2">
+                      <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                        <input
+                          type="checkbox"
+                          checked={notifyEmployees || notificationsSuccess === true}
+                          disabled={isSubmitting || notificationsSuccess !== null}
+                          onChange={(e) => setNotifyEmployees(e.target.checked)}
+                          className={`w-4 h-4 rounded transition-all duration-300 cursor-pointer`}
+                          style={{
+                            accentColor: notificationsSuccess === true ? '#10b981' : undefined,
+                          }}
+                        />
+                        <span
+                          className={`text-[10px] font-black uppercase tracking-widest transition-colors duration-300 ${
+                            notificationsSuccess === true
+                              ? 'text-emerald-600'
+                              : notificationsSuccess === false
+                                ? 'text-rose-600'
+                                : 'text-[#66635d]'
+                          }`}
+                        >
+                          Notify Assigned Employees
+                        </span>
+                      </label>
+                      {notificationsSuccess === true && (
+                        <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-wider animate-in fade-in duration-300">
+                          ✓ Notifications sent successfully!
+                        </p>
+                      )}
+                      {notificationsSuccess === false && (
+                        <p className="text-[10px] text-rose-500 font-bold uppercase tracking-wider animate-in fade-in duration-300">
+                          ⚠ Some notifications failed to deliver.
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -566,6 +666,7 @@ function ProjectsPageContent() {
                   variant="outline"
                   size="sm"
                   type="button"
+                  disabled={isSubmitting}
                   onClick={() => setShowModal(false)}
                   className="h-10 text-[9px] font-black tracking-widest uppercase border-[#e6e3da] text-[#66635d] hover:bg-[#faf8f5]"
                 >
@@ -575,10 +676,10 @@ function ProjectsPageContent() {
                   variant="primary"
                   size="sm"
                   type="submit"
-                  disabled={createProjectMutation.isPending}
-                  className="h-10 text-[9px] font-black tracking-widest uppercase border border-[#7d6b4a] cursor-pointer"
+                  disabled={isSubmitting || notificationsSuccess !== null}
+                  className="h-10 text-[9px] font-black tracking-widest uppercase border border-[#7d6b4a]"
                 >
-                  {createProjectMutation.isPending ? 'Generating...' : 'Generate Plan'}
+                  {isSubmitting ? 'Generating...' : 'Generate Plan'}
                 </Button>
               </div>
             </form>
@@ -591,7 +692,7 @@ function ProjectsPageContent() {
 
 export default function ProjectsPage() {
   return (
-    <Suspense fallback={<div className="text-[#66635d] text-xs font-black uppercase tracking-widest py-8">Loading workspace...</div>}>
+    <Suspense fallback={<div className="text-zinc-400 py-8">Loading workspace...</div>}>
       <ProjectsPageContent />
     </Suspense>
   );
