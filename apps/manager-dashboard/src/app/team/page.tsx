@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { UserCheck, MessageSquare, Trash2 } from 'lucide-react';
+import { useState } from 'react';
+import { MessageSquare, Trash2, UserPlus } from 'lucide-react';
 import { Button, Card, Badge } from '@useaxiom/ui';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { SendReminderModal } from '../components/SendReminderModal';
+import { AddEmployeeModal } from '../components/AddEmployeeModal';
 
 interface DBUser {
   id: string;
@@ -30,97 +31,49 @@ interface DBUser {
   }>;
 }
 
-interface DBProject {
-  id: string;
-  name: string;
-  status: string;
-  members?: unknown[];
-}
-
 export default function TeamPage() {
-  const [employees, setEmployees] = useState<DBUser[]>([]);
-  const [projects, setProjects] = useState<DBProject[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [assigningMap, setAssigningMap] = useState<Record<string, string>>({});
+  const queryClient = useQueryClient();
+
   const [reminderModalOpen, setReminderModalOpen] = useState(false);
+  const [addEmployeeModalOpen, setAddEmployeeModalOpen] = useState(false);
   const [selectedMemberId, setSelectedMemberId] = useState('');
   const [selectedMemberName, setSelectedMemberName] = useState('');
   const [selectedMemberPhone, setSelectedMemberPhone] = useState('');
-  const router = useRouter();
 
-  const fetchWorkloads = async () => {
-    try {
+  // 1. Fetch Users using TanStack Query
+  const { data: employees = [], isLoading: loading } = useQuery<DBUser[]>({
+    queryKey: ['team-employees'],
+    queryFn: async () => {
       const token = localStorage.getItem('axiom_token');
-      if (!token) return;
-      const headers = { Authorization: `Bearer ${token}` };
-      const [uRes, pRes] = await Promise.all([
-        fetch('/api/v1/users', { headers }),
-        fetch('/api/v1/projects', { headers }),
-      ]);
-      if (uRes.ok) {
-        const usersData = await uRes.json();
-        setEmployees(usersData.filter((u: DBUser) => u.role === 'EMPLOYEE'));
-      }
-      if (pRes.ok) {
-        setProjects(await pRes.json());
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      await fetchWorkloads();
-      setLoading(false);
-    };
-    fetchData();
-  }, [router]);
-
-  const handleAssignProject = async (userId: string) => {
-    const projectId = assigningMap[userId];
-    if (!projectId) return;
-
-    try {
-      const token = localStorage.getItem('axiom_token');
-      const res = await fetch(`/api/v1/projects/${projectId}/assign`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ userId }),
+      if (!token) return [];
+      const res = await fetch('/api/v1/users', {
+        headers: { Authorization: `Bearer ${token}` },
       });
+      if (!res.ok) throw new Error('Failed to fetch team members');
+      const usersData: DBUser[] = await res.json();
+      return usersData.filter((u) => u.role === 'EMPLOYEE');
+    },
+  });
 
-      if (res.ok) {
-        alert('Project assigned and WhatsApp alert sent successfully!');
-        setAssigningMap((prev) => ({ ...prev, [userId]: '' }));
-        fetchWorkloads();
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const handleUnassignProject = async (userId: string, projectId: string) => {
-    if (!confirm('Are you sure you want to unassign this project?')) return;
-
-    try {
+  // 2. Unassign Project Mutation
+  const unassignProjectMutation = useMutation({
+    mutationFn: async ({ userId, projectId }: { userId: string; projectId: string }) => {
       const token = localStorage.getItem('axiom_token');
       const res = await fetch(`/api/v1/projects/${projectId}/assign/${userId}`, {
         method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
+      if (!res.ok) throw new Error('Failed to unassign project');
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['team-employees'] });
+    },
+  });
 
-      if (res.ok) {
-        fetchWorkloads();
-      }
-    } catch (err) {
-      console.error(err);
-    }
+  const handleUnassignProject = (userId: string, projectId: string) => {
+    if (!confirm('Are you sure you want to unassign this project?')) return;
+    unassignProjectMutation.mutate({ userId, projectId });
   };
 
   const getInitials = (name: string) => {
@@ -135,13 +88,11 @@ export default function TeamPage() {
     const pms = member.projectMembers || [];
     const pCount = pms.length;
 
-    // Load allocation mapping
     let load = 0;
     if (pCount === 1) load = 60;
     else if (pCount === 2) load = 80;
     else if (pCount >= 3) load = 95;
 
-    // Sum task counts across assigned projects
     let active = 0;
     let queued = 0;
     let blocked = 0;
@@ -164,13 +115,31 @@ export default function TeamPage() {
     return 'bg-[#3e593e]';
   };
 
-  if (loading) {
-    return (
-      <div className="space-y-8 animate-in fade-in duration-500">
+  return (
+    <div className="space-y-8 animate-in fade-in duration-500">
+      {/* Header with Add Employee Action */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="space-y-1">
-          <div className="h-8 bg-[#e6e3da] rounded w-48" />
-          <div className="h-4 bg-[#e6e3da] rounded w-96" />
+          <h1 className="text-3xl font-serif font-black tracking-tight text-[#1c1b18]">
+            Team Workloads & Employees
+          </h1>
+          <p className="text-[#66635d] text-xs font-semibold uppercase tracking-widest">
+            Review resource allocation, active tasks, and employee WhatsApp contact details.
+          </p>
         </div>
+
+        <Button
+          variant="primary"
+          size="sm"
+          onClick={() => setAddEmployeeModalOpen(true)}
+          className="h-10 px-4 font-black tracking-widest text-[10px] uppercase shadow-sm border border-[#7d6b4a] gap-2 cursor-pointer"
+        >
+          <UserPlus className="w-4 h-4" />
+          <span>Add Employee</span>
+        </Button>
+      </div>
+
+      {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-pulse">
           {[1, 2, 3, 4, 5, 6].map((idx) => (
             <div
@@ -188,31 +157,8 @@ export default function TeamPage() {
                 <div className="h-3 bg-[#e6e3da] rounded w-full" />
                 <div className="h-3 bg-[#e6e3da] rounded w-3/4" />
               </div>
-              <div className="space-y-2 pt-4 border-t border-[#e6e3da]">
-                <div className="h-4 bg-[#e6e3da] rounded w-full" />
-              </div>
             </div>
           ))}
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      {/* Header */}
-      <div className="space-y-1">
-        <h1 className="text-3xl font-serif font-black tracking-tight text-[#1c1b18]">
-          Team Workloads
-        </h1>
-        <p className="text-[#66635d] text-xs font-semibold uppercase tracking-widest">
-          Review resource allocation, active tasks, and employee status details.
-        </p>
-      </div>
-
-      {loading ? (
-        <div className="text-[#66635d] text-xs font-black uppercase tracking-widest py-8">
-          Loading team workloads...
         </div>
       ) : employees.length > 0 ? (
         /* Team grid */
@@ -240,48 +186,14 @@ export default function TeamPage() {
                         <span className="block text-xs text-[#8c7853] font-semibold">
                           Specialty: {member.specialty || 'General'}
                         </span>
-                        <span className="block text-[9px] text-[#66635d] font-black uppercase tracking-widest mt-0.5">
-                          ID: {member.employeeId || 'None'} • Phone: {member.phoneNumber}
+                        <span className="block text-[9px] text-[#66635d] font-black uppercase tracking-widest mt-0.5 font-mono">
+                          ID: {member.employeeId || 'EMP'} • WhatsApp: {member.phoneNumber}
                         </span>
                       </div>
                     </div>
                     <Badge variant={assignedProjects.length > 0 ? 'completed' : 'proposed'}>
                       {assignedProjects.length > 0 ? 'Active' : 'Waiting'}
                     </Badge>
-                  </div>
-
-                  {/* Project Assignment Control */}
-                  <div className="space-y-2.5 p-3.5 bg-[#faf8f5] border border-[#e6e3da]/80 rounded-xl shadow-inner">
-                    <label className="block text-[9px] font-black text-[#66635d] uppercase tracking-widest">
-                      Assign to Project
-                    </label>
-                    <div className="flex gap-2 w-full">
-                      <select
-                        value={assigningMap[member.id] || ''}
-                        onChange={(e) =>
-                          setAssigningMap((prev) => ({ ...prev, [member.id]: e.target.value }))
-                        }
-                        className="flex-1 bg-white border border-[#e6e3da] rounded-lg px-2 py-1.5 text-xs text-[#1c1b18] outline-none focus:border-[#8c7853] shadow-sm cursor-pointer"
-                      >
-                        <option value="">Select project...</option>
-                        {projects
-                          .filter((p) => !p.members || p.members.length === 0)
-                          .map((p) => (
-                            <option key={p.id} value={p.id}>
-                              {p.name}
-                            </option>
-                          ))}
-                      </select>
-                      <Button
-                        variant="primary"
-                        size="sm"
-                        onClick={() => handleAssignProject(member.id)}
-                        disabled={!assigningMap[member.id]}
-                        className="h-8 px-3 text-[9px] font-black tracking-widest uppercase cursor-pointer rounded-lg border border-[#7d6b4a]"
-                      >
-                        Assign
-                      </Button>
-                    </div>
                   </div>
 
                   {/* Workload Stats */}
@@ -371,11 +283,6 @@ export default function TeamPage() {
                               </span>
                             ))}
                           </div>
-                          {pm.project.targetDeadline && (
-                            <span className="block text-[8px] text-[#66635d] font-black uppercase tracking-widest mt-1">
-                              Deadline: {new Date(pm.project.targetDeadline).toLocaleDateString()}
-                            </span>
-                          )}
                         </div>
                       ))
                     ) : (
@@ -404,16 +311,8 @@ export default function TeamPage() {
                     }}
                     className="flex-1 rounded-lg text-[9px] tracking-widest uppercase gap-1.5 h-9 border-[#e6e3da] text-[#66635d] hover:bg-[#faf8f5] shadow-sm cursor-pointer"
                   >
-                    <MessageSquare className="w-3.5 h-3.5" />
+                    <MessageSquare className="w-3.5 h-3.5 text-[#8c7853]" />
                     <span>Send Reminder</span>
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    className="flex-1 rounded-lg text-[9px] tracking-widest uppercase gap-1.5 h-9 border border-[#e6e3da] hover:bg-[#e6e3da]/10 bg-white text-[#1c1b18] shadow-sm"
-                  >
-                    <UserCheck className="w-3.5 h-3.5 text-[#8c7853]" />
-                    <span>Reallocate task</span>
                   </Button>
                 </div>
               </Card>
@@ -421,12 +320,29 @@ export default function TeamPage() {
           })}
         </div>
       ) : (
-        <div className="text-[#66635d] text-xs font-black uppercase tracking-widest py-8">
-          No employees found.
+        <div className="bg-white border border-dashed border-[#e6e3da] p-8 rounded-2xl text-center max-w-md mx-auto space-y-3">
+          <div className="w-12 h-12 rounded-full bg-[#8c7853]/10 text-[#8c7853] flex items-center justify-center mx-auto">
+            <UserPlus className="w-6 h-6" />
+          </div>
+          <div>
+            <h3 className="font-serif font-black text-[#1c1b18] text-base">No Employees Found</h3>
+            <p className="text-[#66635d] text-xs font-semibold mt-1">
+              You haven&apos;t added any employees under your organization yet. Click &quot;+ Add Employee&quot; above to register team members.
+            </p>
+          </div>
         </div>
       )}
 
-      {/* Manual Phone Number Entry WhatsApp Reminder Modal */}
+      {/* Direct Add Employee Modal */}
+      <AddEmployeeModal
+        isOpen={addEmployeeModalOpen}
+        onClose={() => setAddEmployeeModalOpen(false)}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ['team-employees'] });
+        }}
+      />
+
+      {/* WhatsApp Reminder Modal */}
       <SendReminderModal
         isOpen={reminderModalOpen}
         onClose={() => setReminderModalOpen(false)}
@@ -435,14 +351,6 @@ export default function TeamPage() {
         onSuccess={async (newPhoneNumber: string) => {
           if (!selectedMemberId) return;
 
-          // 1. Update local state so card immediately displays new phone number
-          setEmployees((prev) =>
-            prev.map((emp) =>
-              emp.id === selectedMemberId ? { ...emp, phoneNumber: newPhoneNumber } : emp,
-            ),
-          );
-
-          // 2. Persist updated phone number to database via API
           try {
             const token = localStorage.getItem('axiom_token');
             if (token) {
@@ -454,6 +362,7 @@ export default function TeamPage() {
                 },
                 body: JSON.stringify({ phoneNumber: newPhoneNumber }),
               });
+              queryClient.invalidateQueries({ queryKey: ['team-employees'] });
             }
           } catch (err) {
             console.error('Error persisting user phone update:', err);

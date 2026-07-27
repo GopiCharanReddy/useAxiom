@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { FolderKanban, Search, Plus, X, Trash2 } from 'lucide-react';
 import { Button, Card, Badge } from '@useaxiom/ui';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 interface Project {
   id: string;
@@ -34,8 +35,6 @@ interface DBProject {
 function ProjectsPageContent() {
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState<'all' | 'progress' | 'proposed' | 'completed'>('all');
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [newName, setNewName] = useState('');
   const [newObjective, setNewObjective] = useState('');
@@ -50,12 +49,120 @@ function ProjectsPageContent() {
 
   const router = useRouter();
   const searchParams = useSearchParams();
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     if (searchParams.get('create') === 'true') {
       setShowModal(true);
     }
   }, [searchParams]);
+
+  // 1. TanStack Query for Projects
+  const { data: projects = [], isLoading: loading } = useQuery<Project[]>({
+    queryKey: ['projects-list'],
+    queryFn: async () => {
+      const token = localStorage.getItem('axiom_token');
+      if (!token) {
+        router.push('/login');
+        return [];
+      }
+
+      const res = await fetch('/api/v1/projects', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (res.status === 401) {
+        localStorage.removeItem('axiom_token');
+        router.push('/login');
+        return [];
+      }
+
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        return data.map((p: DBProject) => {
+          let status: 'progress' | 'proposed' | 'completed' = 'proposed';
+          if (p.status === 'ACTIVE') status = 'progress';
+          else if (p.status === 'COMPLETED') status = 'completed';
+
+          let health: 'on_track' | 'at_risk' | 'review' = 'review';
+          if (p.healthStatus === 'LOW') health = 'on_track';
+          else if (p.healthStatus === 'HIGH') health = 'at_risk';
+
+          const tasksTotal = p.tasks?.length || 0;
+          const tasksDone = p.tasks?.filter((t) => t.status === 'COMPLETED').length || 0;
+          const progress =
+            tasksTotal > 0
+              ? Math.round((tasksDone / tasksTotal) * 100)
+              : p.status === 'ACTIVE'
+                ? 10
+                : 0;
+
+          return {
+            id: p.id,
+            name: p.name,
+            category: p.category || 'General',
+            description: p.objective,
+            status,
+            progress,
+            health,
+            tasksDone,
+            tasksTotal,
+            members: p.members || [],
+          };
+        });
+      }
+      return [];
+    },
+  });
+
+  // 2. Delete Project Mutation
+  const deleteProjectMutation = useMutation({
+    mutationFn: async (projectId: string) => {
+      const token = localStorage.getItem('axiom_token');
+      const res = await fetch(`/api/v1/projects/${projectId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(`Failed to delete project. Status: ${res.status}. Details: ${errorText}`);
+      }
+      return projectId;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projects-list'] });
+    },
+    onError: (err: unknown) => {
+      const msg = err instanceof Error ? err.message : String(err);
+      alert(`Error deleting project: ${msg}`);
+    },
+  });
+
+  // 3. Create Project Mutation
+  const createProjectMutation = useMutation({
+    mutationFn: async (payload: unknown) => {
+      const token = localStorage.getItem('axiom_token');
+      const res = await fetch('/api/v1/projects', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error('Failed to create project');
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projects-list'] });
+      setShowModal(false);
+      setNewName('');
+      setNewObjective('');
+      setNewDomain('Frontend');
+      setNewTechStack('');
+      setModalTasks([]);
+    },
+  });
 
   const handleAddModalTask = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -73,151 +180,25 @@ function ProjectsPageContent() {
     setModalTaskHours('');
   };
 
-  const handleDeleteProject = async (projectId: string) => {
+  const handleDeleteProject = (projectId: string) => {
     if (!confirm('Are you sure you want to delete this project?')) return;
-    try {
-      const token = localStorage.getItem('axiom_token');
-      const res = await fetch(`/api/v1/projects/${projectId}`, {
-        method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      if (res.ok) {
-        setProjects((prev) => prev.filter((p) => p.id !== projectId));
-      } else {
-        const errorText = await res.text();
-        alert(`Failed to delete project. Status: ${res.status}. Details: ${errorText}`);
-      }
-    } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : String(err);
-      alert(`Network error during project deletion: ${errorMsg}`);
-      console.error(err);
-    }
+    deleteProjectMutation.mutate(projectId);
   };
 
-  useEffect(() => {
-    const fetchProjects = async () => {
-      try {
-        const token = localStorage.getItem('axiom_token');
-        if (!token) {
-          router.push('/login');
-          return;
-        }
-
-        const res = await fetch('/api/v1/projects', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        if (res.status === 401) {
-          localStorage.removeItem('axiom_token');
-          router.push('/login');
-          return;
-        }
-
-        const data = await res.json();
-        if (Array.isArray(data)) {
-          // Map the backend DB projects to frontend visual model
-          const mapped: Project[] = data.map((p: DBProject) => {
-            let status: 'progress' | 'proposed' | 'completed' = 'proposed';
-            if (p.status === 'ACTIVE') status = 'progress';
-            else if (p.status === 'COMPLETED') status = 'completed';
-
-            let health: 'on_track' | 'at_risk' | 'review' = 'review';
-            if (p.healthStatus === 'LOW') health = 'on_track';
-            else if (p.healthStatus === 'HIGH') health = 'at_risk';
-
-            const tasksTotal = p.tasks?.length || 0;
-            const tasksDone = p.tasks?.filter((t) => t.status === 'COMPLETED').length || 0;
-            const progress =
-              tasksTotal > 0
-                ? Math.round((tasksDone / tasksTotal) * 100)
-                : p.status === 'ACTIVE'
-                  ? 10
-                  : 0;
-
-            return {
-              id: p.id,
-              name: p.name,
-              category: p.category || 'General',
-              description: p.objective,
-              status,
-              progress,
-              health,
-              tasksDone,
-              tasksTotal,
-              members: p.members || [],
-            };
-          });
-          setProjects(mapped);
-        }
-      } catch (err) {
-        console.error('Error fetching projects:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchProjects();
-  }, [router]);
-
-  const handleCreateProject = async (e: React.FormEvent) => {
+  const handleCreateProject = (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      const token = localStorage.getItem('axiom_token');
-      const payload = {
-        name: newName,
-        objective: newObjective,
-        targetDeadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-        domain: newDomain,
-        techStack: newTechStack
-          .split(',')
-          .map((t) => t.trim())
-          .filter(Boolean),
-        tasks: modalTasks,
-      };
-
-      // Optimistically create new project model for instant UI response
-      const tempId = `proj_${Date.now()}`;
-      const optimisticProject: Project = {
-        id: tempId,
-        name: newName,
-        category: newDomain || 'Frontend',
-        description: newObjective,
-        status: 'proposed',
-        progress: 0,
-        health: 'review',
-        tasksDone: 0,
-        tasksTotal: modalTasks.length,
-        members: [],
-      };
-
-      setProjects((prev) => [optimisticProject, ...prev]);
-      setShowModal(false);
-      setNewName('');
-      setNewObjective('');
-      setNewDomain('Frontend');
-      setNewTechStack('');
-      setModalTasks([]);
-
-      const res = await fetch('/api/v1/projects', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload),
-      });
-
-      if (res.ok) {
-        const createdData = await res.json();
-        // Replace tempId with actual DB project ID
-        setProjects((prev) =>
-          prev.map((p) => (p.id === tempId ? { ...p, id: createdData.id || tempId } : p)),
-        );
-      }
-    } catch (err) {
-      console.error('Error creating project:', err);
-    }
+    const payload = {
+      name: newName,
+      objective: newObjective,
+      targetDeadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+      domain: newDomain,
+      techStack: newTechStack
+        .split(',')
+        .map((t) => t.trim())
+        .filter(Boolean),
+      tasks: modalTasks,
+    };
+    createProjectMutation.mutate(payload);
   };
 
   const filteredProjects = projects.filter((project) => {
@@ -328,13 +309,6 @@ function ProjectsPageContent() {
                 <div className="h-6 bg-[#e6e3da] rounded w-3/4" />
                 <div className="h-3 bg-[#e6e3da] rounded w-full" />
                 <div className="h-3 bg-[#e6e3da] rounded w-2/3" />
-              </div>
-              <div className="space-y-2 pt-4 border-t border-[#e6e3da]">
-                <div className="flex justify-between items-center">
-                  <div className="h-3 bg-[#e6e3da] rounded w-24" />
-                  <div className="h-3 bg-[#e6e3da] rounded w-12" />
-                </div>
-                <div className="h-2 bg-[#e6e3da] rounded w-full" />
               </div>
             </div>
           ))}
@@ -498,7 +472,7 @@ function ProjectsPageContent() {
                       value={newTechStack}
                       onChange={(e) => setNewTechStack(e.target.value)}
                       placeholder="e.g. Next.js, TailwindCSS"
-                      className="w-full bg-white border border-[#e6e3da] rounded-xl py-2.5 px-3.5 text-xs text-[#1c1b18] placeholder:text-[#a09c94] focus:outline-none focus:border-[#8c7853] focus:ring-4 focus:ring-[#8c7853]/10 transition-all duration-300 shadow-sm"
+                      className="w-full bg-[#faf8f5] border border-[#e6e3da] rounded-xl py-2.5 px-3.5 text-xs text-[#1c1b18] placeholder:text-[#a09c94] focus:outline-none focus:border-[#8c7853] focus:ring-4 focus:ring-[#8c7853]/10 transition-all duration-300 shadow-sm"
                     />
                   </div>
                 </div>
@@ -509,7 +483,6 @@ function ProjectsPageContent() {
                     Project Tasks
                   </h3>
 
-                  {/* Local task list */}
                   {modalTasks.length > 0 ? (
                     <div className="space-y-2 max-h-32 overflow-y-auto bg-[#faf8f5] p-3 border border-[#e6e3da] rounded-xl shadow-inner">
                       {modalTasks.map((t, idx) => (
@@ -602,9 +575,10 @@ function ProjectsPageContent() {
                   variant="primary"
                   size="sm"
                   type="submit"
-                  className="h-10 text-[9px] font-black tracking-widest uppercase border border-[#7d6b4a]"
+                  disabled={createProjectMutation.isPending}
+                  className="h-10 text-[9px] font-black tracking-widest uppercase border border-[#7d6b4a] cursor-pointer"
                 >
-                  Generate Plan
+                  {createProjectMutation.isPending ? 'Generating...' : 'Generate Plan'}
                 </Button>
               </div>
             </form>
@@ -617,7 +591,7 @@ function ProjectsPageContent() {
 
 export default function ProjectsPage() {
   return (
-    <Suspense fallback={<div className="text-zinc-400 py-8">Loading workspace...</div>}>
+    <Suspense fallback={<div className="text-[#66635d] text-xs font-black uppercase tracking-widest py-8">Loading workspace...</div>}>
       <ProjectsPageContent />
     </Suspense>
   );

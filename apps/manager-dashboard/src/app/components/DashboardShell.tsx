@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
@@ -23,6 +23,8 @@ import {
 import { Button } from '@useaxiom/ui';
 import AIAssistantPanel from './AIAssistantPanel';
 
+import { useQuery } from '@tanstack/react-query';
+
 interface UserProfile {
   id: string;
   name: string;
@@ -34,7 +36,6 @@ interface UserProfile {
 }
 
 export default function DashboardShell({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<UserProfile | null>(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isAIOpen, setIsAIOpen] = useState(false);
   const pathname = usePathname();
@@ -47,41 +48,26 @@ export default function DashboardShell({ children }: { children: React.ReactNode
     router.push('/login');
   };
 
-  useEffect(() => {
-    const token = localStorage.getItem('axiom_token');
-    if (!token) {
-      router.push('/login');
-      return;
-    }
-
-    // Fast path: load cached user profile from sessionStorage
-    const cachedUser = sessionStorage.getItem('axiom_user_profile');
-    if (cachedUser) {
-      try {
-        setUser(JSON.parse(cachedUser));
-      } catch (_e) {
-        // Fallthrough to fetch
+  const { data: user } = useQuery<UserProfile | null>({
+    queryKey: ['auth-me'],
+    queryFn: async () => {
+      const token = localStorage.getItem('axiom_token');
+      if (!token) {
+        handleLogout();
+        return null;
       }
-    }
-
-    fetch('/api/v1/auth/me', {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((r) => {
-        if (r.status === 401) {
-          handleLogout();
-          throw new Error('Unauthorized');
-        }
-        return r.json();
-      })
-      .then((data) => {
-        if (data) {
-          setUser(data);
-          sessionStorage.setItem('axiom_user_profile', JSON.stringify(data));
-        }
-      })
-      .catch((err) => console.error('Error fetching user profile:', err));
-  }, []);
+      const res = await fetch('/api/v1/auth/me', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.status === 401) {
+        handleLogout();
+        return null;
+      }
+      if (!res.ok) throw new Error('Failed to fetch profile');
+      return res.json();
+    },
+    staleTime: 10 * 60 * 1000,
+  });
 
   const initials = user?.name
     ? user.name

@@ -137,34 +137,36 @@ export default function AIAssistantPanel({ isOpen, onClose }: AIAssistantPanelPr
       {/* Backdrop */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity duration-300"
+          className="fixed inset-0 bg-[#1c1b18]/40 backdrop-blur-sm z-40 transition-opacity duration-300"
           onClick={onClose}
         />
       )}
 
       {/* Slide-out Panel */}
       <div
-        className={`fixed top-0 right-0 h-full w-full sm:w-[480px] bg-zinc-950 border-l border-zinc-800 shadow-2xl z-50 flex flex-col transition-transform duration-300 ease-in-out ${
+        className={`fixed top-0 right-0 h-full w-full sm:w-[480px] bg-[#faf8f5] border-l border-[#e6e3da] shadow-2xl z-50 flex flex-col transition-transform duration-300 ease-in-out ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
         {/* Header */}
-        <div className="p-4 border-b border-zinc-800 flex items-center justify-between bg-zinc-900/50">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-purple-600 to-indigo-600 flex items-center justify-center">
-              <Sparkles className="w-4 h-4 text-white animate-pulse" />
+        <div className="p-4 border-b border-[#e6e3da] flex items-center justify-between bg-white shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#8c7853] to-[#bda272] flex items-center justify-center shadow-sm">
+              <Sparkles className="w-4.5 h-4.5 text-white animate-pulse" />
             </div>
             <div>
-              <h2 className="font-semibold text-zinc-100 text-sm">Axiom Assistant</h2>
-              <span className="text-[10px] text-emerald-400 font-medium flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+              <h2 className="font-serif font-black text-[#1c1b18] text-base tracking-tight">
+                Ask Axiom AI
+              </h2>
+              <span className="text-[10px] text-[#8c7853] font-bold uppercase tracking-wider flex items-center gap-1.5 mt-0.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#8c7853] animate-ping" />
                 Autonomous Engine Active
               </span>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg hover:bg-zinc-800 text-zinc-400 hover:text-zinc-100 transition-colors"
+            className="p-2 rounded-xl hover:bg-[#faf8f5] text-[#66635d] hover:text-[#1c1b18] transition-colors border border-transparent hover:border-[#e6e3da] cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -175,31 +177,31 @@ export default function AIAssistantPanel({ isOpen, onClose }: AIAssistantPanelPr
           {messages.map((msg) => (
             <div
               key={msg.id}
-              className={`flex gap-3 max-w-[85%] ${
+              className={`flex gap-3 max-w-[88%] ${
                 msg.sender === 'user' ? 'ml-auto flex-row-reverse' : ''
               }`}
             >
               <div
-                className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border ${
+                className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 border shadow-xs ${
                   msg.sender === 'user'
-                    ? 'bg-zinc-800 border-zinc-700 text-zinc-200'
-                    : 'bg-purple-950/40 border-purple-800/40 text-purple-400'
+                    ? 'bg-[#8c7853]/10 border-[#8c7853]/20 text-[#8c7853]'
+                    : 'bg-white border-[#e6e3da] text-[#8c7853]'
                 }`}
               >
                 {msg.sender === 'user' ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
               </div>
               <div className="flex flex-col gap-1">
                 <div
-                  className={`p-3 rounded-2xl text-sm leading-relaxed ${
+                  className={`p-3.5 rounded-2xl text-xs sm:text-sm leading-relaxed shadow-sm ${
                     msg.sender === 'user'
-                      ? 'bg-purple-600 text-white rounded-tr-none'
-                      : 'bg-zinc-900 border border-zinc-800 text-zinc-200 rounded-tl-none'
+                      ? 'bg-[#8c7853] text-white rounded-tr-none font-medium'
+                      : 'bg-white border border-[#e6e3da] text-[#1c1b18] rounded-tl-none font-normal'
                   }`}
                 >
                   {msg.content}
                 </div>
                 <span
-                  className={`text-[10px] text-zinc-500 px-1 ${
+                  className={`text-[9px] font-bold text-[#a09c94] uppercase tracking-wider px-1 ${
                     msg.sender === 'user' ? 'text-right' : ''
                   }`}
                 >
@@ -211,20 +213,20 @@ export default function AIAssistantPanel({ isOpen, onClose }: AIAssistantPanelPr
 
           {isTyping && (
             <div className="flex gap-3 max-w-[85%]">
-              <div className="w-8 h-8 rounded-lg bg-purple-950/40 border border-purple-800/40 text-purple-400 flex items-center justify-center shrink-0">
-                <RefreshCw className="w-4 h-4 animate-spin" />
+              <div className="w-8 h-8 rounded-xl bg-white border border-[#e6e3da] text-[#8c7853] flex items-center justify-center shrink-0 shadow-xs">
+                <RefreshCw className="w-4 h-4 animate-spin text-[#8c7853]" />
               </div>
-              <div className="p-3 bg-zinc-900 border border-zinc-800 rounded-2xl rounded-tl-none flex items-center gap-1">
+              <div className="p-3 bg-white border border-[#e6e3da] rounded-2xl rounded-tl-none flex items-center gap-1.5 shadow-sm">
                 <span
-                  className="w-1.5 h-1.5 rounded-full bg-zinc-400 animate-bounce"
+                  className="w-1.5 h-1.5 rounded-full bg-[#8c7853] animate-bounce"
                   style={{ animationDelay: '0ms' }}
                 />
                 <span
-                  className="w-1.5 h-1.5 rounded-full bg-zinc-400 animate-bounce"
+                  className="w-1.5 h-1.5 rounded-full bg-[#8c7853] animate-bounce"
                   style={{ animationDelay: '150ms' }}
                 />
                 <span
-                  className="w-1.5 h-1.5 rounded-full bg-zinc-400 animate-bounce"
+                  className="w-1.5 h-1.5 rounded-full bg-[#8c7853] animate-bounce"
                   style={{ animationDelay: '300ms' }}
                 />
               </div>
@@ -235,8 +237,8 @@ export default function AIAssistantPanel({ isOpen, onClose }: AIAssistantPanelPr
 
         {/* Suggestion Chips */}
         {messages.length === 1 && (
-          <div className="px-4 pb-2">
-            <p className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">
+          <div className="px-4 pb-3">
+            <p className="text-[9px] font-black text-[#66635d] uppercase tracking-widest mb-2">
               Suggested Actions
             </p>
             <div className="flex flex-wrap gap-1.5">
@@ -244,7 +246,7 @@ export default function AIAssistantPanel({ isOpen, onClose }: AIAssistantPanelPr
                 <button
                   key={index}
                   onClick={() => handleSend(suggestion)}
-                  className="px-2.5 py-1.5 text-xs text-zinc-300 bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 hover:border-zinc-700 rounded-xl transition-all text-left"
+                  className="px-3 py-1.5 text-xs text-[#1c1b18] font-medium bg-white hover:bg-[#faf8f5] border border-[#e6e3da] hover:border-[#8c7853] rounded-xl transition-all text-left shadow-xs cursor-pointer"
                 >
                   {suggestion}
                 </button>
@@ -254,7 +256,7 @@ export default function AIAssistantPanel({ isOpen, onClose }: AIAssistantPanelPr
         )}
 
         {/* Input Bar */}
-        <div className="p-4 border-t border-zinc-800 bg-zinc-900/20">
+        <div className="p-4 border-t border-[#e6e3da] bg-white shadow-lg">
           <form
             onSubmit={(e: React.FormEvent) => {
               e.preventDefault();
@@ -267,21 +269,21 @@ export default function AIAssistantPanel({ isOpen, onClose }: AIAssistantPanelPr
               value={input}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setInput(e.target.value)}
               placeholder="Ask Axiom to reassign, ping, or generate plans..."
-              className="flex-1 px-4 py-2.5 bg-zinc-900 border border-zinc-800 focus:border-zinc-700 rounded-xl text-zinc-100 placeholder-zinc-500 text-sm focus:outline-none focus:ring-1 focus:ring-purple-500/30"
+              className="flex-1 px-4 py-2.5 bg-[#faf8f5] border border-[#e6e3da] focus:border-[#8c7853] rounded-xl text-[#1c1b18] placeholder-[#a09c94] text-xs font-medium focus:outline-none focus:ring-4 focus:ring-[#8c7853]/10 shadow-inner"
             />
             <Button
               type="submit"
               variant="primary"
               size="sm"
-              className="px-3 py-2.5 rounded-xl shrink-0"
+              className="px-3.5 py-2.5 rounded-xl shrink-0 bg-[#8c7853] hover:bg-[#736243] text-white border border-[#7d6b4a] shadow-sm cursor-pointer"
               disabled={!input.trim() || isTyping}
             >
               <Send className="w-4 h-4" />
             </Button>
           </form>
           <div className="mt-2 flex items-center gap-1.5 justify-center">
-            <AlertCircle className="w-3 h-3 text-zinc-500" />
-            <span className="text-[10px] text-zinc-500">
+            <AlertCircle className="w-3 h-3 text-[#66635d]" />
+            <span className="text-[10px] text-[#66635d] font-semibold">
               Updates are piped to WhatsApp agents automatically.
             </span>
           </div>

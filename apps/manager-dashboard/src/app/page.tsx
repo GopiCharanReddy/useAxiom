@@ -1,6 +1,5 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
@@ -15,90 +14,130 @@ import {
   Users,
 } from 'lucide-react';
 import { Button, Card, CardHeader, CardTitle, CardContent, CardFooter, Badge } from '@useaxiom/ui';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+
+interface DBProject {
+  id: string;
+  name: string;
+  objective: string;
+  status: string;
+  healthScore?: number;
+  healthStatus?: string;
+  healthReasoning?: string;
+  tasks?: Array<{ id: string; status: string }>;
+}
+
+interface StatsData {
+  active_projects: number;
+  blocked_tasks: number;
+  ai_interventions_count: number;
+  team_velocity: number;
+}
+
+interface Workload {
+  employee_id: string;
+  employee_name: string;
+  active_tasks: number;
+  capacity_percentage: number;
+}
+
+interface UserData {
+  name: string;
+}
 
 export default function Home() {
-  const [projects, setProjects] = useState<
-    Array<{
-      id: string;
-      name: string;
-      objective: string;
-      status: string;
-      healthScore?: number;
-      healthStatus?: string;
-      healthReasoning?: string;
-      tasks?: Array<{ id: string; status: string }>;
-    }>
-  >([]);
-  const [statsData, setStatsData] = useState<{
-    active_projects: number;
-    blocked_tasks: number;
-    ai_interventions_count: number;
-    team_velocity: number;
-  } | null>(null);
-  const [workloads, setWorkloads] = useState<
-    Array<{
-      employee_id: string;
-      employee_name: string;
-      active_tasks: number;
-      capacity_percentage: number;
-    }>
-  >([]);
-  const [user, setUser] = useState<{ name: string } | null>(null);
-
   const router = useRouter();
+  const queryClient = useQueryClient();
 
-  const loadDashboardData = () => {
-    const token = localStorage.getItem('axiom_token');
-    if (!token) {
-      router.push('/login');
-      return;
-    }
+  // 1. TanStack Query for Home Dashboard Data
+  const { data: homeData, isLoading } = useQuery<{
+    projects: DBProject[];
+    statsData: StatsData | null;
+    workloads: Workload[];
+    user: UserData | null;
+  }>({
+    queryKey: ['home-dashboard-data'],
+    queryFn: async () => {
+      const token = localStorage.getItem('axiom_token');
+      if (!token) {
+        router.push('/login');
+        return { projects: [], statsData: null, workloads: [], user: null };
+      }
 
-    Promise.all([
-      fetch('/api/v1/projects', { headers: { Authorization: `Bearer ${token}` } }).then((r) => {
-        if (r.status === 401) throw new Error('Unauthorized');
-        return r.json();
-      }),
-      fetch('/api/v1/analytics/dashboard', { headers: { Authorization: `Bearer ${token}` } }).then(
-        (r) => r.json(),
-      ),
-      fetch('/api/v1/analytics/team-workload', {
+      const headers = { Authorization: `Bearer ${token}` };
+
+      const [pRes, dRes, wRes, uRes] = await Promise.all([
+        fetch('/api/v1/projects', { headers }),
+        fetch('/api/v1/analytics/dashboard', { headers }),
+        fetch('/api/v1/analytics/team-workload', { headers }),
+        fetch('/api/v1/auth/me', { headers }),
+      ]);
+
+      if (pRes.status === 401 || uRes.status === 401) {
+        localStorage.removeItem('axiom_token');
+        router.push('/login');
+        return { projects: [], statsData: null, workloads: [], user: null };
+      }
+
+      const projects = pRes.ok ? await pRes.json() : [];
+      const statsData = dRes.ok ? await dRes.json() : null;
+      const wData = wRes.ok ? await wRes.json() : null;
+      const user = uRes.ok ? await uRes.json() : null;
+
+      return {
+        projects: Array.isArray(projects) ? projects : [],
+        statsData,
+        workloads: wData?.workloads || [],
+        user,
+      };
+    },
+  });
+
+  const projects = homeData?.projects || [];
+  const statsData = homeData?.statsData || null;
+  const workloads = homeData?.workloads || [];
+  const user = homeData?.user || null;
+
+  // 2. Approve Project Mutation
+  const approveMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const token = localStorage.getItem('axiom_token');
+      const res = await fetch(`/api/v1/projects/${id}/approve`, {
+        method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
-      }).then((r) => r.json()),
-      fetch('/api/v1/auth/me', {
-        headers: { Authorization: `Bearer ${token}` },
-      }).then((r) => r.json()),
-    ])
-      .then(([projectsData, dashboardData, workloadData, userData]) => {
-        if (Array.isArray(projectsData)) setProjects(projectsData);
-        setStatsData(dashboardData);
-        if (workloadData?.workloads) setWorkloads(workloadData.workloads);
-        if (userData) setUser(userData);
-      })
-      .catch((err) => {
-        if (err.message === 'Unauthorized') {
-          localStorage.removeItem('axiom_token');
-          router.push('/login');
-        }
-        console.error('Failed to fetch dashboard data:', err);
       });
+      if (!res.ok) throw new Error('Failed to approve project');
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['home-dashboard-data'] });
+    },
+  });
+
+  // 3. Generate Plan Mutation
+  const generateMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const token = localStorage.getItem('axiom_token');
+      const res = await fetch(`/api/v1/projects/${id}/generate-plan`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error('Failed to generate plan');
+      return res.json();
+    },
+    onSuccess: () => {
+      alert('Plan generation triggered!');
+      queryClient.invalidateQueries({ queryKey: ['home-dashboard-data'] });
+    },
+  });
+
+  const handleApprove = (id: string) => {
+    approveMutation.mutate(id);
   };
 
-  useEffect(() => {
-    loadDashboardData();
-
-    const handleProjectCreated = () => {
-      loadDashboardData();
-    };
-
-    window.addEventListener('axiom_project_created', handleProjectCreated);
-    window.addEventListener('focus', handleProjectCreated);
-
-    return () => {
-      window.removeEventListener('axiom_project_created', handleProjectCreated);
-      window.removeEventListener('focus', handleProjectCreated);
-    };
-  }, [router]);
+  const handleGenerate = (id: string) => {
+    generateMutation.mutate(id);
+  };
 
   const hasApprovedPlan = !projects.some((p) => p.status === 'PROPOSED');
   const hasResolvedBlocker = statsData?.blocked_tasks === 0;
@@ -143,38 +182,20 @@ export default function Home() {
     },
   ];
 
-  const handleApprove = async (id: string) => {
-    try {
-      const token = localStorage.getItem('axiom_token');
-      await fetch(`/api/v1/projects/${id}/approve`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      // Re-fetch
-      const res = await fetch('/api/v1/projects', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
-      if (Array.isArray(data)) setProjects(data);
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  const handleGenerate = async (id: string) => {
-    try {
-      const token = localStorage.getItem('axiom_token');
-      await fetch(`/api/v1/projects/${id}/generate-plan`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      alert('Plan generation triggered!');
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
   const proposedProject = projects.find((p) => p.status === 'PROPOSED');
+
+  if (isLoading) {
+    return (
+      <div className="space-y-8 animate-pulse">
+        <div className="h-48 bg-[#e6e3da]/40 rounded-2xl" />
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+          {[1, 2, 3, 4].map((idx) => (
+            <div key={idx} className="h-24 bg-white border border-[#e6e3da] rounded-xl" />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -282,7 +303,8 @@ export default function Home() {
                     </Button>
                     <Button
                       variant="primary"
-                      className="flex-1 sm:flex-none h-10"
+                      className="flex-1 sm:flex-none h-10 cursor-pointer"
+                      disabled={approveMutation.isPending}
                       onClick={() => {
                         if (proposedProject) {
                           handleApprove(proposedProject.id);
@@ -290,7 +312,7 @@ export default function Home() {
                       }}
                     >
                       <Play className="w-3.5 h-3.5 fill-current" />
-                      <span>Approve & Start</span>
+                      <span>{approveMutation.isPending ? 'Starting...' : 'Approve & Start'}</span>
                     </Button>
                   </div>
                 </div>
@@ -463,7 +485,7 @@ export default function Home() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="w-full text-[10px] tracking-widest uppercase border-[#9f3a38] text-[#9f3a38] hover:bg-[#fdf2f2] h-9 rounded-md"
+                  className="w-full text-[10px] tracking-widest uppercase border-[#9f3a38] text-[#9f3a38] hover:bg-[#fdf2f2] h-9 rounded-md cursor-pointer"
                   onClick={() => router.push('/projects')}
                 >
                   View Projects

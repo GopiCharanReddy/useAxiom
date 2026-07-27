@@ -9,21 +9,23 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@tanstack/react-query": "^5.101.4",
+    "@useaxiom/ui": "workspace:*",
+    "lucide-react": "^0.470.0",
     "next": "^15.0.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "@useaxiom/ui": "workspace:*",
-    "lucide-react": "^0.470.0"
+    "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@useaxiom/config": "workspace:*",
+    "@eslint/eslintrc": "^3.2.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@useaxiom/config": "workspace:*",
     "eslint": "^9",
     "eslint-config-next": "^15.0.0",
-    "@eslint/eslintrc": "^3.2.0",
     "globals": "^17.0.0",
     "tailwindcss": "^4",
     "typescript": "^5"
