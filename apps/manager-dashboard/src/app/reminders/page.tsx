@@ -154,6 +154,11 @@ export default function AutomaticRemindersPage() {
       queryClient.invalidateQueries({ queryKey: ['reminder-schedules'] });
       setTimeout(() => setActionMessage(''), 3500);
     },
+    onError: (err: unknown) => {
+      const msg = err instanceof Error ? err.message : 'Failed to trigger reminder';
+      setActionMessage(`Error: ${msg}. Please ensure backend API service is running.`);
+      setTimeout(() => setActionMessage(''), 4000);
+    },
     onSettled: () => {
       setTriggeringId(null);
     },
