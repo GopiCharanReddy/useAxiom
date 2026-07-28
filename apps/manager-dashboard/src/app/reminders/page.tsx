@@ -349,10 +349,15 @@ export default function AutomaticRemindersPage() {
                       </Button>
 
                       <Button
+                        type="button"
                         variant="primary"
                         size="sm"
                         disabled={triggeringId === schedule.id}
-                        onClick={() => handleManualTrigger(schedule)}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleManualTrigger(schedule);
+                        }}
                         className="text-[9px] font-black uppercase tracking-widest border border-[#7d6b4a] cursor-pointer"
                       >
                         <Send className="w-3.5 h-3.5" />

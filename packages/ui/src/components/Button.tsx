@@ -6,7 +6,7 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className = '', variant = 'primary', size = 'md', children, ...props }, ref) => {
+  ({ className = '', variant = 'primary', size = 'md', type = 'button', children, ...props }, ref) => {
     const baseStyles =
       'inline-flex items-center justify-center font-black rounded-lg transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-[#8c7853] ring-offset-2 disabled:opacity-50 disabled:pointer-events-none cursor-pointer tracking-widest uppercase text-xs';
 
@@ -32,6 +32,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     return (
       <button
         ref={ref}
+        type={type}
         className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${className}`}
         {...props}
       >
