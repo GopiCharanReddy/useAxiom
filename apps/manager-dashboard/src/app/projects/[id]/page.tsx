@@ -66,8 +66,13 @@ export default function ProjectDetailPage({ params }: PageProps) {
           return;
         }
 
-        setProject(await pRes.json());
-        setTasks(await tRes.json());
+        if (pRes.ok) {
+          setProject(await pRes.json());
+        }
+        if (tRes.ok) {
+          const taskData = await tRes.json();
+          if (Array.isArray(taskData)) setTasks(taskData);
+        }
       } catch (e: unknown) {
         console.error(e);
       } finally {

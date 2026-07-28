@@ -6,7 +6,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import {
   FolderKanban,
   Search,
-  Plus,
   X,
   Trash2,
   Sparkles,
@@ -134,6 +133,8 @@ function ProjectsPageContent() {
         router.push('/login');
         return;
       }
+
+      if (!res.ok) return;
 
       const data = await res.json();
       if (Array.isArray(data)) {
@@ -470,15 +471,6 @@ function ProjectsPageContent() {
             Monitor execution states, AI planning modes, and day-to-day employee tasks.
           </p>
         </div>
-        <Button
-          variant="primary"
-          size="sm"
-          onClick={() => setShowModal(true)}
-          className="rounded-lg shadow-sm cursor-pointer border border-[#7d6b4a] hidden sm:flex items-center gap-2"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          <span>New Project Goal</span>
-        </Button>
       </div>
 
       {/* Filters and Search Bar */}

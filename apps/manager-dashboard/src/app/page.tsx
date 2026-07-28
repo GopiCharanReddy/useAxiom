@@ -54,26 +54,51 @@ export default function Home() {
       return;
     }
 
-    Promise.all([
-      fetch('/api/v1/projects', { headers: { Authorization: `Bearer ${token}` } }).then((r) => {
+    const headers = { Authorization: `Bearer ${token}` };
+
+    const safeJsonFetch = async (url: string, retries = 1): Promise<Record<string, unknown> | unknown[] | null> => {
+      try {
+        const r = await fetch(url, { headers });
         if (r.status === 401) throw new Error('Unauthorized');
-        return r.json();
-      }),
-      fetch('/api/v1/analytics/dashboard', { headers: { Authorization: `Bearer ${token}` } }).then(
-        (r) => r.json(),
-      ),
-      fetch('/api/v1/analytics/team-workload', {
-        headers: { Authorization: `Bearer ${token}` },
-      }).then((r) => r.json()),
-      fetch('/api/v1/auth/me', {
-        headers: { Authorization: `Bearer ${token}` },
-      }).then((r) => r.json()),
+        if (!r.ok && retries > 0) {
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+          return safeJsonFetch(url, retries - 1);
+        }
+        if (!r.ok) return null;
+        const text = await r.text();
+        try {
+          return JSON.parse(text);
+        } catch {
+          return null;
+        }
+      } catch (err: unknown) {
+        if (err instanceof Error && err.message === 'Unauthorized') throw err;
+        if (retries > 0) {
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+          return safeJsonFetch(url, retries - 1);
+        }
+        return null;
+      }
+    };
+
+    Promise.all([
+      safeJsonFetch('/api/v1/projects'),
+      safeJsonFetch('/api/v1/analytics/dashboard'),
+      safeJsonFetch('/api/v1/analytics/team-workload'),
+      safeJsonFetch('/api/v1/auth/me'),
     ])
       .then(([projectsData, dashboardData, workloadData, userData]) => {
-        if (Array.isArray(projectsData)) setProjects(projectsData);
-        setStatsData(dashboardData);
-        if (workloadData?.workloads) setWorkloads(workloadData.workloads);
-        if (userData) setUser(userData);
+        if (Array.isArray(projectsData)) setProjects(projectsData as unknown as Parameters<typeof setProjects>[0]);
+        if (dashboardData && typeof dashboardData === 'object' && !Array.isArray(dashboardData)) {
+          setStatsData(dashboardData as unknown as Parameters<typeof setStatsData>[0]);
+        }
+        if (workloadData && typeof workloadData === 'object' && !Array.isArray(workloadData) && 'workloads' in workloadData) {
+          const wList = (workloadData as Record<string, unknown>).workloads;
+          if (Array.isArray(wList)) setWorkloads(wList as unknown as Parameters<typeof setWorkloads>[0]);
+        }
+        if (userData && typeof userData === 'object' && !Array.isArray(userData)) {
+          setUser(userData as unknown as Parameters<typeof setUser>[0]);
+        }
       })
       .catch((err) => {
         if (err.message === 'Unauthorized') {
