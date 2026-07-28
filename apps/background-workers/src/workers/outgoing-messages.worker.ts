@@ -78,12 +78,14 @@ export function createOutgoingMessagesWorker(redisConnection: any) {
       }
 
       if (hasMeta) {
+        const normalizedPhone = to.replace(/[^\d]/g, '');
+        const apiVersion = process.env.WHATSAPP_API_VERSION || 'v21.0';
         console.info(
-          `[OutgoingWorker] Dispatching message via Meta WhatsApp Graph API to: ${to}`,
+          `[OutgoingWorker] Dispatching message via Meta WhatsApp Graph API (${apiVersion}) to: ${normalizedPhone}`,
         );
         try {
           const response = await fetch(
-            `https://graph.facebook.com/v19.0/${phoneNumberId}/messages`,
+            `https://graph.facebook.com/${apiVersion}/${phoneNumberId}/messages`,
             {
               method: 'POST',
               headers: {
@@ -93,18 +95,26 @@ export function createOutgoingMessagesWorker(redisConnection: any) {
               body: JSON.stringify({
                 messaging_product: 'whatsapp',
                 recipient_type: 'individual',
-                to,
+                to: normalizedPhone,
                 type: 'text',
                 text: { preview_url: false, body: content },
               }),
             },
           );
 
-          const responseData = await response.json();
+          const responseData = (await response.json()) as any;
           if (!response.ok) {
-            throw new Error(
-              `Meta API error: ${responseData?.error?.message || response.statusText}`,
+            const errCode = responseData?.error?.code;
+            const errMsg = responseData?.error?.message || response.statusText;
+            console.error(
+              `[OutgoingWorker] Meta API Error (Code ${errCode}): ${errMsg}`,
             );
+            if (errCode === 190) {
+              console.warn(
+                '[OutgoingWorker] WHATSAPP_ACCESS_TOKEN in .env has expired. Please refresh your token from Meta Developer Portal.',
+              );
+            }
+            throw new Error(`Meta API error (${errCode}): ${errMsg}`);
           }
 
           console.info(
