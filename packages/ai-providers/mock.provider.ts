@@ -984,34 +984,55 @@ export class MockLlmProvider implements ILlmProvider {
       } as unknown as T;
     }
 
-    // 4. Default fallback: Planner Agent output
+    // 4. Planner Agent output: Dynamically extract objective from messages
+    const userPrompt = [...messages].reverse().find((m) => m.role === 'user')?.content || 'Project Goal';
+    const objMatch = /Objective:\s*["']?([^"'\n]+)["']?/i.exec(userPrompt);
+    const targetObj = objMatch ? objMatch[1] : userPrompt.slice(0, 60);
+
     return {
       milestones: [
         {
-          name: 'Sprint 1: Base Platform & Identity',
+          name: `Milestone 1: Architectural Setup & Core Discovery`,
           tasks: [
             {
-              name: 'Setup Monorepo',
-              description: 'Configure Turborepo, pnpm workspaces, and base tsconfig/eslint rules.',
+              name: `Day 1: Scope Specification & Domain Modeling`,
+              description: `Analyze requirements and establish architectural patterns for "${targetObj}".`,
               estimatedHours: 8,
-              requiredSkills: ['DevOps', 'TypeScript', 'pnpm'],
+              requiredSkills: ['Architecture', 'TypeScript'],
             },
             {
-              name: 'Scaffold NestJS API',
-              description: 'Initialize NestJS app-api modules and global exception filters.',
-              estimatedHours: 6,
-              requiredSkills: ['NestJS', 'TypeScript'],
+              name: `Day 2: Data Schema & API Foundation`,
+              description: `Implement database schemas, security guards, and validation logic for ${targetObj}.`,
+              estimatedHours: 8,
+              requiredSkills: ['Backend', 'PostgreSQL'],
             },
           ],
         },
         {
-          name: 'Sprint 2: Authentication & Multi-Tenancy',
+          name: `Milestone 2: Feature Execution & System Integration`,
           tasks: [
             {
-              name: 'Database migrations',
-              description: 'Define Prisma schemas for User, Organization, and Tenant limits.',
-              estimatedHours: 4,
-              requiredSkills: ['PostgreSQL', 'Prisma'],
+              name: `Day 3: Business Capability Endpoint Implementation`,
+              description: `Develop core business logic services and state handlers supporting "${targetObj}".`,
+              estimatedHours: 8,
+              requiredSkills: ['NestJS', 'API Design'],
+            },
+            {
+              name: `Day 4: Dashboard UI & Interaction Integration`,
+              description: `Build responsive interfaces, state management, and real-time event updates.`,
+              estimatedHours: 8,
+              requiredSkills: ['Frontend', 'Next.js'],
+            },
+          ],
+        },
+        {
+          name: `Milestone 3: Verification & Automated Employee Dispatch`,
+          tasks: [
+            {
+              name: `Day 5: Integration Testing & Dispatch Verification`,
+              description: `Run integration test suites, verify API contracts, and trigger automated WhatsApp notifications.`,
+              estimatedHours: 8,
+              requiredSkills: ['QA', 'Testing'],
             },
           ],
         },

@@ -1,28 +1,39 @@
-import { Controller, Get, Query, HttpCode, HttpStatus, Headers } from '@nestjs/common';
+import { Controller, Get, Query, HttpCode, HttpStatus, Headers, UseGuards } from '@nestjs/common';
 import { AnalyticsService } from './analytics.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { Role } from '@useaxiom/database';
+
+interface ActiveUser {
+  id: string;
+  email: string;
+  role: Role;
+  organizationId: string;
+}
 
 @Controller('analytics')
+@UseGuards(JwtAuthGuard)
 export class AnalyticsController {
   constructor(private readonly analyticsService: AnalyticsService) {}
-
-  private getOrgId(orgIdHeader?: string): string {
-    return orgIdHeader || '00000000-0000-0000-0000-000000000000';
-  }
 
   @Get('dashboard')
   @HttpCode(HttpStatus.OK)
   async getDashboard(
-    @Headers('x-organization-id') orgId: string,
+    @CurrentUser() user: ActiveUser,
+    @Headers('x-organization-id') orgIdHeader?: string,
     @Query('timeframe') timeframe?: string,
   ) {
-    const organizationId = this.getOrgId(orgId);
+    const organizationId = user?.organizationId || orgIdHeader || '00000000-0000-0000-0000-000000000000';
     return this.analyticsService.getDashboard(organizationId, timeframe);
   }
 
   @Get('team-workload')
   @HttpCode(HttpStatus.OK)
-  async getTeamWorkload(@Headers('x-organization-id') orgId: string) {
-    const organizationId = this.getOrgId(orgId);
+  async getTeamWorkload(
+    @CurrentUser() user: ActiveUser,
+    @Headers('x-organization-id') orgIdHeader?: string,
+  ) {
+    const organizationId = user?.organizationId || orgIdHeader || '00000000-0000-0000-0000-000000000000';
     return this.analyticsService.getTeamWorkload(organizationId);
   }
 }
