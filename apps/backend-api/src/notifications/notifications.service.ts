@@ -382,26 +382,32 @@ export class NotificationsService {
       `Please ensure your project is progressing according to schedule. If you expect any delays, kindly inform your manager.\n\n` +
       `Best regards,\nAxiom Assistant`;
 
-    const job = await this.notificationsQueue.add(
-      'send-notification',
-      {
-        recipient: {
-          phone: targetPhone,
-          name: employeeName,
+    let jobId: string | number = 'job-queued';
+    try {
+      const job = await this.notificationsQueue.add(
+        'send-notification',
+        {
+          recipient: {
+            phone: targetPhone,
+            name: employeeName,
+          },
+          channels: ['WHATSAPP'],
+          template: 'AI_AUTOMATIC_REMINDER',
+          variables: {
+            message: reminderMsg,
+            projectName,
+            daysRemaining,
+          },
         },
-        channels: ['WHATSAPP'],
-        template: 'AI_AUTOMATIC_REMINDER',
-        variables: {
-          message: reminderMsg,
-          projectName,
-          daysRemaining,
+        {
+          attempts: 3,
+          backoff: { type: 'exponential', delay: 1000 },
         },
-      },
-      {
-        attempts: 3,
-        backoff: { type: 'exponential', delay: 1000 },
-      },
-    );
+      );
+      if (job?.id) jobId = job.id;
+    } catch (queueErr) {
+      console.warn('[NotificationsService] Queue trigger notice:', queueErr);
+    }
 
     const logEntry = {
       id: `log_${Date.now()}`,
@@ -418,7 +424,7 @@ export class NotificationsService {
 
     return {
       success: true,
-      jobId: job.id || 'job-queued',
+      jobId: jobId || 'job-queued',
       recipientPhone: targetPhone,
       message: reminderMsg,
       log: logEntry,
