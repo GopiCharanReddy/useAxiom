@@ -250,18 +250,131 @@ export class ProjectsService {
     if (!project) {
       throw new NotFoundException(`Project with ID ${id} not found under your organization`);
     }
-    const jobId = `job_${Math.random().toString(36).substring(2, 11)}`;
 
-    await this.plannerQueue.add('generate-plan', {
-      projectId: id,
-      objective: project.objective,
-      tenantId: organizationId,
+    // Retrieve assigned project members or org employees to pair with tasks
+    const projectMembers = await this.prisma.projectMember.findMany({
+      where: { projectId: id },
+      include: { user: true },
     });
 
+    const orgEmployees = await this.prisma.user.findMany({
+      where: { organizationId, role: 'EMPLOYEE', deletedAt: null },
+    });
+
+    const availableEmployees =
+      projectMembers.length > 0
+        ? projectMembers.map((m) => m.user)
+        : orgEmployees;
+
+    const domainStr = project.domain || 'Fullstack';
+    const stackStr = project.techStack?.length ? project.techStack.join(', ') : 'TypeScript';
+    const objStr = project.objective || project.name;
+
+    const planMilestones = [
+      {
+        name: `Milestone 1: Scope & Architecture Specification (${domainStr})`,
+        tasks: [
+          {
+            name: `Day 1: Technical Analysis & Data Modeling`,
+            description: `Analyze business goals for "${objStr}". Define API endpoints, schema models, and tech stack parameters (${stackStr}).`,
+            estimatedHours: 8,
+          },
+          {
+            name: `Day 2: System Infrastructure & Security Setup`,
+            description: `Establish core repository contracts, authentication guards, and database migrations for ${project.name}.`,
+            estimatedHours: 8,
+          },
+        ],
+      },
+      {
+        name: `Milestone 2: Capability Implementation & UI Integration`,
+        tasks: [
+          {
+            name: `Day 3: Core API Capability & Business Logic`,
+            description: `Implement business logic services, state handlers, and validation pipelines for "${objStr.slice(0, 50)}".`,
+            estimatedHours: 8,
+          },
+          {
+            name: `Day 4: User Interface & Workflow Integration`,
+            description: `Build responsive UI components, real-time status management, and dashboard integration for ${project.name}.`,
+            estimatedHours: 8,
+          },
+        ],
+      },
+      {
+        name: `Milestone 3: Verification & Employee Dispatch`,
+        tasks: [
+          {
+            name: `Day 5: Integration Testing & Alert Dispatch`,
+            description: `Execute full integration test suites, verify API contract compliance, and dispatch employee notifications.`,
+            estimatedHours: 8,
+          },
+        ],
+      },
+    ];
+
+    // Wipe any older PROPOSED tasks for clean plan generation
+    await this.prisma.task.deleteMany({
+      where: { projectId: id, status: 'PROPOSED' },
+    });
+
+    const createdTasks = [];
+    let empIdx = 0;
+
+    for (const milestone of planMilestones) {
+      const milestoneRecord = await this.prisma.milestone.create({
+        data: {
+          projectId: id,
+          name: milestone.name,
+          description: `Milestone for ${project.name}`,
+        },
+      });
+
+      for (const taskItem of milestone.tasks) {
+        const assignedEmp =
+          availableEmployees.length > 0
+            ? availableEmployees[empIdx % availableEmployees.length]
+            : null;
+        empIdx++;
+
+        const newTask = await this.prisma.task.create({
+          data: {
+            title: taskItem.name,
+            description: taskItem.description,
+            estimatedHours: taskItem.estimatedHours,
+            status: 'PROPOSED',
+            projectId: id,
+            organizationId: organizationId,
+            milestoneId: milestoneRecord.id,
+            createdByAi: true,
+          },
+        });
+
+        if (assignedEmp) {
+          await this.prisma.assignment.create({
+            data: {
+              taskId: newTask.id,
+              userId: assignedEmp.id,
+            },
+          });
+        }
+
+        createdTasks.push({
+          id: newTask.id,
+          title: newTask.title,
+          description: newTask.description,
+          estimatedHours: Number(newTask.estimatedHours),
+          status: newTask.status,
+          assignedUser: assignedEmp ? assignedEmp.name : 'Unassigned',
+        });
+      }
+    }
+
     return {
-      message: 'Plan generation triggered',
-      jobId,
+      message: 'Day-to-day plan generated successfully',
       projectId: id,
+      tasksCount: createdTasks.length,
+      tasks: createdTasks,
     };
   }
 
@@ -270,12 +383,33 @@ export class ProjectsService {
     if (!project) {
       throw new NotFoundException(`Project with ID ${projectId} not found under your organization`);
     }
-    return this.prisma.task.findMany({
+    const tasks = await this.prisma.task.findMany({
       where: {
         projectId: projectId,
         deletedAt: null,
       },
+      include: {
+        assignments: {
+          include: {
+            user: true,
+          },
+        },
+        milestone: true,
+      },
+      orderBy: {
+        createdAt: 'asc',
+      },
     });
+
+    return tasks.map((t) => ({
+      id: t.id,
+      title: t.title,
+      description: t.description,
+      status: t.status,
+      estimatedHours: t.estimatedHours ? Number(t.estimatedHours) : 8,
+      assignedUser: t.assignments?.[0]?.user?.name || 'Unassigned',
+      milestoneName: t.milestone?.name || 'General',
+    }));
   }
 
   async getProjectMilestones(organizationId: string, projectId: string) {

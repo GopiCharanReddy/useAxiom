@@ -3,8 +3,21 @@
 import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { FolderKanban, Search, Plus, X, Trash2 } from 'lucide-react';
-import { Button, Card, Badge } from '@useaxiom/ui';
+import {
+  FolderKanban,
+  Search,
+  X,
+  Trash2,
+  Sparkles,
+  Bot,
+  UserCheck,
+  CheckCircle2,
+  Clock,
+  Wand2,
+  ArrowRight,
+  ShieldAlert,
+} from 'lucide-react';
+import { Button, Card, Badge, Toast } from '@useaxiom/ui';
 
 interface Project {
   id: string;
@@ -31,21 +44,44 @@ interface DBProject {
   tasks?: Array<{ id: string; status: string }>;
 }
 
+interface GeneratedTaskItem {
+  id?: string;
+  title: string;
+  description: string;
+  estimatedHours: number;
+  assignedUser: string;
+  status: string;
+}
+
 function ProjectsPageContent() {
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState<'all' | 'progress' | 'proposed' | 'completed'>('all');
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+
+  // Form Fields
+  const [planningMode, setPlanningMode] = useState<'AI_ASSISTED' | 'AUTONOMOUS' | 'MANUAL'>('AI_ASSISTED');
   const [newName, setNewName] = useState('');
   const [newObjective, setNewObjective] = useState('');
   const [newDomain, setNewDomain] = useState('Frontend');
   const [newTechStack, setNewTechStack] = useState('');
-  const [employees, setEmployees] = useState<Array<{ id: string; name: string; role: string; employeeId?: string }>>([]);
+  const [employees, setEmployees] = useState<Array<{ id: string; name: string; role: string; employeeId?: string; specialty?: string }>>([]);
   const [selectedEmployeeIds, setSelectedEmployeeIds] = useState<string[]>([]);
-  const [notifyEmployees, setNotifyEmployees] = useState(false);
-  const [notificationsSuccess, setNotificationsSuccess] = useState<boolean | null>(null);
+  const [notifyEmployees, setNotifyEmployees] = useState(true);
+
+  // State for AI Plan Preview & Approval Workflow
+  const [modalStep, setModalStep] = useState<'FORM' | 'PLAN_PREVIEW'>('FORM');
+  const [createdProjectId, setCreatedProjectId] = useState<string | null>(null);
+  const [generatedTasks, setGeneratedTasks] = useState<GeneratedTaskItem[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isApproving, setIsApproving] = useState(false);
+  const [approvedSuccess, setApprovedSuccess] = useState(false);
+
+  // UI Dialog & Toast State
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' | 'warning' } | null>(null);
+
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
@@ -80,8 +116,73 @@ function ProjectsPageContent() {
     }
   }, [searchParams]);
 
+  const fetchProjects = async () => {
+    try {
+      const token = localStorage.getItem('axiom_token');
+      if (!token) {
+        router.push('/login');
+        return;
+      }
+
+      const res = await fetch('/api/v1/projects', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (res.status === 401) {
+        localStorage.removeItem('axiom_token');
+        router.push('/login');
+        return;
+      }
+
+      if (!res.ok) return;
+
+      const data = await res.json();
+      if (Array.isArray(data)) {
+        const mapped: Project[] = data.map((p: DBProject) => {
+          let status: 'progress' | 'proposed' | 'completed' = 'proposed';
+          if (p.status === 'ACTIVE') status = 'progress';
+          else if (p.status === 'COMPLETED') status = 'completed';
+
+          let health: 'on_track' | 'at_risk' | 'review' = 'review';
+          if (p.healthStatus === 'LOW') health = 'on_track';
+          else if (p.healthStatus === 'HIGH') health = 'at_risk';
+
+          const tasksTotal = p.tasks?.length || 0;
+          const tasksDone = p.tasks?.filter((t) => t.status === 'COMPLETED').length || 0;
+          const progress =
+            tasksTotal > 0
+              ? Math.round((tasksDone / tasksTotal) * 100)
+              : p.status === 'ACTIVE'
+                ? 10
+                : 0;
+
+          return {
+            id: p.id,
+            name: p.name,
+            category: p.category || 'General',
+            description: p.objective,
+            status,
+            progress,
+            health,
+            tasksDone,
+            tasksTotal,
+            members: p.members || [],
+          };
+        });
+        setProjects(mapped);
+      }
+    } catch (err) {
+      console.error('Error fetching projects:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProjects();
+  }, [router]);
+
   const handleDeleteProject = async (projectId: string) => {
-    if (!confirm('Are you sure you want to delete this project?')) return;
     try {
       const token = localStorage.getItem('axiom_token');
       const res = await fetch(`/api/v1/projects/${projectId}`, {
@@ -92,90 +193,35 @@ function ProjectsPageContent() {
       });
       if (res.ok) {
         setProjects((prev) => prev.filter((p) => p.id !== projectId));
+        setToast({ message: 'Project successfully deleted', type: 'success' });
       } else {
         const errorText = await res.text();
-        alert(`Failed to delete project. Status: ${res.status}. Details: ${errorText}`);
+        setToast({ message: `Failed to delete project: ${errorText}`, type: 'error' });
       }
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : String(err);
-      alert(`Network error during project deletion: ${errorMsg}`);
+      setToast({ message: `Network error during deletion: ${errorMsg}`, type: 'error' });
       console.error(err);
+    } finally {
+      setDeleteConfirmId(null);
     }
   };
 
-  useEffect(() => {
-    const fetchProjects = async () => {
-      try {
-        const token = localStorage.getItem('axiom_token');
-        if (!token) {
-          router.push('/login');
-          return;
-        }
-
-        const res = await fetch('/api/v1/projects', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-
-        if (res.status === 401) {
-          localStorage.removeItem('axiom_token');
-          router.push('/login');
-          return;
-        }
-
-        const data = await res.json();
-        if (Array.isArray(data)) {
-          // Map the backend DB projects to frontend visual model
-          const mapped: Project[] = data.map((p: DBProject) => {
-            let status: 'progress' | 'proposed' | 'completed' = 'proposed';
-            if (p.status === 'ACTIVE') status = 'progress';
-            else if (p.status === 'COMPLETED') status = 'completed';
-
-            let health: 'on_track' | 'at_risk' | 'review' = 'review';
-            if (p.healthStatus === 'LOW') health = 'on_track';
-            else if (p.healthStatus === 'HIGH') health = 'at_risk';
-
-            const tasksTotal = p.tasks?.length || 0;
-            const tasksDone = p.tasks?.filter((t) => t.status === 'COMPLETED').length || 0;
-            const progress =
-              tasksTotal > 0
-                ? Math.round((tasksDone / tasksTotal) * 100)
-                : p.status === 'ACTIVE'
-                  ? 10
-                  : 0;
-
-            return {
-              id: p.id,
-              name: p.name,
-              category: p.category || 'General',
-              description: p.objective,
-              status,
-              progress,
-              health,
-              tasksDone,
-              tasksTotal,
-              members: p.members || [],
-            };
-          });
-          setProjects(mapped);
-        }
-      } catch (err) {
-        console.error('Error fetching projects:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchProjects();
-  }, [router]);
-
   const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (selectedEmployeeIds.length === 0) {
-      alert('Please assign at least one employee to this project.');
+
+    let activeEmployeeIds = selectedEmployeeIds;
+    if (activeEmployeeIds.length === 0 && (planningMode === 'AUTONOMOUS' || planningMode === 'AI_ASSISTED')) {
+      activeEmployeeIds = employees.slice(0, 3).map((emp) => emp.id);
+    }
+
+    if (activeEmployeeIds.length === 0 && planningMode === 'MANUAL') {
+      setToast({ message: 'Please assign at least one employee for manual project planning.', type: 'warning' });
       return;
     }
 
     setIsSubmitting(true);
-    setNotificationsSuccess(null);
+    setApprovedSuccess(false);
 
     try {
       const token = localStorage.getItem('axiom_token');
@@ -188,7 +234,7 @@ function ProjectsPageContent() {
           .split(',')
           .map((t) => t.trim())
           .filter(Boolean),
-        employeeIds: selectedEmployeeIds,
+        employeeIds: activeEmployeeIds,
         notifyEmployees: notifyEmployees,
         tasks: [],
       };
@@ -204,52 +250,134 @@ function ProjectsPageContent() {
 
       if (res.ok) {
         const createdData = await res.json();
-        
-        if (notifyEmployees) {
-          if (createdData.notificationsSent === true) {
-            setNotificationsSuccess(true);
-          } else {
-            setNotificationsSuccess(false);
+        setCreatedProjectId(createdData.id);
+
+        // Call backend API generate-plan endpoint
+        let fetchedTasks: GeneratedTaskItem[] = [];
+        try {
+          const planRes = await fetch(`/api/v1/projects/${createdData.id}/generate-plan`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (planRes.ok) {
+            const planData = await planRes.json();
+            if (Array.isArray(planData.tasks) && planData.tasks.length > 0) {
+              fetchedTasks = planData.tasks;
+            }
+          }
+        } catch (planErr) {
+          console.warn('AI Plan generation trigger notice:', planErr);
+        }
+
+        // If tasks array wasn't in planData, fetch from tasks endpoint
+        if (fetchedTasks.length === 0) {
+          try {
+            const tRes = await fetch(`/api/v1/projects/${createdData.id}/tasks`, {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            if (tRes.ok) {
+              const taskList = await tRes.json();
+              if (Array.isArray(taskList)) {
+                fetchedTasks = taskList.map((t: Record<string, unknown>) => ({
+                  id: String(t.id || ''),
+                  title: String(t.title || ''),
+                  description: String(t.description || 'Day-to-day project deliverable'),
+                  estimatedHours: Number(t.estimatedHours || 8),
+                  assignedUser: String(t.assignedUser || 'Assigned Developer'),
+                  status: String(t.status || 'PROPOSED'),
+                }));
+              }
+            }
+          } catch (tErr) {
+            console.warn('Task fetch error:', tErr);
           }
         }
 
-        const newProj: Project = {
-          id: createdData.id || `proj_${Date.now()}`,
-          name: newName,
-          category: newDomain || 'Frontend',
-          description: newObjective,
-          status: 'proposed',
-          progress: 0,
-          health: 'review',
-          tasksDone: 0,
-          tasksTotal: 0,
-          members: selectedEmployeeIds.map(id => ({ userId: id })),
-        };
-
-        setProjects((prev) => [newProj, ...prev]);
-
-        setTimeout(() => {
-          setShowModal(false);
-          setNewName('');
-          setNewObjective('');
-          setNewDomain('Frontend');
-          setNewTechStack('');
-          setSelectedEmployeeIds([]);
-          setNotifyEmployees(false);
-          setNotificationsSuccess(null);
+        if (planningMode === 'AI_ASSISTED') {
+          // Transition to Plan Preview step for Manager Review
+          setGeneratedTasks(fetchedTasks);
+          setModalStep('PLAN_PREVIEW');
           setIsSubmitting(false);
-        }, 1500);
+          setToast({ message: 'AI Plan generated! Review day-to-day tasks below.', type: 'info' });
+          return;
+        }
 
+        if (planningMode === 'AUTONOMOUS') {
+          // Autonomous mode auto-approves and provisions instantly
+          await fetch(`/api/v1/projects/${createdData.id}/approve`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          setToast({ message: 'Project provisioned and activated autonomously by AI Agent!', type: 'success' });
+        } else {
+          setToast({ message: 'Project created successfully!', type: 'success' });
+        }
+
+        await fetchProjects();
+        setTimeout(() => {
+          resetModal();
+        }, 1200);
       } else {
         const errorText = await res.text();
-        alert(`Failed to create project: ${errorText}`);
+        setToast({ message: `Failed to create project: ${errorText}`, type: 'error' });
         setIsSubmitting(false);
       }
     } catch (err) {
       console.error('Error creating project:', err);
-      alert('A network error occurred while creating the project.');
+      setToast({ message: 'A network error occurred while creating the project.', type: 'error' });
       setIsSubmitting(false);
     }
+  };
+
+  const handleApprovePlan = async () => {
+    if (!createdProjectId) {
+      setToast({ message: 'No project ID available to approve.', type: 'error' });
+      return;
+    }
+
+    setIsApproving(true);
+
+    try {
+      const token = localStorage.getItem('axiom_token');
+      const res = await fetch(`/api/v1/projects/${createdProjectId}/approve`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (res.ok) {
+        setApprovedSuccess(true);
+        setToast({ message: 'Plan approved! Project is active and notifications dispatched.', type: 'success' });
+        await fetchProjects();
+
+        setTimeout(() => {
+          resetModal();
+        }, 1500);
+      } else {
+        const errText = await res.text();
+        setToast({ message: `Failed to approve plan: ${errText}`, type: 'error' });
+        setIsApproving(false);
+      }
+    } catch (err) {
+      console.error('Error approving plan:', err);
+      setToast({ message: 'Network error while approving project plan.', type: 'error' });
+      setIsApproving(false);
+    }
+  };
+
+  const resetModal = () => {
+    setShowModal(false);
+    setModalStep('FORM');
+    setCreatedProjectId(null);
+    setGeneratedTasks([]);
+    setNewName('');
+    setNewObjective('');
+    setNewDomain('Frontend');
+    setNewTechStack('');
+    setSelectedEmployeeIds([]);
+    setNotifyEmployees(true);
+    setApprovedSuccess(false);
+    setIsSubmitting(false);
+    setIsApproving(false);
   };
 
   const filteredProjects = projects.filter((project) => {
@@ -286,23 +414,63 @@ function ProjectsPageContent() {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
+      {/* Toast Notification Container */}
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
+
+      {/* Custom Delete Confirmation Modal */}
+      {deleteConfirmId && (
+        <div className="fixed inset-0 bg-[#1c1b18]/40 backdrop-blur-sm flex items-center justify-center z-[90] p-4">
+          <div className="bg-white border border-[#e6e3da] max-w-md w-full p-6 space-y-4 rounded-3xl shadow-xl animate-in zoom-in-95 duration-200">
+            <div className="flex items-center gap-3 text-[#9f3a38]">
+              <div className="p-2.5 bg-[#fdf2f2] rounded-xl border border-[#fcdada]">
+                <ShieldAlert className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="font-serif font-black text-lg text-[#1c1b18]">Confirm Deletion</h3>
+                <p className="text-[11px] text-[#66635d] font-semibold uppercase tracking-wider">
+                  This action cannot be undone.
+                </p>
+              </div>
+            </div>
+            <p className="text-xs text-[#66635d] leading-relaxed">
+              Are you sure you want to delete this project and all associated task assignments?
+            </p>
+            <div className="flex justify-end gap-2.5 pt-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setDeleteConfirmId(null)}
+                className="h-9 text-[10px] font-black tracking-widest uppercase border-[#e6e3da] text-[#66635d]"
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={() => handleDeleteProject(deleteConfirmId)}
+                className="h-9 text-[10px] font-black tracking-widest uppercase bg-[#9f3a38] hover:bg-[#862e2c] border-[#9f3a38] text-white"
+              >
+                Delete Project
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="space-y-1">
           <h1 className="text-3xl font-serif font-black tracking-tight text-[#1c1b18]">Projects</h1>
           <p className="text-[#66635d] text-xs font-semibold uppercase tracking-widest">
-            Monitor the execution states and goals generated by the planner.
+            Monitor execution states, AI planning modes, and day-to-day employee tasks.
           </p>
         </div>
-        <Button
-          variant="primary"
-          size="sm"
-          onClick={() => setShowModal(true)}
-          className="rounded-lg shadow-sm cursor-pointer border border-[#7d6b4a] sm:hidden"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          <span>New Project Goal</span>
-        </Button>
       </div>
 
       {/* Filters and Search Bar */}
@@ -361,13 +529,6 @@ function ProjectsPageContent() {
                 <div className="h-3 bg-[#e6e3da] rounded w-full" />
                 <div className="h-3 bg-[#e6e3da] rounded w-2/3" />
               </div>
-              <div className="space-y-2 pt-4 border-t border-[#e6e3da]">
-                <div className="flex justify-between items-center">
-                  <div className="h-3 bg-[#e6e3da] rounded w-24" />
-                  <div className="h-3 bg-[#e6e3da] rounded w-12" />
-                </div>
-                <div className="h-2 bg-[#e6e3da] rounded w-full" />
-              </div>
             </div>
           ))}
         </div>
@@ -394,11 +555,6 @@ function ProjectsPageContent() {
                       {project.status === 'proposed' && 'Proposed'}
                       {project.status === 'completed' && 'Completed'}
                     </Badge>
-                    {project.members && project.members.length > 0 ? (
-                      <Badge variant="completed">Assigned</Badge>
-                    ) : (
-                      <Badge variant="proposed">Unassigned</Badge>
-                    )}
                   </div>
                 </div>
 
@@ -434,7 +590,7 @@ function ProjectsPageContent() {
                     onClick={(e) => {
                       e.stopPropagation();
                       e.preventDefault();
-                      handleDeleteProject(project.id);
+                      setDeleteConfirmId(project.id);
                     }}
                     className="p-1.5 rounded-lg bg-[#fdf2f2] hover:bg-[#fcdada] text-[#9f3a38] border border-[#fcdada] hover:shadow transition-all cursor-pointer flex items-center justify-center"
                     title="Delete Project"
@@ -456,143 +612,221 @@ function ProjectsPageContent() {
         </Card>
       )}
 
-      {/* New Project Modal */}
+      {/* New Project Goal & AI Planning Wizard Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-[#1c1b18]/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white border border-[#e6e3da] max-w-2xl w-full p-8 space-y-6 max-h-[90vh] overflow-y-auto rounded-3xl shadow-[0_20px_50px_rgba(28,27,24,0.1)] animate-in fade-in zoom-in-95 duration-300">
+          <div className="bg-white border border-[#e6e3da] max-w-3xl w-full p-8 space-y-6 max-h-[92vh] overflow-y-auto rounded-3xl shadow-[0_20px_50px_rgba(28,27,24,0.15)] animate-in fade-in zoom-in-95 duration-300">
+            {/* Modal Header */}
             <div className="flex justify-between items-center pb-4 border-b border-[#e6e3da]">
-              <h2 className="text-xl font-serif font-black text-[#1c1b18]">
-                Create New Project Goal
-              </h2>
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-[#faf4e8] border border-[#eedebf] rounded-xl text-[#8c7853]">
+                  <Sparkles className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-serif font-black text-[#1c1b18]">
+                    {modalStep === 'FORM' ? 'Create New Project Goal' : 'AI-Generated Execution Plan Review'}
+                  </h2>
+                  <p className="text-[10px] font-black text-[#66635d] uppercase tracking-widest">
+                    {modalStep === 'FORM'
+                      ? 'Configure planning mode, employee assignments, and business objectives'
+                      : 'Review proposed day-to-day employee tasks before final approval'}
+                  </p>
+                </div>
+              </div>
               <button
-                onClick={() => setShowModal(false)}
+                onClick={resetModal}
                 className="p-1.5 bg-[#faf8f5] hover:bg-[#e6e3da] text-[#66635d] rounded-lg transition-colors cursor-pointer border border-[#e6e3da]/80"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
-            <form onSubmit={handleCreateProject} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Column 1: Project Details */}
-                <div className="space-y-4">
-                  <h3 className="text-[10px] font-black text-[#8c7853] uppercase tracking-widest pb-1 border-b border-[#faf8f5]">
-                    Project Details
-                  </h3>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black text-[#66635d] uppercase tracking-widest block mb-1">
-                      Project Name
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={newName}
-                      onChange={(e) => setNewName(e.target.value)}
-                      placeholder="e.g. Q4 Website Redesign"
-                      className="w-full bg-white border border-[#e6e3da] rounded-xl py-2.5 px-3.5 text-xs text-[#1c1b18] placeholder:text-[#a09c94] focus:outline-none focus:border-[#8c7853] focus:ring-4 focus:ring-[#8c7853]/10 transition-all duration-300 shadow-sm"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black text-[#66635d] uppercase tracking-widest block mb-1">
-                      Objective / Description
-                    </label>
-                    <textarea
-                      required
-                      rows={4}
-                      value={newObjective}
-                      onChange={(e) => setNewObjective(e.target.value)}
-                      placeholder="Describe the ultimate business objective or goal..."
-                      className="w-full bg-white border border-[#e6e3da] rounded-xl py-2.5 px-3.5 text-xs text-[#1c1b18] placeholder:text-[#a09c94] focus:outline-none focus:border-[#8c7853] focus:ring-4 focus:ring-[#8c7853]/10 transition-all duration-300 shadow-sm resize-none"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black text-[#66635d] uppercase tracking-widest block mb-1">
-                      Domain
-                    </label>
-                    <select
-                      value={newDomain}
-                      onChange={(e) => setNewDomain(e.target.value)}
-                      className="w-full bg-white border border-[#e6e3da] rounded-xl py-2.5 px-3.5 text-xs text-[#1c1b18] focus:outline-none focus:border-[#8c7853] focus:ring-4 focus:ring-[#8c7853]/10 transition-all duration-300 shadow-sm cursor-pointer"
+
+            {modalStep === 'FORM' ? (
+              <form onSubmit={handleCreateProject} className="space-y-6">
+                {/* Mode Selector Header */}
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-[#66635d] uppercase tracking-widest block">
+                    Select Planning Execution Mode
+                  </label>
+                  <div className="grid grid-cols-3 gap-3 bg-[#faf8f5] p-1.5 rounded-2xl border border-[#e6e3da]">
+                    <button
+                      type="button"
+                      onClick={() => setPlanningMode('AI_ASSISTED')}
+                      className={`flex flex-col items-center justify-center p-3 rounded-xl border text-center transition-all cursor-pointer ${
+                        planningMode === 'AI_ASSISTED'
+                          ? 'bg-white border-[#8c7853] shadow-sm text-[#8c7853]'
+                          : 'border-transparent text-[#66635d] hover:bg-white/60'
+                      }`}
                     >
-                      <option value="Frontend">Frontend</option>
-                      <option value="Backend">Backend</option>
-                      <option value="Fullstack">Fullstack</option>
-                      <option value="AI/ML">AI/ML</option>
-                      <option value="DevOps">DevOps</option>
-                      <option value="QA">QA</option>
-                    </select>
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-black text-[#66635d] uppercase tracking-widest block mb-1">
-                      Tech Stack (comma separated)
-                    </label>
-                    <input
-                      type="text"
-                      value={newTechStack}
-                      onChange={(e) => setNewTechStack(e.target.value)}
-                      placeholder="e.g. Next.js, TailwindCSS"
-                      className="w-full bg-white border border-[#e6e3da] rounded-xl py-2.5 px-3.5 text-xs text-[#1c1b18] placeholder:text-[#a09c94] focus:outline-none focus:border-[#8c7853] focus:ring-4 focus:ring-[#8c7853]/10 transition-all duration-300 shadow-sm"
-                    />
+                      <div className="flex items-center gap-1.5 font-black text-xs uppercase tracking-wider">
+                        <Wand2 className="w-4 h-4 text-[#8c7853]" />
+                        <span>AI-Assisted</span>
+                      </div>
+                      <span className="text-[9px] text-[#66635d] font-semibold mt-0.5">
+                        AI generates plan &rarr; Manager Approves
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setPlanningMode('AUTONOMOUS')}
+                      className={`flex flex-col items-center justify-center p-3 rounded-xl border text-center transition-all cursor-pointer ${
+                        planningMode === 'AUTONOMOUS'
+                          ? 'bg-white border-[#8c7853] shadow-sm text-[#8c7853]'
+                          : 'border-transparent text-[#66635d] hover:bg-white/60'
+                      }`}
+                    >
+                      <div className="flex items-center gap-1.5 font-black text-xs uppercase tracking-wider">
+                        <Bot className="w-4 h-4 text-[#8c7853]" />
+                        <span>Autonomous</span>
+                      </div>
+                      <span className="text-[9px] text-[#66635d] font-semibold mt-0.5">
+                        Full AI team matching & auto-dispatch
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setPlanningMode('MANUAL')}
+                      className={`flex flex-col items-center justify-center p-3 rounded-xl border text-center transition-all cursor-pointer ${
+                        planningMode === 'MANUAL'
+                          ? 'bg-white border-[#8c7853] shadow-sm text-[#8c7853]'
+                          : 'border-transparent text-[#66635d] hover:bg-white/60'
+                      }`}
+                    >
+                      <div className="flex items-center gap-1.5 font-black text-xs uppercase tracking-wider">
+                        <UserCheck className="w-4 h-4 text-[#8c7853]" />
+                        <span>Manual</span>
+                      </div>
+                      <span className="text-[9px] text-[#66635d] font-semibold mt-0.5">
+                        Manager manually specifies tasks
+                      </span>
+                    </button>
                   </div>
                 </div>
 
-                {/* Column 2: Employee Assignment & Notifications */}
-                <div className="space-y-6 border-t md:border-t-0 md:border-l md:pl-6 border-[#e6e3da]">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Column 1: Details */}
                   <div className="space-y-4">
                     <h3 className="text-[10px] font-black text-[#8c7853] uppercase tracking-widest pb-1 border-b border-[#faf8f5]">
-                      Employee Assignment
+                      Project Parameters
                     </h3>
-                    <div className="space-y-1 relative">
+                    <div className="space-y-1">
                       <label className="text-[10px] font-black text-[#66635d] uppercase tracking-widest block mb-1">
-                        Assign Employees
+                        Project Name
                       </label>
-                      
-                      {/* Selection Box / Trigger */}
-                      <div
-                        onClick={() => setDropdownOpen(!dropdownOpen)}
-                        className="w-full bg-white border border-[#e6e3da] rounded-xl py-2.5 px-3.5 text-xs text-[#1c1b18] focus:outline-none focus:border-[#8c7853] transition-all duration-300 shadow-sm cursor-pointer flex justify-between items-center select-none"
-                      >
-                        <span className="font-bold text-[#1c1b18] truncate">
-                          {selectedEmployeeIds.length === 0
-                            ? 'Select employees...'
-                            : `${selectedEmployeeIds.length} employee(s) selected`}
-                        </span>
-                        <span className="text-[#a09c94] text-xs">{dropdownOpen ? '▲' : '▼'}</span>
+                      <input
+                        type="text"
+                        required
+                        value={newName}
+                        onChange={(e) => setNewName(e.target.value)}
+                        placeholder="e.g. Enterprise WhatsApp Bot Integration"
+                        className="w-full bg-white border border-[#e6e3da] rounded-xl py-2.5 px-3.5 text-xs text-[#1c1b18] placeholder:text-[#a09c94] focus:outline-none focus:border-[#8c7853] focus:ring-4 focus:ring-[#8c7853]/10 transition-all duration-300 shadow-sm"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[10px] font-black text-[#66635d] uppercase tracking-widest block mb-1">
+                        Business Objective / Goal
+                      </label>
+                      <textarea
+                        required
+                        rows={3}
+                        value={newObjective}
+                        onChange={(e) => setNewObjective(e.target.value)}
+                        placeholder="Describe the overall business objective for the AI agent to break down into day-to-day employee tasks..."
+                        className="w-full bg-white border border-[#e6e3da] rounded-xl py-2.5 px-3.5 text-xs text-[#1c1b18] placeholder:text-[#a09c94] focus:outline-none focus:border-[#8c7853] focus:ring-4 focus:ring-[#8c7853]/10 transition-all duration-300 shadow-sm resize-none"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-black text-[#66635d] uppercase tracking-widest block mb-1">
+                          Domain
+                        </label>
+                        <select
+                          value={newDomain}
+                          onChange={(e) => setNewDomain(e.target.value)}
+                          className="w-full bg-white border border-[#e6e3da] rounded-xl py-2.5 px-3.5 text-xs text-[#1c1b18] focus:outline-none focus:border-[#8c7853] shadow-sm cursor-pointer"
+                        >
+                          <option value="Frontend">Frontend</option>
+                          <option value="Backend">Backend</option>
+                          <option value="Fullstack">Fullstack</option>
+                          <option value="AI/ML">AI/ML</option>
+                          <option value="DevOps">DevOps</option>
+                        </select>
                       </div>
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-black text-[#66635d] uppercase tracking-widest block mb-1">
+                          Tech Stack
+                        </label>
+                        <input
+                          type="text"
+                          value={newTechStack}
+                          onChange={(e) => setNewTechStack(e.target.value)}
+                          placeholder="e.g. NestJS, Prisma"
+                          className="w-full bg-white border border-[#e6e3da] rounded-xl py-2.5 px-3.5 text-xs text-[#1c1b18] placeholder:text-[#a09c94] focus:outline-none focus:border-[#8c7853] shadow-sm"
+                        />
+                      </div>
+                    </div>
+                  </div>
 
-                      {/* Dropdown Panel */}
-                      {dropdownOpen && (
-                        <div className="absolute left-0 right-0 z-50 mt-1 bg-white border border-[#e6e3da] rounded-xl shadow-lg p-3 space-y-2 max-h-60 overflow-y-auto animate-in fade-in slide-in-from-top-1 duration-200">
-                          {/* Search Bar */}
-                          <input
-                            type="text"
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            placeholder="Search by ID or name..."
-                            onClick={(e) => e.stopPropagation()}
-                            className="w-full bg-[#faf8f5] border border-[#e6e3da] rounded-lg py-2 px-3 text-xs text-[#1c1b18] placeholder:text-[#a09c94] focus:outline-none focus:border-[#8c7853] shadow-inner mb-2"
-                          />
-                          
-                          {/* List Options */}
-                          <div className="space-y-1">
-                            {employees.filter(emp => 
-                              emp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                              (emp.employeeId || '').toLowerCase().includes(searchTerm.toLowerCase())
-                            ).length > 0 ? (
-                              employees
-                                .filter(emp => 
-                                  emp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                                  (emp.employeeId || '').toLowerCase().includes(searchTerm.toLowerCase())
-                                )
+                  {/* Column 2: Employee Matching & Notifications */}
+                  <div className="space-y-4 border-t md:border-t-0 md:border-l md:pl-6 border-[#e6e3da]">
+                    <h3 className="text-[10px] font-black text-[#8c7853] uppercase tracking-widest pb-1 border-b border-[#faf8f5]">
+                      Team & Dispatch Setup
+                    </h3>
+
+                    {planningMode === 'AUTONOMOUS' ? (
+                      <div className="p-4 bg-[#FAF4E8] border border-[#eedebf] rounded-2xl space-y-2">
+                        <div className="flex items-center gap-2 text-[#8c7853] font-black text-xs uppercase tracking-wider">
+                          <Bot className="w-4 h-4" />
+                          <span>AI Auto-Team Assignment</span>
+                        </div>
+                        <p className="text-[11px] text-[#66635d] leading-relaxed">
+                          In Autonomous mode, the AI Agent evaluates employee domain skills and active workload capacity, and automatically assigns day-to-day tasks.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3 relative">
+                        <label className="text-[10px] font-black text-[#66635d] uppercase tracking-widest block mb-1">
+                          {planningMode === 'AI_ASSISTED'
+                            ? 'Assign Employees (Optional - AI recommends if empty)'
+                            : 'Assign Employees (Required for Manual)'}
+                        </label>
+
+                        {/* Selection Box / Trigger */}
+                        <div
+                          onClick={() => setDropdownOpen(!dropdownOpen)}
+                          className="w-full bg-white border border-[#e6e3da] rounded-xl py-2.5 px-3.5 text-xs text-[#1c1b18] focus:outline-none focus:border-[#8c7853] shadow-sm cursor-pointer flex justify-between items-center select-none"
+                        >
+                          <span className="font-bold text-[#1c1b18] truncate">
+                            {selectedEmployeeIds.length === 0
+                              ? 'Select employees...'
+                              : `${selectedEmployeeIds.length} employee(s) selected`}
+                          </span>
+                          <span className="text-[#a09c94] text-xs">{dropdownOpen ? '▲' : '▼'}</span>
+                        </div>
+
+                        {/* Dropdown Panel */}
+                        {dropdownOpen && (
+                          <div className="absolute left-0 right-0 z-50 mt-1 bg-white border border-[#e6e3da] rounded-xl shadow-lg p-3 space-y-2 max-h-56 overflow-y-auto">
+                            <input
+                              type="text"
+                              value={searchTerm}
+                              onChange={(e) => setSearchTerm(e.target.value)}
+                              placeholder="Search employees..."
+                              onClick={(e) => e.stopPropagation()}
+                              className="w-full bg-[#faf8f5] border border-[#e6e3da] rounded-lg py-1.5 px-3 text-xs text-[#1c1b18] focus:outline-none focus:border-[#8c7853]"
+                            />
+                            <div className="space-y-1">
+                              {employees
+                                .filter((emp) => emp.name.toLowerCase().includes(searchTerm.toLowerCase()))
                                 .map((emp) => {
                                   const isSelected = selectedEmployeeIds.includes(emp.id);
-                                  const empIdStr = emp.employeeId ? emp.employeeId.trim().replace('-', '') : 'EMP000';
-                                  const labelText = `${empIdStr} – ${emp.name}`;
-                                  
                                   return (
                                     <label
                                       key={emp.id}
                                       onClick={(e) => e.stopPropagation()}
-                                      className="flex items-center gap-2.5 text-xs text-[#1c1b18] font-bold cursor-pointer hover:bg-[#faf8f5] p-1.5 rounded transition-colors"
+                                      className="flex items-center gap-2 text-xs text-[#1c1b18] font-bold cursor-pointer hover:bg-[#faf8f5] p-1.5 rounded"
                                     >
                                       <input
                                         type="checkbox"
@@ -604,85 +838,163 @@ function ProjectsPageContent() {
                                             setSelectedEmployeeIds((prev) => [...prev, emp.id]);
                                           }
                                         }}
-                                        className="rounded border-[#e6e3da] text-[#8c7853] focus:ring-[#8c7853]/20 cursor-pointer"
+                                        className="rounded border-[#e6e3da] text-[#8c7853]"
                                       />
-                                      <span>{labelText}</span>
+                                      <span>
+                                        {emp.employeeId ? `${emp.employeeId} – ` : ''}
+                                        {emp.name}
+                                      </span>
                                     </label>
                                   );
-                                })
-                            ) : (
-                              <p className="text-[10px] text-[#66635d] uppercase tracking-widest font-black text-center py-2">
-                                No employees match search
-                              </p>
-                            )}
+                                })}
+                            </div>
                           </div>
-                        </div>
-                      )}
-                    </div>
+                        )}
+                      </div>
+                    )}
 
-                    {/* Notification Action */}
+                    {/* Dispatch Checkbox */}
                     <div className="space-y-2 pt-2">
                       <label className="flex items-center gap-2.5 cursor-pointer select-none">
                         <input
                           type="checkbox"
-                          checked={notifyEmployees || notificationsSuccess === true}
-                          disabled={isSubmitting || notificationsSuccess !== null}
+                          checked={notifyEmployees}
                           onChange={(e) => setNotifyEmployees(e.target.checked)}
-                          className={`w-4 h-4 rounded transition-all duration-300 cursor-pointer`}
-                          style={{
-                            accentColor: notificationsSuccess === true ? '#10b981' : undefined,
-                          }}
+                          className="w-4 h-4 rounded text-[#8c7853]"
                         />
-                        <span
-                          className={`text-[10px] font-black uppercase tracking-widest transition-colors duration-300 ${
-                            notificationsSuccess === true
-                              ? 'text-emerald-600'
-                              : notificationsSuccess === false
-                                ? 'text-rose-600'
-                                : 'text-[#66635d]'
-                          }`}
-                        >
-                          Notify Assigned Employees
+                        <span className="text-[10px] font-black uppercase tracking-widest text-[#66635d]">
+                          Send WhatsApp & Portal Alerts to Employees
                         </span>
                       </label>
-                      {notificationsSuccess === true && (
-                        <p className="text-[10px] text-emerald-600 font-bold uppercase tracking-wider animate-in fade-in duration-300">
-                          ✓ Notifications sent successfully!
-                        </p>
-                      )}
-                      {notificationsSuccess === false && (
-                        <p className="text-[10px] text-rose-500 font-bold uppercase tracking-wider animate-in fade-in duration-300">
-                          ⚠ Some notifications failed to deliver.
-                        </p>
-                      )}
                     </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Action Buttons */}
-              <div className="flex justify-end gap-3 pt-4 border-t border-[#e6e3da]">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  type="button"
-                  disabled={isSubmitting}
-                  onClick={() => setShowModal(false)}
-                  className="h-10 text-[9px] font-black tracking-widest uppercase border-[#e6e3da] text-[#66635d] hover:bg-[#faf8f5]"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  variant="primary"
-                  size="sm"
-                  type="submit"
-                  disabled={isSubmitting || notificationsSuccess !== null}
-                  className="h-10 text-[9px] font-black tracking-widest uppercase border border-[#7d6b4a]"
-                >
-                  {isSubmitting ? 'Generating...' : 'Generate Plan'}
-                </Button>
+                {/* Footer Buttons */}
+                <div className="flex justify-end gap-3 pt-4 border-t border-[#e6e3da]">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    type="button"
+                    disabled={isSubmitting}
+                    onClick={resetModal}
+                    className="h-10 text-[9px] font-black tracking-widest uppercase border-[#e6e3da] text-[#66635d]"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="h-10 text-[9px] font-black tracking-widest uppercase border border-[#7d6b4a] flex items-center gap-2"
+                  >
+                    {isSubmitting ? (
+                      'Generating Plan...'
+                    ) : planningMode === 'AI_ASSISTED' ? (
+                      <>
+                        <span>Generate & Preview AI Plan</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </>
+                    ) : planningMode === 'AUTONOMOUS' ? (
+                      <>
+                        <span>Provision Autonomously</span>
+                        <Bot className="w-3.5 h-3.5" />
+                      </>
+                    ) : (
+                      'Create Project'
+                    )}
+                  </Button>
+                </div>
+              </form>
+            ) : (
+              /* PLAN PREVIEW & APPROVAL STEP */
+              <div className="space-y-6 animate-in fade-in duration-300">
+                <div className="bg-[#FAF4E8] border border-[#eedebf] p-4 rounded-2xl flex items-center justify-between">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-serif font-black text-base text-[#1c1b18]">{newName}</h3>
+                      <span className="text-[9px] font-black uppercase tracking-widest bg-amber-100 text-amber-800 border border-amber-300 px-2 py-0.5 rounded-full">
+                        Status: Awaiting Manager Approval
+                      </span>
+                    </div>
+                    <p className="text-xs text-[#66635d] mt-1 font-semibold">{newObjective}</p>
+                  </div>
+                  <Badge variant="proposed">{generatedTasks.length} Day-to-Day Tasks</Badge>
+                </div>
+
+                {/* Day-to-Day Task Breakdown List */}
+                <div className="space-y-3">
+                  <h4 className="text-[10px] font-black text-[#8c7853] uppercase tracking-widest">
+                    Generated Day-to-Day Employee Tasks & Assignments
+                  </h4>
+
+                  <div className="space-y-2.5 max-h-72 overflow-y-auto pr-1">
+                    {generatedTasks.map((task, idx) => (
+                      <div
+                        key={idx}
+                        className="bg-white border border-[#e6e3da] p-3.5 rounded-xl flex items-center justify-between hover:border-[#8c7853] transition-all shadow-sm"
+                      >
+                        <div className="space-y-1 max-w-[65%]">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-black text-[#1c1b18]">{task.title}</span>
+                            <span className="text-[9px] font-black uppercase tracking-widest text-[#8c7853] bg-[#faf4e8] px-2 py-0.5 rounded">
+                              {task.status || 'PROPOSED'}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-[#66635d] leading-relaxed">{task.description}</p>
+                        </div>
+
+                        <div className="flex items-center gap-4 text-right pl-4">
+                          <div className="space-y-0.5">
+                            <div className="text-[10px] font-black text-[#1c1b18] flex items-center justify-end gap-1">
+                              <UserCheck className="w-3 h-3 text-[#8c7853]" />
+                              <span>{task.assignedUser}</span>
+                            </div>
+                            <div className="text-[9px] text-[#66635d] font-bold flex items-center justify-end gap-1">
+                              <Clock className="w-3 h-3 text-[#a09c94]" />
+                              <span>Est: {task.estimatedHours}h</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {approvedSuccess && (
+                  <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold rounded-xl flex items-center gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                    <span>✓ Plan Approved! Project is active and employee notifications were sent successfully.</span>
+                  </div>
+                )}
+
+                {/* Footer Action Buttons */}
+                <div className="flex justify-between items-center pt-4 border-t border-[#e6e3da]">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    type="button"
+                    disabled={isApproving}
+                    onClick={() => setModalStep('FORM')}
+                    className="h-10 text-[9px] font-black tracking-widest uppercase border-[#e6e3da] text-[#66635d]"
+                  >
+                    &larr; Back to Edit Parameters
+                  </Button>
+
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={handleApprovePlan}
+                    disabled={isApproving || approvedSuccess}
+                    className="h-10 text-[9px] font-black tracking-widest uppercase border border-[#7d6b4a] bg-[#8c7853] hover:bg-[#7d6b4a] text-white flex items-center gap-2 shadow cursor-pointer"
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>{isApproving ? 'Approving & Dispatching...' : 'Approve & Dispatch Plan'}</span>
+                  </Button>
+                </div>
               </div>
-            </form>
+            )}
           </div>
         </div>
       )}

@@ -1,11 +1,22 @@
-import { Controller, Post, Body, Req } from '@nestjs/common';
+import { Controller, Post, Body, Req, UseGuards } from '@nestjs/common';
 import { AiService } from './ai.service';
 import { ProjectsService } from '../projects/projects.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { Role } from '@useaxiom/database';
 import type { Request } from 'express';
 
+interface ActiveUser {
+  id: string;
+  email: string;
+  role: Role;
+  organizationId: string;
+}
+
 @Controller('ai')
+@UseGuards(JwtAuthGuard)
 export class AiController {
   constructor(
     private readonly aiService: AiService,
@@ -16,12 +27,13 @@ export class AiController {
 
   @Post('chat')
   async chat(
+    @CurrentUser() user: ActiveUser,
     @Body('message') message: string,
     @Body('threadId') threadId: string,
-    @Req() req: Request,
   ) {
     const orchestrator = this.aiService.getOrchestrator();
-    const conversationThread = threadId || 'dashboard-thread';
+    const conversationThread = threadId || `user-thread-${user.id}`;
+    const organizationId = user.organizationId;
 
     try {
       const response = await orchestrator.getConversation().run({
@@ -42,50 +54,43 @@ export class AiController {
         promptLower.includes('deadline') ||
         promptLower.includes('employee')
       ) {
-        // Retrieve tenant organization and manager IDs
-        const org = await this.prisma.organization.findFirst();
-        const manager = await this.prisma.user.findFirst({
-          where: { role: 'MANAGER' },
+        const managerId = user.id;
+
+        // Extract title or fallback
+        const projName = promptLower.includes('mobile banking')
+          ? 'Mobile Banking Dashboard'
+          : promptLower.includes('payment')
+            ? 'Payment Gateway Integration'
+            : 'AI Assigned Goal';
+
+        const phoneMatch = message?.match(/\+?[1-9]\d{8,14}/);
+        const recipientPhone = phoneMatch ? phoneMatch[0] : '+918105670193';
+
+        // Persist project record scoped to user's tenant organization
+        createdProject = await this.prisma.project.create({
+          data: {
+            name: projName,
+            objective: `AI Assigned project: ${message}`,
+            targetDeadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+            status: 'ACTIVE',
+            domain: 'Engineering',
+            techStack: ['TypeScript', 'Next.js', 'NestJS'],
+            organization: { connect: { id: organizationId } },
+            manager: { connect: { id: managerId } },
+          },
         });
 
-        if (org && manager) {
-          // Extract title or fallback
-          const projName = promptLower.includes('mobile banking')
-            ? 'Mobile Banking Dashboard'
-            : promptLower.includes('payment')
-              ? 'Payment Gateway Integration'
-              : 'AI Assigned Goal';
+        // Create automatic WhatsApp reminder schedule
+        await this.notificationsService.createReminderSchedule({
+          employeeName: promptLower.includes('rahul') ? 'Rahul Sharma' : 'Assigned Employee',
+          employeeId: 'EMP-005',
+          employeePhone: recipientPhone,
+          projectName: projName,
+          projectDescription: `AI Assigned project: ${message}`,
+          deadline: '2026-07-30',
+        });
 
-          // Extract phone or fallback to test number
-          const phoneMatch = message?.match(/\+?[1-9]\d{8,14}/);
-          const recipientPhone = phoneMatch ? phoneMatch[0] : '+918105670193';
-
-          // Persist project record in database
-          createdProject = await this.prisma.project.create({
-            data: {
-              name: projName,
-              objective: `AI Assigned project: ${message}`,
-              targetDeadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-              status: 'ACTIVE',
-              domain: 'Engineering',
-              techStack: ['TypeScript', 'Next.js', 'NestJS'],
-              organization: { connect: { id: org.id } },
-              manager: { connect: { id: manager.id } },
-            },
-          });
-
-          // Create automatic WhatsApp reminder schedule
-          await this.notificationsService.createReminderSchedule({
-            employeeName: promptLower.includes('rahul') ? 'Rahul Sharma' : 'Assigned Employee',
-            employeeId: 'EMP-005',
-            employeePhone: recipientPhone,
-            projectName: projName,
-            projectDescription: `AI Assigned project: ${message}`,
-            deadline: '2026-07-30',
-          });
-
-          projectCreated = true;
-        }
+        projectCreated = true;
       }
 
       return {
